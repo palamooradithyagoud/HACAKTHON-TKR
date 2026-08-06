@@ -1,0 +1,41 @@
+# ── SkillsCatalyst .gitignore ──────────────────────────────────────────────────
+
+# Environment variables — NEVER commit these
+.env
+.env.local
+.env.*.local
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+venv/
+.venv/
+env/
+
+# Next.js
+frontend/.next/
+frontend/out/
+frontend/node_modules/
+
+# Data folder (660+ CSV files — too large for git)
+/data/
+
+# Logs
+*.log
+npm-debug.log*
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
