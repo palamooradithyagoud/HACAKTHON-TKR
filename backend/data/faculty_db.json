@@ -1,0 +1,278 @@
+{
+  "students": [
+    {
+      "id": "student_student_demo_com",
+      "name": "Alex Student",
+      "roll_number": "CSE-2026-001",
+      "department": "CSE",
+      "academic_year": "3rd Year",
+      "section": "A",
+      "attendance_percentage": 92.5,
+      "coding_score": 850,
+      "placement_readiness_score": 88.0,
+      "faculty_notes": "Very active in class. Needs to focus a bit more on advanced system design patterns.",
+      "github_handle": "alex-student",
+      "leetcode_handle": "alex_leet",
+      "hackerrank_handle": "alex_hr",
+      "certifications": [
+        "AWS Cloud Practitioner",
+        "Google Data Analytics Certificate"
+      ],
+      "projects": [
+        "E-Commerce Microservice App",
+        "Personal Coding Blog"
+      ],
+      "timeline": [
+        {
+          "date": "2026-08-05",
+          "title": "Assignment Evaluated",
+          "description": "Scored 9/10 in Trees & Graphs assignment."
+        },
+        {
+          "date": "2026-08-03",
+          "title": "LeetCode Benchmark Reached",
+          "description": "Solved 250 problems on LeetCode."
+        }
+      ]
+    },
+    {
+      "id": "student_alice_college_edu",
+      "name": "Alice Johnson",
+      "roll_number": "CSE-2026-002",
+      "department": "CSE",
+      "academic_year": "3rd Year",
+      "section": "A",
+      "attendance_percentage": 73.0,
+      "coding_score": 980,
+      "placement_readiness_score": 91.5,
+      "faculty_notes": "Coding skills are outstanding. However, attendance is currently below the 75% threshold. Spoke with her regarding the same.",
+      "github_handle": "alice-j",
+      "leetcode_handle": "alice_codes",
+      "hackerrank_handle": "alice_hr",
+      "certifications": [
+        "Certified Kubernetes Administrator (CKA)"
+      ],
+      "projects": [
+        "Distributed KV Store in Go",
+        "AI Image Generator Webapp"
+      ],
+      "timeline": [
+        {
+          "date": "2026-08-04",
+          "title": "Attendance Warning",
+          "description": "Marked absent for 3 consecutive lectures. Warning sent."
+        },
+        {
+          "date": "2026-08-01",
+          "title": "Contest Rank #12",
+          "description": "Achieved global rank 12 in weekly university coding cup."
+        }
+      ]
+    },
+    {
+      "id": "student_bob_college_edu",
+      "name": "Bob Smith",
+      "roll_number": "CSE-2026-003",
+      "department": "CSE",
+      "academic_year": "3rd Year",
+      "section": "B",
+      "attendance_percentage": 88.0,
+      "coding_score": 310,
+      "placement_readiness_score": 42.0,
+      "faculty_notes": "Struggling with basic DSA questions. Recommended daily practice sheet and office hours.",
+      "github_handle": "bob-smith",
+      "leetcode_handle": "bob_builds",
+      "hackerrank_handle": "bob_hr",
+      "certifications": [],
+      "projects": [
+        "Simple Weather CLI Dashboard"
+      ],
+      "timeline": [
+        {
+          "date": "2026-08-06",
+          "title": "Low Coding Alert",
+          "description": "Coding activity score remains under critical benchmark."
+        },
+        {
+          "date": "2026-08-02",
+          "title": "Assignment Submitted",
+          "description": "Submitted URL Shortener System Design assignment."
+        }
+      ]
+    }
+  ],
+  "classes": [
+    {
+      "id": 1,
+      "subject": "Data Structures & Algorithms",
+      "department": "CSE",
+      "year": "3rd Year",
+      "section": "A",
+      "time": "09:00 AM - 10:00 AM",
+      "room": "Seminar Hall-2"
+    },
+    {
+      "id": 2,
+      "subject": "System Design & Architecture",
+      "department": "CSE",
+      "year": "3rd Year",
+      "section": "B",
+      "time": "11:30 AM - 12:30 PM",
+      "room": "Lab-4"
+    },
+    {
+      "id": 3,
+      "subject": "Web Development Lab",
+      "department": "CSE",
+      "year": "2nd Year",
+      "section": "A",
+      "time": "02:00 PM - 04:00 PM",
+      "room": "Programming Lab"
+    }
+  ],
+  "assignments": [
+    {
+      "id": 1,
+      "title": "Advanced Trees & Graphs Implementation",
+      "description": "Implement an AVL Tree and a Graph traversal (DFS/BFS) using adjacency list representation. Code should be written in clean Python or C++.",
+      "subject": "Data Structures & Algorithms",
+      "deadline": "2026-08-10T23:59:00Z",
+      "max_marks": 10,
+      "attachments": "dsa_trees_graphs_handout.pdf",
+      "created_at": "2026-08-01T10:00:00Z"
+    },
+    {
+      "id": 2,
+      "title": "Design a Scalable URL Shortener System",
+      "description": "Submit a system design document outlining the architecture of a URL shortener service (like Bitly). Explain capacity estimation, database choice, API contracts, caching, and rate limiting.",
+      "subject": "System Design & Architecture",
+      "deadline": "2026-08-15T23:59:00Z",
+      "max_marks": 20,
+      "attachments": "url_shortener_guide.pdf",
+      "created_at": "2026-08-03T11:00:00Z"
+    }
+  ],
+  "submissions": [
+    {
+      "id": 1,
+      "assignment_id": 1,
+      "student_id": "student_student_demo_com",
+      "submitted_at": "2026-08-04T16:30:00Z",
+      "status": "graded",
+      "marks_obtained": 9.0,
+      "feedback": "Perfect logic and graph traversals. Your AVL balance checking function is extremely concise. Well done!",
+      "submission_content": "See attached github link for repository: github.com/alex-student/avl-tree-graph-dsa"
+    },
+    {
+      "id": 2,
+      "assignment_id": 1,
+      "student_id": "student_alice_college_edu",
+      "submitted_at": "2026-08-05T09:12:00Z",
+      "status": "pending",
+      "marks_obtained": 0.0,
+      "feedback": "",
+      "submission_content": "Submission file upload: alice_johnson_dsa_assignment_1.pdf"
+    },
+    {
+      "id": 3,
+      "assignment_id": 1,
+      "student_id": "student_bob_college_edu",
+      "submitted_at": "2026-08-06T14:40:00Z",
+      "status": "pending",
+      "marks_obtained": 0.0,
+      "feedback": "",
+      "submission_content": "Attached code implementation in Python for BST, AVL and BFS traversal. Hoping for quick review!"
+    }
+  ],
+  "attendance_records": [
+    {
+      "id": 1,
+      "student_id": "student_student_demo_com",
+      "subject": "Data Structures & Algorithms",
+      "date": "2026-08-06",
+      "status": "present"
+    },
+    {
+      "id": 2,
+      "student_id": "student_alice_college_edu",
+      "subject": "Data Structures & Algorithms",
+      "date": "2026-08-06",
+      "status": "absent"
+    },
+    {
+      "id": 3,
+      "student_id": "student_bob_college_edu",
+      "subject": "Data Structures & Algorithms",
+      "date": "2026-08-06",
+      "status": "present"
+    }
+  ],
+  "learning_materials": [
+    {
+      "id": 1,
+      "title": "System Design Primer - Scalability Lecture Slides",
+      "type": "ppt",
+      "url": "https://example.com/materials/system_design_scalability.pptx",
+      "subject": "System Design & Architecture",
+      "semester": "5th Semester",
+      "department": "CSE",
+      "academic_year": "3rd Year",
+      "uploaded_at": "2026-08-04T09:00:00Z"
+    },
+    {
+      "id": 2,
+      "title": "DSA Cheat Sheet - Trees, Graphs & Dynamic Programming",
+      "type": "pdf",
+      "url": "https://example.com/materials/dsa_cheatsheet.pdf",
+      "subject": "Data Structures & Algorithms",
+      "semester": "5th Semester",
+      "department": "CSE",
+      "academic_year": "3rd Year",
+      "uploaded_at": "2026-08-05T14:20:00Z"
+    }
+  ],
+  "announcements": [
+    {
+      "id": 1,
+      "title": "Internal Hackathon 2026 Registration Open",
+      "content": "All CSE students in 3rd year are required to form groups of 3-4 and register for the upcoming Hackathon on or before August 15. Great prizes and placement interviews up for grabs!",
+      "target_scope": "department",
+      "target_value": "CSE",
+      "created_at": "2026-08-04T12:00:00Z"
+    },
+    {
+      "id": 2,
+      "title": "Special Session on System Architecture Design",
+      "content": "A special lecture on Microservices and Event-Driven Architecture will be conducted on Saturday at 10 AM. Recommended for all placement aspirants.",
+      "target_scope": "section",
+      "target_value": "A",
+      "created_at": "2026-08-05T08:30:00Z"
+    }
+  ],
+  "messages": [
+    {
+      "id": 1,
+      "sender_id": "faculty_demo",
+      "receiver_id": "student_alice_college_edu",
+      "content": "Hello Alice, I noticed your attendance is currently 73%. Please make sure you attend the next few lectures to stay above the 75% placement cutoff.",
+      "created_at": "2026-08-04T10:00:00Z",
+      "is_read": true
+    },
+    {
+      "id": 2,
+      "sender_id": "student_alice_college_edu",
+      "receiver_id": "faculty_demo",
+      "content": "Hello Dr. Faculty, sorry about that. I was unwell last week. I will make sure to catch up and attend all future lectures.",
+      "created_at": "2026-08-04T11:30:00Z",
+      "is_read": true
+    },
+    {
+      "id": 3,
+      "sender_id": "faculty_demo",
+      "receiver_id": "student_bob_college_edu",
+      "content": "Hi Bob, let's schedule a time to go over your graph traversal algorithms assignment. Please review DFS/BFS.",
+      "created_at": "2026-08-05T14:00:00Z",
+      "is_read": false
+    }
+  ]
+}

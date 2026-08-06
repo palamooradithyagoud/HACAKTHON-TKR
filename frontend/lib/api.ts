@@ -1844,3 +1844,173 @@ export async function saveCodingProfiles(data: CodingProfilesInput) {
   }
 }
 
+// ── Faculty API Operations ──────────────────────────────────────────────
+
+export async function fetchFacultyDashboard() {
+  const authHeaders = await getAuthHeaders();
+  const res = await apiFetch(`${API_BASE}/api/faculty/dashboard`, {
+    headers: { ...authHeaders },
+    cache: "no-store",
+  });
+  if (!res.ok) throw new Error("Failed to fetch faculty dashboard data");
+  return res.json();
+}
+
+export async function fetchFacultyStudents() {
+  const authHeaders = await getAuthHeaders();
+  const res = await apiFetch(`${API_BASE}/api/faculty/students`, {
+    headers: { ...authHeaders },
+    cache: "no-store",
+  });
+  if (!res.ok) throw new Error("Failed to fetch faculty students list");
+  return res.json();
+}
+
+export async function fetchFacultyStudentDetail(studentId: string) {
+  const authHeaders = await getAuthHeaders();
+  const res = await apiFetch(`${API_BASE}/api/faculty/students/${encodeURIComponent(studentId)}`, {
+    headers: { ...authHeaders },
+    cache: "no-store",
+  });
+  if (!res.ok) throw new Error("Failed to fetch student details");
+  return res.json();
+}
+
+export async function saveFacultyStudentNotes(studentId: string, notes: string) {
+  const authHeaders = await getAuthHeaders();
+  const res = await apiFetch(`${API_BASE}/api/faculty/students/${encodeURIComponent(studentId)}/notes`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...authHeaders },
+    body: JSON.stringify({ notes }),
+  });
+  if (!res.ok) throw new Error("Failed to save student notes");
+  return res.json();
+}
+
+export async function saveFacultyAttendance(payload: any) {
+  const authHeaders = await getAuthHeaders();
+  const res = await apiFetch(`${API_BASE}/api/faculty/attendance`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...authHeaders },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) throw new Error("Failed to record attendance");
+  return res.json();
+}
+
+export async function fetchFacultyAttendance() {
+  const authHeaders = await getAuthHeaders();
+  const res = await apiFetch(`${API_BASE}/api/faculty/attendance`, {
+    headers: { ...authHeaders },
+    cache: "no-store",
+  });
+  if (!res.ok) throw new Error("Failed to fetch attendance history");
+  return res.json();
+}
+
+export async function createFacultyAssignment(payload: any) {
+  const authHeaders = await getAuthHeaders();
+  const res = await apiFetch(`${API_BASE}/api/faculty/assignments`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...authHeaders },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) throw new Error("Failed to create assignment");
+  return res.json();
+}
+
+export async function fetchFacultyAssignments() {
+  const authHeaders = await getAuthHeaders();
+  const res = await apiFetch(`${API_BASE}/api/faculty/assignments`, {
+    headers: { ...authHeaders },
+    cache: "no-store",
+  });
+  if (!res.ok) throw new Error("Failed to fetch assignments");
+  return res.json();
+}
+
+export async function evaluateFacultySubmission(payload: any) {
+  const authHeaders = await getAuthHeaders();
+  const res = await apiFetch(`${API_BASE}/api/faculty/assignments/evaluate`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...authHeaders },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) throw new Error("Failed to evaluate submission");
+  return res.json();
+}
+
+export async function createLearningMaterial(payload: any) {
+  const authHeaders = await getAuthHeaders();
+  const res = await apiFetch(`${API_BASE}/api/faculty/learning-materials`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...authHeaders },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) throw new Error("Failed to register learning material");
+  return res.json();
+}
+
+export async function fetchLearningMaterials() {
+  const authHeaders = await getAuthHeaders();
+  const res = await apiFetch(`${API_BASE}/api/faculty/learning-materials`, {
+    headers: { ...authHeaders },
+    cache: "no-store",
+  });
+  if (!res.ok) throw new Error("Failed to fetch learning materials");
+  return res.json();
+}
+
+export async function fetchFacultyChatHistory(studentId: string) {
+  const authHeaders = await getAuthHeaders();
+  const res = await apiFetch(`${API_BASE}/api/faculty/messages/${encodeURIComponent(studentId)}`, {
+    headers: { ...authHeaders },
+    cache: "no-store",
+  });
+  if (!res.ok) throw new Error("Failed to fetch chat history");
+  return res.json();
+}
+
+export async function sendFacultyChatMessage(payload: any) {
+  const authHeaders = await getAuthHeaders();
+  const res = await apiFetch(`${API_BASE}/api/faculty/messages`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...authHeaders },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) throw new Error("Failed to send message");
+  return res.json();
+}
+
+export async function createFacultyAnnouncement(payload: any) {
+  const authHeaders = await getAuthHeaders();
+  const res = await apiFetch(`${API_BASE}/api/faculty/announcements`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...authHeaders },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) throw new Error("Failed to create announcement");
+  return res.json();
+}
+
+export async function fetchFacultyAnnouncements() {
+  const authHeaders = await getAuthHeaders();
+  const res = await apiFetch(`${API_BASE}/api/faculty/announcements`, {
+    headers: { ...authHeaders },
+    cache: "no-store",
+  });
+  if (!res.ok) throw new Error("Failed to fetch announcements list");
+  return res.json();
+}
+
+export async function fetchFacultyAIInsights() {
+  const authHeaders = await getAuthHeaders();
+  const res = await apiFetch(`${API_BASE}/api/faculty/ai-insights`, {
+    headers: { ...authHeaders },
+    cache: "no-store",
+  });
+  if (!res.ok) throw new Error("Failed to fetch AI insights");
+  return res.json();
+}
+
+
