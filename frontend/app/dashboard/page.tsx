@@ -6,6 +6,7 @@ import Header from "@/components/Header";
 import MetricCards from "@/components/MetricCards";
 import UpcomingList from "@/components/UpcomingList";
 import PracticeOverview from "@/components/PracticeOverview";
+import FacultyDashboard from "@/components/FacultyDashboard";
 import { useQuery } from "@tanstack/react-query";
 import { fetchDashboardData } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
@@ -19,8 +20,12 @@ export default function DashboardPage() {
   const { data } = useQuery({
     queryKey: ["dashboard", userId],
     queryFn: () => fetchDashboardData(),
-    enabled: !!session?.user_id,
+    enabled: !!session?.user_id && session?.role !== "faculty",
   });
+
+  if (session?.role === "faculty") {
+    return <FacultyDashboard />;
+  }
 
   const displayName = session?.name || data?.user?.name || session?.email?.split("@")[0] || "Learner";
 

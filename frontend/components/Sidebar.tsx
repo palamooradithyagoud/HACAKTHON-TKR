@@ -13,6 +13,14 @@ import {
   Code2,
   Flame,
   Zap,
+  Users,
+  ClipboardList,
+  ClipboardCheck,
+  FolderOpen,
+  MessagesSquare,
+  Megaphone,
+  Settings,
+  AlertTriangle,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -22,7 +30,7 @@ import UserIcon from "@/components/icons/UserIcon";
 import ExploreIcon from "@/components/icons/ExploreIcon";
 import type { AnimatedIconHandle } from "@/components/icons/types";
 
-const navItems = [
+const studentNavItems = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutGrid },
   { name: "Learning", href: "/learning", icon: BookIcon },
   { name: "Roadmaps", href: "/roadmaps", icon: Map },
@@ -31,6 +39,13 @@ const navItems = [
   { name: "Explore", href: "/explore", icon: ExploreIcon },
   { name: "Analytics", href: "/analytics", icon: BarChart3 },
   { name: "Profile", href: "/settings", icon: UserIcon },
+];
+
+const facultyNavItems = [
+  { name: "Home", href: "/dashboard", icon: LayoutGrid },
+  { name: "Students", href: "/students", icon: Users },
+  { name: "Analytics", href: "/analytics", icon: BarChart3 },
+  { name: "Warnings", href: "/warnings", icon: AlertTriangle },
 ];
 
 const sidebarVariants = {
@@ -61,6 +76,8 @@ export default function Sidebar() {
     return null;
   }
 
+  const items = session.role === "faculty" ? facultyNavItems : studentNavItems;
+
   return (
     <motion.aside
       variants={sidebarVariants}
@@ -90,7 +107,7 @@ export default function Sidebar() {
 
         {/* ── Nav Items ── */}
         <nav className="space-y-1">
-          {navItems.map((item, i) => {
+          {items.map((item, i) => {
             const isActive =
               pathname === item.href ||
               (pathname === "/" && item.href === "/dashboard");
@@ -174,38 +191,55 @@ export default function Sidebar() {
         </nav>
       </div>
 
-      {/* ── Streak Widget ── */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.7, duration: 0.5, ease: "easeOut" as const }}
-        className="glass rounded-2xl p-4 relative overflow-hidden"
-      >
-        {/* Ambient glow behind widget */}
-        <div className="absolute inset-0 bg-gradient-to-br from-orange-500/5 via-transparent to-transparent rounded-2xl pointer-events-none" />
+      {/* ── Streak Widget or Faculty Settings ── */}
+      {session.role === "faculty" ? (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.7, duration: 0.5, ease: "easeOut" }}
+          className="pt-4 border-t border-white/5"
+        >
+          <Link
+            href="/settings"
+            className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-slate-400 hover:text-white hover:bg-white/[0.03] transition-all w-full"
+          >
+            <Settings className="w-[18px] h-[18px] text-slate-500" />
+            <span>Settings</span>
+          </Link>
+        </motion.div>
+      ) : (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.7, duration: 0.5, ease: "easeOut" as const }}
+          className="glass rounded-2xl p-4 relative overflow-hidden"
+        >
+          {/* Ambient glow behind widget */}
+          <div className="absolute inset-0 bg-gradient-to-br from-orange-500/5 via-transparent to-transparent rounded-2xl pointer-events-none" />
 
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 tracking-widest uppercase">
-            <Flame className="w-3.5 h-3.5 text-orange-400 fill-orange-400/30" />
-            Current Streak
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 tracking-widest uppercase">
+              <Flame className="w-3.5 h-3.5 text-orange-400 fill-orange-400/30" />
+              Current Streak
+            </div>
+            <Zap className="w-3.5 h-3.5 text-amber-400" />
           </div>
-          <Zap className="w-3.5 h-3.5 text-amber-400" />
-        </div>
 
-        <div className="text-2xl font-black text-white tracking-tight mb-3">
-          0 <span className="text-sm font-semibold text-slate-400">days</span>
-        </div>
+          <div className="text-2xl font-black text-white tracking-tight mb-3">
+            0 <span className="text-sm font-semibold text-slate-400">days</span>
+          </div>
 
-        <div className="w-full bg-white/5 h-1.5 rounded-full overflow-hidden">
-          <motion.div
-            className="streak-bar h-full"
-            initial={{ width: "0%" }}
-            animate={{ width: "5%" }}
-            transition={{ delay: 1, duration: 0.8, ease: "easeOut" }}
-          />
-        </div>
-        <div className="text-[10px] text-slate-500 mt-2">Complete a task to start your streak! 🚀</div>
-      </motion.div>
+          <div className="w-full bg-white/5 h-1.5 rounded-full overflow-hidden">
+            <motion.div
+              className="streak-bar h-full"
+              initial={{ width: "0%" }}
+              animate={{ width: "5%" }}
+              transition={{ delay: 1, duration: 0.8, ease: "easeOut" }}
+            />
+          </div>
+          <div className="text-[10px] text-slate-500 mt-2">Complete a task to start your streak! 🚀</div>
+        </motion.div>
+      )}
     </motion.aside>
   );
 }

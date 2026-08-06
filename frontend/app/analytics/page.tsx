@@ -12,6 +12,7 @@ import { useQuery } from "@tanstack/react-query";
 import { fetchDashboardData, fetchSavedPlaylists, fetchProfileData } from "@/lib/api";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth";
+import FacultyAnalytics from "@/components/FacultyAnalytics";
 
 // ─── Problem dataset for topic mapping ───────────────────────────────────────
 interface ProblemMeta {
@@ -288,6 +289,10 @@ function formatCompanyName(slug: string): string {
 export default function AnalyticsPage() {
   const { session } = useAuth();
   const userId = session?.user_id;
+
+  if (session?.role === "faculty") {
+    return <FacultyAnalytics />;
+  }
 
   const [timeRange, setTimeRange] = useState("30D");
   const [solvedKeys, setSolvedKeys] = useState<string[]>([]);

@@ -18,6 +18,14 @@ import {
   ChevronRight,
   User,
   Search,
+  Users,
+  ClipboardList,
+  ClipboardCheck,
+  FolderOpen,
+  MessagesSquare,
+  Megaphone,
+  Settings,
+  AlertTriangle,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -26,7 +34,7 @@ import BookIcon from "@/components/icons/BookIcon";
 import UserIcon from "@/components/icons/UserIcon";
 import ExploreIcon from "@/components/icons/ExploreIcon";
 
-const navItems = [
+const studentNavItems = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutGrid, desc: "Overview & metrics" },
   { name: "Learning", href: "/learning", icon: BookIcon, desc: "Courses & YouTube playlists" },
   { name: "Roadmaps", href: "/roadmaps", icon: Map, desc: "Interactive career tracks" },
@@ -37,13 +45,26 @@ const navItems = [
   { name: "Profile", href: "/settings", icon: UserIcon, desc: "Account & settings" },
 ];
 
-// High-frequency bottom bar items for 1-thumb native smartphone navigation
-const bottomBarItems = [
+const facultyNavItems = [
+  { name: "Home", href: "/dashboard", icon: LayoutGrid, desc: "SaaS home & tasks" },
+  { name: "Students", href: "/students", icon: Users, desc: "Student list & details" },
+  { name: "Analytics", href: "/analytics", icon: BarChart3, desc: "Aggregated performance" },
+  { name: "Warnings", href: "/warnings", icon: AlertTriangle, desc: "Academic warnings" },
+];
+
+const studentBottomBarItems = [
   { name: "Home", href: "/dashboard", icon: LayoutGrid },
   { name: "Learn", href: "/learning", icon: BookIcon },
   { name: "Explore", href: "/explore", icon: ExploreIcon },
   { name: "Practice", href: "/practice", icon: Target },
   { name: "Profile", href: "/settings", icon: UserIcon },
+];
+
+const facultyBottomBarItems = [
+  { name: "Home", href: "/dashboard", icon: LayoutGrid },
+  { name: "Students", href: "/students", icon: Users },
+  { name: "Analytics", href: "/analytics", icon: BarChart3 },
+  { name: "Warnings", href: "/warnings", icon: AlertTriangle },
 ];
 
 export default function MobileNav() {
@@ -152,7 +173,7 @@ export default function MobileNav() {
 
                 {/* Navigation Links */}
                 <nav className="space-y-1.5">
-                  {navItems.map((item) => {
+                  {(session?.role === "faculty" ? facultyNavItems : studentNavItems).map((item) => {
                     const isActive =
                       pathname === item.href ||
                       (pathname === "/" && item.href === "/dashboard");
@@ -227,7 +248,7 @@ export default function MobileNav() {
 
       {/* ── Mobile Native Floating Glass Pill Navigation Bar (Visible on smartphone < md) ── */}
       <nav aria-label="Mobile Navigation" className="md:hidden fixed bottom-3 inset-x-3 max-w-md mx-auto z-40 rounded-full border border-white/15 bg-[#091122]/92 backdrop-blur-2xl shadow-[0_12px_40px_rgba(0,0,0,0.7)] px-2 py-1.5 flex items-center justify-around">
-        {bottomBarItems.map((item) => {
+        {(session?.role === "faculty" ? facultyBottomBarItems : studentBottomBarItems).map((item) => {
           const isActive =
             pathname === item.href ||
             (pathname === "/" && item.href === "/dashboard");
