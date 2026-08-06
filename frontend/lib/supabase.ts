@@ -1,28 +1,6 @@
-// Supabase is disabled — using local authentication instead.
-// This stub prevents import errors from existing code that imports supabase.
+import { createClient } from "@supabase/supabase-js";
 
-const noop = () => Promise.resolve({ data: null, error: null });
-const noopAuth = {
-  getUser: noop,
-  signOut: noop,
-  signInWithPassword: noop,
-  signUp: noop,
-  signInWithOAuth: noop,
-  resend: noop,
-  onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
-};
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://zzjxprhapptjoziwdcro.supabase.co";
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp6anhwcmhhcHB0am96aXdkY3JvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUzMDgzODgsImV4cCI6MjEwMDg4NDM4OH0.-bweaY3kcKetY7PrW2FY78krtvMs34GSBWNaEWarXFo";
 
-const noopFrom = () => ({
-  upsert: noop,
-  select: noop,
-  insert: noop,
-  update: noop,
-  delete: noop,
-  eq: () => noopFrom(),
-  single: noop,
-});
-
-export const supabase = {
-  auth: noopAuth,
-  from: noopFrom,
-} as any;
+export const supabase = createClient(supabaseUrl, supabaseAnonKey);
