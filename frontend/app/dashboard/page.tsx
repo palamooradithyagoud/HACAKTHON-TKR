@@ -51,37 +51,40 @@ export default function DashboardPage() {
         </div>
         <div className="grid grid-cols-4 gap-3 bg-white/[0.02] border border-white/10 rounded-2xl p-3.5 backdrop-blur-xl">
           <Link
-            href="/practice"
-            className="flex flex-col items-center justify-center gap-1.5 group select-none"
+            href="#"
+            onClick={(e) => e.preventDefault()}
+            className="flex flex-col items-center justify-center gap-1.5 group select-none cursor-not-allowed opacity-50"
           >
-            <div className="w-13 h-13 rounded-full bg-gradient-to-br from-blue-500/25 to-indigo-600/20 border border-blue-400/30 flex items-center justify-center text-blue-400 shadow-md shadow-blue-500/10 group-active:scale-90 transition-transform">
+            <div className="w-13 h-13 rounded-full bg-gradient-to-br from-blue-500/25 to-indigo-600/20 border border-blue-400/30 flex items-center justify-center text-blue-400 shadow-md shadow-blue-500/10">
               <Target className="w-5 h-5" />
             </div>
-            <span className="text-[11px] font-semibold text-slate-300 group-hover:text-white text-center tracking-tight">
+            <span className="text-[11px] font-semibold text-slate-400 text-center tracking-tight">
               Practice
             </span>
           </Link>
 
           <Link
-            href="/career"
-            className="flex flex-col items-center justify-center gap-1.5 group select-none"
+            href="#"
+            onClick={(e) => e.preventDefault()}
+            className="flex flex-col items-center justify-center gap-1.5 group select-none cursor-not-allowed opacity-50"
           >
-            <div className="w-13 h-13 rounded-full bg-gradient-to-br from-purple-500/25 to-pink-600/20 border border-purple-400/30 flex items-center justify-center text-purple-400 shadow-md shadow-purple-500/10 group-active:scale-90 transition-transform">
+            <div className="w-13 h-13 rounded-full bg-gradient-to-br from-purple-500/25 to-pink-600/20 border border-purple-400/30 flex items-center justify-center text-purple-400 shadow-md shadow-purple-500/10">
               <FileText className="w-5 h-5" />
             </div>
-            <span className="text-[11px] font-semibold text-slate-300 group-hover:text-white text-center tracking-tight">
+            <span className="text-[11px] font-semibold text-slate-400 text-center tracking-tight">
               Resume
             </span>
           </Link>
 
           <Link
-            href="/roadmaps"
-            className="flex flex-col items-center justify-center gap-1.5 group select-none"
+            href="#"
+            onClick={(e) => e.preventDefault()}
+            className="flex flex-col items-center justify-center gap-1.5 group select-none cursor-not-allowed opacity-50"
           >
-            <div className="w-13 h-13 rounded-full bg-gradient-to-br from-emerald-500/25 to-teal-600/20 border border-emerald-400/30 flex items-center justify-center text-emerald-400 shadow-md shadow-emerald-500/10 group-active:scale-90 transition-transform">
+            <div className="w-13 h-13 rounded-full bg-gradient-to-br from-emerald-500/25 to-teal-600/20 border border-emerald-400/30 flex items-center justify-center text-emerald-400 shadow-md shadow-emerald-500/10">
               <Map className="w-5 h-5" />
             </div>
-            <span className="text-[11px] font-semibold text-slate-300 group-hover:text-white text-center tracking-tight">
+            <span className="text-[11px] font-semibold text-slate-400 text-center tracking-tight">
               Roadmaps
             </span>
           </Link>
