@@ -25,9 +25,9 @@ import type { AnimatedIconHandle } from "@/components/icons/types";
 const navItems = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutGrid },
   { name: "Learning", href: "/learning", icon: BookIcon },
-  { name: "Roadmaps", href: "/roadmaps", icon: Map, disabled: true },
-  { name: "Practice", href: "/practice", icon: Target, disabled: true },
-  { name: "Career", href: "/career", icon: Briefcase, disabled: true },
+  { name: "Roadmaps", href: "/roadmaps", icon: Map },
+  { name: "Practice", href: "/practice", icon: Target },
+  { name: "Career", href: "/career", icon: Briefcase },
   { name: "Explore", href: "/explore", icon: ExploreIcon },
   { name: "Analytics", href: "/analytics", icon: BarChart3 },
   { name: "Profile", href: "/settings", icon: UserIcon },
@@ -92,14 +92,12 @@ export default function Sidebar() {
         <nav className="space-y-1">
           {navItems.map((item, i) => {
             const isActive =
-              !item.disabled &&
-              (pathname === item.href ||
-              (pathname === "/" && item.href === "/dashboard"));
+              pathname === item.href ||
+              (pathname === "/" && item.href === "/dashboard");
             const Icon = item.icon;
             const isLearning = item.name === "Learning";
             const isProfile = item.name === "Profile";
             const isExplore = item.name === "Explore";
-            const isDisabled = item.disabled;
 
             return (
               <motion.div
@@ -110,26 +108,15 @@ export default function Sidebar() {
                 animate="visible"
               >
                 <Link
-                  href={isDisabled ? "#" : item.href}
-                  onClick={(e) => {
-                    if (isDisabled) {
-                      e.preventDefault();
-                    }
-                  }}
-                  className={`relative block rounded-xl group ${
-                    isDisabled ? "cursor-not-allowed opacity-50 select-none" : ""
-                  }`}
+                  href={item.href}
+                  className="relative block rounded-xl group"
                   onMouseEnter={() => {
-                    if (!isDisabled) {
-                      if (isLearning) learningIconRef.current?.startAnimation();
-                      if (isProfile) profileIconRef.current?.startAnimation();
-                    }
+                    if (isLearning) learningIconRef.current?.startAnimation();
+                    if (isProfile) profileIconRef.current?.startAnimation();
                   }}
                   onMouseLeave={() => {
-                    if (!isDisabled) {
-                      if (isLearning) learningIconRef.current?.stopAnimation();
-                      if (isProfile) profileIconRef.current?.stopAnimation();
-                    }
+                    if (isLearning) learningIconRef.current?.stopAnimation();
+                    if (isProfile) profileIconRef.current?.stopAnimation();
                   }}
                 >
                   {/* Active background pill */}
@@ -147,35 +134,35 @@ export default function Sidebar() {
                   </AnimatePresence>
 
                   {/* Hover glow effect */}
-                  {!isActive && !isDisabled && (
+                  {!isActive && (
                     <div className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-white/[0.03]" />
                   )}
 
                   <div
                     className={`relative flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${
-                      isActive ? "text-white" : isDisabled ? "text-slate-500" : "text-slate-400 group-hover:text-slate-200"
+                      isActive ? "text-white" : "text-slate-400 group-hover:text-slate-200"
                     }`}
                   >
                     <motion.div
-                      whileHover={isDisabled ? undefined : { scale: 1.1, rotate: isActive ? 0 : 5 }}
+                      whileHover={{ scale: 1.1, rotate: isActive ? 0 : 5 }}
                       transition={{ type: "spring", stiffness: 400, damping: 25 }}
                     >
                       {isLearning ? (
                         <BookIcon
                           ref={learningIconRef}
                           size={18}
-                          className={`w-[18px] h-[18px] shrink-0 ${isActive ? "text-white" : isDisabled ? "text-slate-600" : "text-slate-500 group-hover:text-slate-300"}`}
+                          className={`w-[18px] h-[18px] shrink-0 ${isActive ? "text-white" : "text-slate-500 group-hover:text-slate-300"}`}
                         />
                       ) : isProfile ? (
                         <UserIcon
                           ref={profileIconRef}
                           size={18}
-                          className={`w-[18px] h-[18px] shrink-0 ${isActive ? "text-white" : isDisabled ? "text-slate-600" : "text-slate-500 group-hover:text-slate-300"}`}
+                          className={`w-[18px] h-[18px] shrink-0 ${isActive ? "text-white" : "text-slate-500 group-hover:text-slate-300"}`}
                         />
                       ) : isExplore ? (
                         <ExploreIcon size={20} />
                       ) : (
-                        <Icon className={`w-[18px] h-[18px] shrink-0 ${isActive ? "text-white" : isDisabled ? "text-slate-600" : "text-slate-500 group-hover:text-slate-300"}`} />
+                        <Icon className={`w-[18px] h-[18px] shrink-0 ${isActive ? "text-white" : "text-slate-500 group-hover:text-slate-300"}`} />
                       )}
                     </motion.div>
                     <span className="font-[500]">{item.name}</span>

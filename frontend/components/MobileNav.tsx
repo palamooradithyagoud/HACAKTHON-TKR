@@ -29,9 +29,9 @@ import ExploreIcon from "@/components/icons/ExploreIcon";
 const navItems = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutGrid, desc: "Overview & metrics" },
   { name: "Learning", href: "/learning", icon: BookIcon, desc: "Courses & YouTube playlists" },
-  { name: "Roadmaps", href: "/roadmaps", icon: Map, desc: "Interactive career tracks", disabled: true },
-  { name: "Practice", href: "/practice", icon: Target, desc: "Aptitude & company questions", disabled: true },
-  { name: "Career", href: "/career", icon: Briefcase, desc: "AI resume analysis", disabled: true },
+  { name: "Roadmaps", href: "/roadmaps", icon: Map, desc: "Interactive career tracks" },
+  { name: "Practice", href: "/practice", icon: Target, desc: "Aptitude & company questions" },
+  { name: "Career", href: "/career", icon: Briefcase, desc: "AI resume analysis" },
   { name: "Explore", href: "/explore", icon: ExploreIcon, desc: "Trending skills & tools" },
   { name: "Analytics", href: "/analytics", icon: BarChart3, desc: "Detailed performance" },
   { name: "Profile", href: "/settings", icon: UserIcon, desc: "Account & settings" },
@@ -42,7 +42,7 @@ const bottomBarItems = [
   { name: "Home", href: "/dashboard", icon: LayoutGrid },
   { name: "Learn", href: "/learning", icon: BookIcon },
   { name: "Explore", href: "/explore", icon: ExploreIcon },
-  { name: "Practice", href: "/practice", icon: Target, disabled: true },
+  { name: "Practice", href: "/practice", icon: Target },
   { name: "Profile", href: "/settings", icon: UserIcon },
 ];
 
@@ -60,37 +60,41 @@ export default function MobileNav() {
 
   return (
     <>
-      {/* ── Native Smartphone Top Header (< md viewport) ── */}
-      <header className="md:hidden sticky top-0 z-30 w-full px-4 py-3 bg-[#060a15]/90 backdrop-blur-xl border-b border-white/10 flex items-center justify-between select-none">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-blue-600 to-cyan-400 flex items-center justify-center text-white shadow-md shadow-blue-500/20">
-            <Code2 className="w-4 h-4 stroke-[2.5]" />
-          </div>
-          <div>
-            <span className="text-base font-black tracking-tight text-white gradient-text-blue block leading-none">
-              SkillsCatalyst
-            </span>
-            <span className="text-[9px] text-slate-400 font-medium tracking-wide block mt-0.5">
-              Mobile Portal
-            </span>
-          </div>
+      {/* ── Mobile Native Top App Bar (Visible on smartphone < md) ── */}
+      <header className="md:hidden sticky top-0 z-30 flex items-center justify-between px-4 py-2.5 mobile-top-header bg-[#060c18]/85 border-b border-white/10 backdrop-blur-2xl">
+        <div className="flex items-center gap-3">
+          <Link href="/dashboard" className="flex items-center gap-2.5">
+            <div className="relative">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-600 via-blue-500 to-cyan-400 flex items-center justify-center text-white shadow-md shadow-blue-500/30">
+                <Code2 className="w-5 h-5 stroke-[2.5]" />
+              </div>
+              <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-[#060c18] animate-pulse" />
+            </div>
+            <div>
+              <span className="text-base font-bold tracking-tight text-white gradient-text-blue block leading-none">
+                SkillsCatalyst
+              </span>
+              <span className="text-[10px] text-slate-400 font-medium block mt-0.5">
+                Native SaaS App
+              </span>
+            </div>
+          </Link>
         </div>
 
-        <div className="flex items-center gap-2">
-          {/* Quick Search trigger */}
+        <div className="flex items-center gap-1.5">
           <Link
             href="/explore"
-            className="p-2 rounded-xl glass hover:bg-white/10 text-slate-300 hover:text-white transition-colors"
+            className="w-10 h-10 rounded-xl glass hover:bg-white/10 text-slate-300 flex items-center justify-center mobile-touch-target"
+            aria-label="Quick Search"
           >
-            <Search className="w-4 h-4" />
+            <Search className="w-4 h-4 text-slate-300" />
           </Link>
 
-          {/* Drawer trigger button */}
           <motion.button
             whileTap={{ scale: 0.92 }}
             onClick={() => setDrawerOpen(!drawerOpen)}
-            aria-label="Toggle navigation menu"
-            className="p-2 rounded-xl bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 border border-blue-500/30 transition-all mobile-touch-target"
+            className="w-10 h-10 rounded-xl glass hover:bg-white/10 text-slate-200 flex items-center justify-center mobile-touch-target relative"
+            aria-label="Toggle Navigation Drawer"
           >
             {drawerOpen ? (
               <X className="w-5 h-5 text-white" />
@@ -150,28 +154,18 @@ export default function MobileNav() {
                 <nav className="space-y-1.5">
                   {navItems.map((item) => {
                     const isActive =
-                      !item.disabled &&
-                      (pathname === item.href ||
-                      (pathname === "/" && item.href === "/dashboard"));
+                      pathname === item.href ||
+                      (pathname === "/" && item.href === "/dashboard");
                     const Icon = item.icon;
                     const isExplore = item.name === "Explore";
-                    const isDisabled = item.disabled;
 
                     return (
                       <Link
                         key={item.name}
-                        href={isDisabled ? "#" : item.href}
-                        onClick={(e) => {
-                          if (isDisabled) {
-                            e.preventDefault();
-                          } else {
-                            setDrawerOpen(false);
-                          }
-                        }}
+                        href={item.href}
+                        onClick={() => setDrawerOpen(false)}
                         className={`group flex items-center justify-between px-3.5 py-3 rounded-2xl text-sm font-semibold transition-all mobile-touch-target ${
-                          isDisabled
-                            ? "opacity-50 cursor-not-allowed select-none"
-                            : isActive
+                          isActive
                             ? "bg-gradient-to-r from-blue-600/30 to-purple-600/20 text-white border border-blue-500/40 shadow-lg shadow-blue-500/10"
                             : "text-slate-300 hover:text-white hover:bg-white/5 border border-transparent"
                         }`}
@@ -235,25 +229,16 @@ export default function MobileNav() {
       <nav aria-label="Mobile Navigation" className="md:hidden fixed bottom-3 inset-x-3 max-w-md mx-auto z-40 rounded-full border border-white/15 bg-[#091122]/92 backdrop-blur-2xl shadow-[0_12px_40px_rgba(0,0,0,0.7)] px-2 py-1.5 flex items-center justify-around">
         {bottomBarItems.map((item) => {
           const isActive =
-            !item.disabled &&
-            (pathname === item.href ||
-            (pathname === "/" && item.href === "/dashboard"));
+            pathname === item.href ||
+            (pathname === "/" && item.href === "/dashboard");
           const Icon = item.icon;
           const isExplore = item.name === "Explore";
-          const isDisabled = item.disabled;
 
           return (
             <Link
               key={item.name}
-              href={isDisabled ? "#" : item.href}
-              onClick={(e) => {
-                if (isDisabled) {
-                  e.preventDefault();
-                }
-              }}
-              className={`relative flex flex-col items-center justify-center py-1.5 px-3 min-w-[56px] min-h-[46px] rounded-full transition-all select-none ${
-                isDisabled ? "opacity-50 cursor-not-allowed" : ""
-              }`}
+              href={item.href}
+              className="relative flex flex-col items-center justify-center py-1.5 px-3 min-w-[56px] min-h-[46px] rounded-full transition-all select-none"
             >
               {isActive && (
                 <motion.div
@@ -263,7 +248,7 @@ export default function MobileNav() {
                 />
               )}
               <motion.div
-                whileTap={isDisabled ? undefined : { scale: 0.86 }}
+                whileTap={{ scale: 0.86 }}
                 className={`relative z-10 flex flex-col items-center justify-center transition-colors duration-200 ${
                   isActive ? "text-cyan-300" : "text-slate-400 hover:text-slate-200"
                 }`}
