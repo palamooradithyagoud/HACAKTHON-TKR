@@ -4136,7 +4136,7 @@ function RoadmapDetailView({
 
       {/* ── Timeline Tree Container */}
       <div className="w-full space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <h2 className="text-xl md:text-2xl font-extrabold text-white">
               {selectedRoadmap.displayTitle} Timeline Tree
@@ -4146,10 +4146,32 @@ function RoadmapDetailView({
             </p>
           </div>
 
-          <span className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-500/15 text-purple-300 border border-purple-500/30 text-xs font-bold">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-500/15 text-purple-300 border border-purple-500/30 text-xs font-bold shrink-0">
             <Sparkles className="w-3.5 h-3.5 text-purple-400" />
             Interactive Learning Path
           </span>
+        </div>
+
+        {/* ── Path Color Legend Bar (Purple = Recommended, Yellow = Alternative) ── */}
+        <div className="p-3.5 rounded-2xl bg-[#0f172a]/90 border border-slate-800 flex items-center gap-3 sm:gap-6 flex-wrap text-xs shadow-lg">
+          <span className="font-extrabold text-slate-300 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+            <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
+            <span>Path Key:</span>
+          </span>
+          <div className="flex items-center gap-2 px-3 py-1 rounded-xl bg-purple-950/60 border border-purple-500/40">
+            <span className="w-2.5 h-2.5 rounded-full bg-purple-500 shadow-[0_0_8px_rgba(168,85,247,0.9)]" />
+            <span className="font-black text-purple-300">Purple: Recommended</span>
+            <span className="text-slate-300 font-normal hidden sm:inline">(Essential Core Path)</span>
+          </div>
+          <div className="flex items-center gap-2 px-3 py-1 rounded-xl bg-amber-950/40 border border-amber-500/40">
+            <span className="w-2.5 h-2.5 rounded-full bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.9)]" />
+            <span className="font-black text-amber-300">Yellow / Amber: Alternative</span>
+            <span className="text-slate-300 font-normal hidden sm:inline">(Flexible Track)</span>
+          </div>
+          <div className="flex items-center gap-2 px-3 py-1 rounded-xl bg-emerald-950/40 border border-emerald-500/40">
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.9)]" />
+            <span className="font-black text-emerald-300">Green: Completed</span>
+          </div>
         </div>
 
         {/* Vertical Tree Container with Scroll-Animated Laser Light */}
@@ -4357,7 +4379,19 @@ function RoadmapDetailView({
                                                   : "bg-[#131b2e] border-slate-700 text-slate-300 hover:border-slate-500"
                                               }`}
                                             >
-                                              <span className="font-extrabold text-white">{topic.name}</span>
+                                              <div className="flex items-center gap-1.5 flex-wrap">
+                                                <span className="font-extrabold text-white">{topic.name}</span>
+                                                {isRec && (
+                                                  <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-purple-500/30 text-purple-200 border border-purple-400/40">
+                                                    Recommended
+                                                  </span>
+                                                )}
+                                                {isAlt && (
+                                                  <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-amber-400/20 text-amber-200 border border-amber-400/40">
+                                                    Alternative
+                                                  </span>
+                                                )}
+                                              </div>
 
                                               {/* Checkmark Badge Circle */}
                                               <div
