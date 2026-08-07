@@ -2177,6 +2177,22 @@
       "content": "Please make sure you submit the graph implementation assignment on time.",
       "created_at": "2026-08-04T10:00:00Z",
       "is_read": true
+    },
+    {
+      "id": 2,
+      "sender_id": "faculty_demo",
+      "receiver_id": "student-001",
+      "content": "Hello test message",
+      "created_at": "2026-08-07T07:18:07.918666+00:00",
+      "is_read": false
+    },
+    {
+      "id": 3,
+      "sender_id": "faculty_demo",
+      "receiver_id": "STU1CSEA1",
+      "content": "hi",
+      "created_at": "2026-08-07T07:19:13.246826+00:00",
+      "is_read": false
     }
   ]
 }
