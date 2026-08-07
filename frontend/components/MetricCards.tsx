@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { BookOpen, Target, Map as MapIcon, Briefcase, Lock, ChevronLeft, ChevronRight, Trash2 } from "lucide-react";
+import { BookOpen, Target, Map as MapIcon, Briefcase, CalendarCheck, Lock, ChevronLeft, ChevronRight, Trash2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -578,6 +578,10 @@ export interface MetricsData {
     roadmapId?: string;
     roadmaps?: any[];
   };
+  attendance?: {
+    percentage: number;
+    subtitle: string;
+  };
   savedPlaylists?: {
     count?: number;
     percentage: number;
@@ -594,9 +598,13 @@ export interface MetricsData {
 }
 
 export default function MetricCards({ metrics }: { metrics?: MetricsData }) {
+  const router = useRouter();
   const lp = metrics?.learningProgress;
-  const rr = metrics?.resumeReadiness;
+  const att = metrics?.attendance;
   const ir = metrics?.interviewReadiness;
+
+  const attendancePct = att?.percentage ?? 0;
+  const attendanceSubtitle = att?.subtitle ?? `${attendancePct}% Class Attendance`;
 
   return (
     <div className="mb-5 sm:mb-8">
@@ -629,14 +637,15 @@ export default function MetricCards({ metrics }: { metrics?: MetricsData }) {
 
           <div className="snap-start flex-shrink-0 w-[240px]">
             <MetricCard
-              title="Resume Readiness"
-              icon={<Target className="w-4 h-4 text-blue-400" />}
-              iconBg="bg-blue-500/10 border border-blue-500/20"
-              percentage={rr?.percentage ?? 0}
-              ringColor="#3b82f6"
-              subtitle={rr?.subtitle ?? "Upload Resume"}
-              subtitleColor="text-blue-400"
+              title="Attendance"
+              icon={<CalendarCheck className="w-4 h-4 text-emerald-400" />}
+              iconBg="bg-emerald-500/10 border border-emerald-500/20"
+              percentage={attendancePct}
+              ringColor="#10b981"
+              subtitle={attendanceSubtitle}
+              subtitleColor="text-emerald-400"
               delay={0.3}
+              onClick={() => router.push("/attendance")}
             />
           </div>
 
@@ -670,14 +679,15 @@ export default function MetricCards({ metrics }: { metrics?: MetricsData }) {
         />
         <RoadmapMetricCard fallbackData={metrics?.roadmapProgress} />
         <MetricCard
-          title="Resume Readiness"
-          icon={<Target className="w-4 h-4 text-blue-400" />}
-          iconBg="bg-blue-500/10 border border-blue-500/20"
-          percentage={rr?.percentage ?? 0}
-          ringColor="#3b82f6"
-          subtitle={rr?.subtitle ?? "No upload yet"}
-          subtitleColor="text-blue-400"
+          title="Attendance"
+          icon={<CalendarCheck className="w-4 h-4 text-emerald-400" />}
+          iconBg="bg-emerald-500/10 border border-emerald-500/20"
+          percentage={attendancePct}
+          ringColor="#10b981"
+          subtitle={attendanceSubtitle}
+          subtitleColor="text-emerald-400"
           delay={0.3}
+          onClick={() => router.push("/attendance")}
         />
         <MetricCard
           title="Interview Readiness"

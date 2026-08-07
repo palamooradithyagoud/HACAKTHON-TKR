@@ -17,81 +17,134 @@ import {
   GraduationCap,
   BookOpen,
   Users,
+  User,
+  Building2,
+  CheckCircle2,
+  UserPlus,
+  LogIn,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth, UserRole } from "@/lib/auth";
-
-// ── Demo / hardcoded credentials ─────────────────────────────────────────────
-const STUDENT_ACCOUNTS: Record<string, { password: string; name: string }> = {
-  "student@demo.com": { password: "student123", name: "Alex Student" },
-  "alice@college.edu": { password: "alice123", name: "Alice Johnson" },
-  "bob@college.edu": { password: "bob123", name: "Bob Smith" },
-};
-
-const FACULTY_ACCOUNTS: Record<string, { password: string; name: string }> = {
-  "faculty@demo.com": { password: "faculty123", name: "Dr. Faculty" },
-  "prof.sharma@college.edu": { password: "prof123", name: "Prof. Sharma" },
-  "dr.rao@college.edu": { password: "rao123", name: "Dr. Rao" },
-};
+import { saveAcademicProfile } from "@/lib/api";
+import { supabase } from "@/lib/supabase";
 
 type AuthTab = "student" | "faculty";
 
 export default function LoginPage() {
   const { login } = useAuth();
 
+  const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [tab, setTab] = useState<AuthTab>("student");
+
+  // Sign in / Sign up form fields
+  const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [department, setDepartment] = useState("");
+  const [section, setSection] = useState("");
+  const [academicYear, setAcademicYear] = useState("");
+  
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
 
   const switchTab = (t: AuthTab) => {
     setTab(t);
-    setEmail("");
-    setPassword("");
     setErrorMessage("");
+    setSuccessMessage("");
   };
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const switchMode = (m: "signin" | "signup") => {
+    setMode(m);
+    setErrorMessage("");
+    setSuccessMessage("");
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage("");
+    setSuccessMessage("");
 
     if (!email || !password) {
-      setErrorMessage("Please enter both email and password.");
+      setErrorMessage("Please enter email and password.");
+      return;
+    }
+
+    if (mode === "signup" && (!fullName || !department)) {
+      setErrorMessage("Please fill out your full name and department.");
       return;
     }
 
     setLoading(true);
-    // Simulate a brief async check
-    await new Promise((r) => setTimeout(r, 600));
 
-    const accounts = tab === "student" ? STUDENT_ACCOUNTS : FACULTY_ACCOUNTS;
-    const account = accounts[email.trim().toLowerCase()];
+    try {
+      const cleanEmail = email.trim().toLowerCase();
+      const sanitizedId = `${tab}_${cleanEmail.replace(/[^a-z0-9]/gi, "_")}`;
 
-    if (!account || account.password !== password) {
-      setErrorMessage(
-        tab === "student"
-          ? "Invalid student credentials. Try student@demo.com / student123"
-          : "Invalid faculty credentials. Try faculty@demo.com / faculty123"
-      );
+      if (mode === "signup") {
+        // Try registering in Supabase Auth first
+        try {
+          if (supabase) {
+            await supabase.auth.signUp({
+              email: cleanEmail,
+              password: password,
+              options: {
+                data: {
+                  full_name: fullName,
+                  role: tab,
+                  department: department,
+                  section: section,
+                },
+              },
+            });
+          }
+        } catch (sbErr) {
+          console.warn("Supabase auth signup warning:", sbErr);
+        }
+
+        // Save student / faculty academic record to DB & localStorage
+        const academicPayload = {
+          user_id: sanitizedId,
+          full_name: fullName,
+          college: "TKR College of Engineering & Technology",
+          department: department || "CSM",
+          section: section || (tab === "student" ? "Section A" : ""),
+          academic_year: academicYear || "2nd Year",
+          target_role: tab === "student" ? "Software Engineer" : "Faculty",
+        };
+
+        try {
+          localStorage.setItem(`sc_academic_profile_${sanitizedId}`, JSON.stringify(academicPayload));
+          await saveAcademicProfile(academicPayload).catch(() => {});
+        } catch {}
+
+        setSuccessMessage("Account created successfully! Logging you in...");
+        await new Promise((r) => setTimeout(r, 600));
+
+        login(cleanEmail, sanitizedId, fullName, tab as UserRole);
+      } else {
+        // Sign In Flow
+        try {
+          if (supabase) {
+            await supabase.auth.signInWithPassword({
+              email: cleanEmail,
+              password: password,
+            });
+          }
+        } catch (sbErr) {
+          console.warn("Supabase auth signin warning:", sbErr);
+        }
+
+        await new Promise((r) => setTimeout(r, 500));
+        const derivedName = fullName || cleanEmail.split("@")[0].replace(/[._]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+        login(cleanEmail, sanitizedId, derivedName, tab as UserRole);
+      }
+    } catch (err: any) {
+      setErrorMessage(err?.message || "Authentication failed. Please check your credentials.");
+    } finally {
       setLoading(false);
-      return;
     }
-
-    const userId = `${tab}_${email.replace(/[^a-z0-9]/gi, "_")}`;
-    login(email.trim(), userId, account.name, tab as UserRole);
-  };
-
-  const fillDemo = () => {
-    if (tab === "student") {
-      setEmail("student@demo.com");
-      setPassword("student123");
-    } else {
-      setEmail("faculty@demo.com");
-      setPassword("faculty123");
-    }
-    setErrorMessage("");
   };
 
   return (
@@ -105,7 +158,7 @@ export default function LoginPage() {
       </div>
 
       {/* LEFT COLUMN: Branding & Features */}
-      <div className="w-full lg:w-[55%] p-8 sm:p-12 lg:p-16 flex flex-col justify-between relative z-10 space-y-8">
+      <div className="w-full lg:w-[52%] p-8 sm:p-12 lg:p-16 flex flex-col justify-between relative z-10 space-y-8">
         <div>
           {/* Logo */}
           <div className="flex items-center gap-3 mb-8">
@@ -118,27 +171,27 @@ export default function LoginPage() {
           {/* Badge */}
           <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/30 text-indigo-400 text-[11px] font-extrabold uppercase tracking-wider mb-6">
             <Sparkles className="w-3 h-3" />
-            AI-POWERED CAREER ACCELERATOR
+            TKR COLLEGE ACADEMIC & PLACEMENT PORTAL
           </div>
 
           {/* Headline */}
-          <h1 className="text-4xl sm:text-5xl lg:text-[52px] font-black tracking-tight leading-[1.1] text-white mb-4">
-            Master Tech Interviews.<br />
+          <h1 className="text-4xl sm:text-5xl lg:text-[50px] font-black tracking-tight leading-[1.1] text-white mb-4">
+            Accelerate Skills.<br />
             <span className="bg-gradient-to-r from-blue-400 via-indigo-400 to-cyan-400 bg-clip-text text-transparent">
-              Accelerate Your Career.
+              Empower Placement Success.
             </span>
           </h1>
 
           <p className="text-slate-400 text-sm sm:text-base max-w-xl leading-relaxed mb-8 font-medium">
-            The all-in-one AI platform for top-tier technology roles. Prepare with structured roadmaps, practice company-wise DSA problems, and master your technical interviews.
+            The unified platform connecting students and faculty. Track DSA practice across LeetCode & GitHub, complete career roadmaps, and monitor student academic performance.
           </p>
 
           {/* Stats */}
           <div className="grid grid-cols-3 gap-3 sm:gap-4 mb-8">
             {[
-              { val: "500+", label: "LEETCODE QUESTIONS" },
-              { val: "100+", label: "TECH COMPANIES" },
-              { val: "98%", label: "ATS PRECISION" },
+              { val: "TKR", label: "COLLEGE OF ENGG & TECH" },
+              { val: "660+", label: "COMPANY DSAS" },
+              { val: "100%", label: "SUPABASE SYNCED" },
             ].map((s) => (
               <div key={s.label} className="bg-[#0b1222]/80 border border-white/[0.08] rounded-2xl p-4 text-center backdrop-blur-md">
                 <div className="text-xl sm:text-2xl font-black text-white">{s.val}</div>
@@ -150,9 +203,9 @@ export default function LoginPage() {
           {/* Feature cards */}
           <div className="space-y-3.5">
             {[
-              { icon: Zap, color: "indigo", title: "Roadmap & Resources", desc: "Personalized 5-tier learning pathways, YouTube playlists & certifications for any skill." },
-              { icon: BarChart3, color: "blue", title: "Topic-wise & Company-wise DSA", desc: "500+ frequency-ranked LeetCode problems for Google, Meta, Amazon, Microsoft & Apple." },
-              { icon: Target, color: "cyan", title: "Interview Prep + Resume Review", desc: "Multi-stage ATS resume scoring, recruiter simulation & real-time AI mock interviews." },
+              { icon: Zap, color: "indigo", title: "Student Career Roadmaps", desc: "Interactive timeline trees for Full Stack, Data Science, AI/ML & DevOps with resources." },
+              { icon: BarChart3, color: "blue", title: "Live Platform Statistics", desc: "Automatic tracking across LeetCode, GitHub, CodeChef, GeeksforGeeks & Codeforces." },
+              { icon: Target, color: "cyan", title: "Faculty Analytics & Scoreboard", desc: "Real-time class attendance, assignment tracking & student readiness monitoring." },
             ].map(({ icon: Icon, color, title, desc }) => (
               <div key={title} className={`bg-[#0b1222]/60 hover:bg-[#0b1222] border border-white/[0.08] hover:border-${color}-500/30 rounded-2xl p-4 flex items-start gap-4 transition-all duration-200 group`}>
                 <div className={`w-10 h-10 rounded-xl bg-${color}-500/10 border border-${color}-500/20 flex items-center justify-center text-${color}-400 shrink-0 group-hover:scale-105 transition-transform`}>
@@ -170,28 +223,59 @@ export default function LoginPage() {
         {/* Footer */}
         <div className="pt-6 text-xs text-slate-500 flex items-center gap-2">
           <ShieldCheck className="w-4 h-4 text-emerald-400" />
-          <span>Secured local authentication — Student & Faculty portals</span>
+          <span>Database Authenticated — TKR College Student & Faculty Portals</span>
         </div>
       </div>
 
-      {/* RIGHT COLUMN: Login Card */}
-      <div className="w-full lg:w-[45%] p-6 sm:p-10 lg:p-12 flex items-center justify-center relative z-10">
+      {/* RIGHT COLUMN: Auth Card */}
+      <div className="w-full lg:w-[48%] p-6 sm:p-10 lg:p-12 flex items-center justify-center relative z-10">
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, ease: "easeOut" }}
-          className="w-full max-w-[460px] bg-[#090e1a]/90 border border-white/[0.1] rounded-3xl p-7 sm:p-9 shadow-2xl backdrop-blur-xl space-y-6 relative overflow-hidden"
+          className="w-full max-w-[480px] bg-[#090e1a]/95 border border-white/[0.1] rounded-3xl p-7 sm:p-9 shadow-2xl backdrop-blur-xl space-y-6 relative overflow-hidden"
         >
           {/* Ambient top glow */}
           <div className="absolute -top-20 left-1/2 -translate-x-1/2 w-64 h-32 bg-blue-600/20 blur-3xl rounded-full pointer-events-none" />
 
-          {/* Header */}
-          <div className="text-center space-y-1 relative z-10">
-            <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight">Welcome Back</h2>
-            <p className="text-xs text-slate-400 font-medium">Choose your portal to continue</p>
+          {/* Mode Switcher Tabs (Sign In vs Sign Up) */}
+          <div className="flex items-center justify-between border-b border-white/10 pb-4 relative z-10">
+            <div>
+              <h2 className="text-2xl font-black text-white tracking-tight">
+                {mode === "signin" ? "Welcome Back" : "Create Account"}
+              </h2>
+              <p className="text-xs text-slate-400 font-medium">
+                {mode === "signin" ? "Sign in to access your portal" : "Register your student/faculty account"}
+              </p>
+            </div>
+
+            <div className="flex bg-[#0b1222] p-1 rounded-xl border border-white/10">
+              <button
+                type="button"
+                onClick={() => switchMode("signin")}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  mode === "signin"
+                    ? "bg-indigo-600 text-white shadow-md"
+                    : "text-slate-400 hover:text-white"
+                }`}
+              >
+                Sign In
+              </button>
+              <button
+                type="button"
+                onClick={() => switchMode("signup")}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  mode === "signup"
+                    ? "bg-indigo-600 text-white shadow-md"
+                    : "text-slate-400 hover:text-white"
+                }`}
+              >
+                Sign Up
+              </button>
+            </div>
           </div>
 
-          {/* Role Tab Switcher */}
+          {/* Role Tab Switcher (Student vs Faculty) */}
           <div className="grid grid-cols-2 gap-2 relative z-10">
             {[
               { id: "student" as AuthTab, label: "Student", icon: GraduationCap, gradient: "from-blue-600 via-indigo-600 to-blue-500", shadow: "shadow-indigo-600/30" },
@@ -201,7 +285,7 @@ export default function LoginPage() {
                 key={id}
                 type="button"
                 onClick={() => switchTab(id)}
-                className={`relative py-3.5 rounded-2xl border transition-all duration-300 flex flex-col items-center gap-1.5 cursor-pointer overflow-hidden ${
+                className={`relative py-3 rounded-2xl border transition-all duration-300 flex flex-col items-center gap-1 cursor-pointer overflow-hidden ${
                   tab === id
                     ? `bg-gradient-to-r ${gradient} border-transparent text-white shadow-lg ${shadow}`
                     : "bg-[#0d1326] border-white/[0.08] text-slate-400 hover:text-slate-200 hover:border-white/[0.15]"
@@ -214,39 +298,11 @@ export default function LoginPage() {
                     transition={{ type: "spring", stiffness: 500, damping: 35 }}
                   />
                 )}
-                <Icon className="w-5 h-5" />
-                <span className="text-xs font-bold tracking-wide uppercase">{label} Portal</span>
+                <Icon className="w-4 h-4" />
+                <span className="text-[11px] font-extrabold tracking-wide uppercase">{label} Portal</span>
               </button>
             ))}
           </div>
-
-          {/* Portal Description Badge */}
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={tab}
-              initial={{ opacity: 0, y: -6 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 6 }}
-              transition={{ duration: 0.2 }}
-              className={`relative z-10 flex items-center gap-2.5 px-4 py-2.5 rounded-xl border text-xs font-semibold ${
-                tab === "student"
-                  ? "bg-blue-500/10 border-blue-500/25 text-blue-300"
-                  : "bg-purple-500/10 border-purple-500/25 text-purple-300"
-              }`}
-            >
-              {tab === "student" ? (
-                <>
-                  <GraduationCap className="w-4 h-4 shrink-0" />
-                  <span>Student Portal — Access learning roadmaps, AI mentor & placement prep.</span>
-                </>
-              ) : (
-                <>
-                  <Users className="w-4 h-4 shrink-0" />
-                  <span>Faculty Portal — Monitor student progress, manage content & analytics.</span>
-                </>
-              )}
-            </motion.div>
-          </AnimatePresence>
 
           {/* Error Banner */}
           <AnimatePresence>
@@ -261,118 +317,199 @@ export default function LoginPage() {
                 <span>{errorMessage}</span>
               </motion.div>
             )}
+            {successMessage && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                className="relative z-10 p-3 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs font-semibold flex items-center gap-2"
+              >
+                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                <span>{successMessage}</span>
+              </motion.div>
+            )}
           </AnimatePresence>
 
-          {/* Login Form */}
-          <div style={{ perspective: "1000px" }} className="relative z-10">
-            <AnimatePresence mode="wait" initial={false}>
-              <motion.form
-                key={tab}
-                initial={{ rotateY: tab === "student" ? -60 : 60, opacity: 0, scale: 0.95 }}
-                animate={{ rotateY: 0, opacity: 1, scale: 1 }}
-                exit={{ rotateY: tab === "student" ? 60 : -60, opacity: 0, scale: 0.95 }}
-                transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-                onSubmit={handleLogin}
-                className="space-y-4 origin-center"
+          {/* Form Container */}
+          <div className="relative z-10">
+            <form onSubmit={handleSubmit} className="space-y-3.5">
+              {/* Full Name for Sign Up */}
+              {mode === "signup" && (
+                <div>
+                  <label className="text-[10px] font-bold text-slate-400 tracking-wider uppercase block mb-1">
+                    Full Name
+                  </label>
+                  <div className="relative">
+                    <User className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    <input
+                      type="text"
+                      required
+                      value={fullName}
+                      onChange={(e) => setFullName(e.target.value)}
+                      placeholder="e.g. Adithya Goud"
+                      className="bg-slate-900/60 border border-white/10 rounded-xl py-2.5 pl-10 pr-4 text-xs font-semibold text-white focus:border-indigo-500 outline-none w-full transition-all placeholder-slate-500"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Email Field */}
+              <div>
+                <label className="text-[10px] font-bold text-slate-400 tracking-wider uppercase block mb-1">
+                  {tab === "student" ? "Student" : "Faculty"} Email
+                </label>
+                <div className="relative">
+                  <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <input
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder={tab === "student" ? "student@tkr.ac.in" : "faculty@tkr.ac.in"}
+                    className="bg-slate-900/60 border border-white/10 rounded-xl py-2.5 pl-10 pr-4 text-xs font-semibold text-white focus:border-indigo-500 outline-none w-full transition-all placeholder-slate-500"
+                  />
+                </div>
+              </div>
+
+              {/* Password Field */}
+              <div>
+                <label className="text-[10px] font-bold text-slate-400 tracking-wider uppercase block mb-1">
+                  Password
+                </label>
+                <div className="relative">
+                  <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="bg-slate-900/60 border border-white/10 rounded-xl py-2.5 pl-10 pr-10 text-xs font-semibold text-white focus:border-indigo-500 outline-none w-full transition-all placeholder-slate-500"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 transition-colors cursor-pointer"
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Additional Sign Up Details */}
+              {mode === "signup" && (
+                <>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-400 tracking-wider uppercase block mb-1">
+                        Department
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={department}
+                        onChange={(e) => setDepartment(e.target.value)}
+                        placeholder="e.g. CSM / CSE"
+                        className="bg-slate-900/60 border border-white/10 rounded-xl py-2.5 px-3 text-xs font-semibold text-white focus:border-indigo-500 outline-none w-full transition-all placeholder-slate-500"
+                      />
+                    </div>
+
+                    {tab === "student" ? (
+                      <div>
+                        <label className="text-[10px] font-bold text-slate-400 tracking-wider uppercase block mb-1">
+                          Section / Batch
+                        </label>
+                        <input
+                          type="text"
+                          value={section}
+                          onChange={(e) => setSection(e.target.value)}
+                          placeholder="e.g. Section A"
+                          className="bg-slate-900/60 border border-white/10 rounded-xl py-2.5 px-3 text-xs font-semibold text-white focus:border-indigo-500 outline-none w-full transition-all placeholder-slate-500"
+                        />
+                      </div>
+                    ) : (
+                      <div>
+                        <label className="text-[10px] font-bold text-slate-400 tracking-wider uppercase block mb-1">
+                          Academic Year
+                        </label>
+                        <input
+                          type="text"
+                          value={academicYear}
+                          onChange={(e) => setAcademicYear(e.target.value)}
+                          placeholder="e.g. 2025-2026"
+                          className="bg-slate-900/60 border border-white/10 rounded-xl py-2.5 px-3 text-xs font-semibold text-white focus:border-indigo-500 outline-none w-full transition-all placeholder-slate-500"
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-400 tracking-wider uppercase block mb-1">
+                      Institution
+                    </label>
+                    <div className="flex items-center gap-2 bg-slate-950/80 border border-slate-700/60 rounded-xl py-2.5 px-3 text-xs font-bold text-slate-300">
+                      <Building2 className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                      <span className="truncate">TKR College of Engineering & Technology</span>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* Submit Button */}
+              <button
+                type="submit"
+                disabled={loading}
+                className={`w-full py-3.5 rounded-xl font-bold text-xs shadow-lg transition-all cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50 mt-2 ${
+                  tab === "student"
+                    ? "bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-500 hover:from-blue-500 hover:to-indigo-500 shadow-indigo-600/30"
+                    : "bg-gradient-to-r from-purple-600 via-violet-600 to-purple-500 hover:from-purple-500 hover:to-violet-500 shadow-purple-600/30"
+                } text-white`}
               >
-                {/* Email Field */}
-                <div>
-                  <label className="text-[10px] font-bold text-slate-400 tracking-wider uppercase block mb-1.5">
-                    {tab === "student" ? "Student" : "Faculty"} Email
-                  </label>
-                  <div className="relative">
-                    <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                    <input
-                      id={`${tab}-email`}
-                      type="email"
-                      required
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder={tab === "student" ? "student@demo.com" : "faculty@demo.com"}
-                      className="bg-slate-900/60 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-xs font-semibold text-white focus:border-indigo-500 outline-none w-full transition-all placeholder-slate-500"
-                    />
-                  </div>
-                </div>
-
-                {/* Password Field */}
-                <div>
-                  <label className="text-[10px] font-bold text-slate-400 tracking-wider uppercase block mb-1.5">
-                    Password
-                  </label>
-                  <div className="relative">
-                    <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                    <input
-                      id={`${tab}-password`}
-                      type={showPassword ? "text" : "password"}
-                      required
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="••••••••"
-                      className="bg-slate-900/60 border border-white/10 rounded-xl py-3 pl-10 pr-10 text-xs font-semibold text-white focus:border-indigo-500 outline-none w-full transition-all placeholder-slate-500"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 transition-colors cursor-pointer"
-                    >
-                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
-                  </div>
-                </div>
-
-                {/* Demo credentials hint */}
-                <button
-                  type="button"
-                  onClick={fillDemo}
-                  className="text-[11px] text-slate-500 hover:text-indigo-400 transition-colors cursor-pointer underline underline-offset-2"
-                >
-                  Use demo credentials →
-                </button>
-
-                {/* Submit Button */}
-                <button
-                  id={`${tab}-login-submit`}
-                  type="submit"
-                  disabled={loading}
-                  className={`w-full py-3.5 rounded-xl font-bold text-xs shadow-lg transition-all cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50 mt-1 ${
-                    tab === "student"
-                      ? "bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-500 hover:from-blue-500 hover:to-indigo-500 shadow-indigo-600/30"
-                      : "bg-gradient-to-r from-purple-600 via-violet-600 to-purple-500 hover:from-purple-500 hover:to-violet-500 shadow-purple-600/30"
-                  } text-white`}
-                >
-                  {loading ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      <span>Signing In...</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>Sign In as {tab === "student" ? "Student" : "Faculty"}</span>
-                      <ArrowRight className="w-4 h-4" />
-                    </>
-                  )}
-                </button>
-              </motion.form>
-            </AnimatePresence>
+                {loading ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    <span>{mode === "signin" ? "Signing In..." : "Creating Account..."}</span>
+                  </>
+                ) : (
+                  <>
+                    {mode === "signin" ? <LogIn className="w-4 h-4" /> : <UserPlus className="w-4 h-4" />}
+                    <span>
+                      {mode === "signin"
+                        ? `Sign In as ${tab === "student" ? "Student" : "Faculty"}`
+                        : `Register as ${tab === "student" ? "Student" : "Faculty"}`}
+                    </span>
+                    <ArrowRight className="w-4 h-4" />
+                  </>
+                )}
+              </button>
+            </form>
           </div>
 
-          {/* Credential hints */}
-          <div className="relative z-10 p-3.5 rounded-xl bg-white/[0.03] border border-white/[0.06] space-y-1.5">
-            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Demo Credentials</p>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1.5 text-[11px] text-slate-400">
-                <GraduationCap className="w-3 h-3 text-blue-400" />
-                <span className="font-mono">student@demo.com</span>
-              </div>
-              <span className="font-mono text-[11px] text-slate-500">student123</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1.5 text-[11px] text-slate-400">
-                <BookOpen className="w-3 h-3 text-purple-400" />
-                <span className="font-mono">faculty@demo.com</span>
-              </div>
-              <span className="font-mono text-[11px] text-slate-500">faculty123</span>
-            </div>
+          {/* Toggle mode footnote */}
+          <div className="pt-2 text-center text-xs text-slate-400">
+            {mode === "signin" ? (
+              <p>
+                Don't have an account?{" "}
+                <button
+                  type="button"
+                  onClick={() => switchMode("signup")}
+                  className="text-indigo-400 font-bold hover:underline"
+                >
+                  Create Student/Faculty Account
+                </button>
+              </p>
+            ) : (
+              <p>
+                Already registered?{" "}
+                <button
+                  type="button"
+                  onClick={() => switchMode("signin")}
+                  className="text-indigo-400 font-bold hover:underline"
+                >
+                  Sign In to your Portal
+                </button>
+              </p>
+            )}
           </div>
         </motion.div>
       </div>

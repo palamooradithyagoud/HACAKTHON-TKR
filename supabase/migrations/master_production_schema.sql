@@ -12,8 +12,9 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE TABLE IF NOT EXISTS public.user_academic_profile (
     user_id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
     full_name TEXT DEFAULT '',
-    college TEXT DEFAULT '',
+    college TEXT DEFAULT 'TKR College of Engineering & Technology',
     department TEXT DEFAULT '',
+    section TEXT DEFAULT '',
     academic_year TEXT DEFAULT '',
     target_role TEXT DEFAULT '',
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -100,7 +101,7 @@ CREATE INDEX IF NOT EXISTS idx_resume_user ON public.resume_scores(user_id);
 -- ── 7. SAVED PLAYLISTS (RELATIONAL TABLE) ────────────────────────────
 CREATE TABLE IF NOT EXISTS public.saved_playlists (
     id BIGSERIAL PRIMARY KEY,
-    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    user_id TEXT NOT NULL,
     playlist_id TEXT NOT NULL,
     title TEXT NOT NULL,
     channel TEXT,

@@ -338,6 +338,26 @@ def get_dashboard_data(user_id: str = Depends(get_current_user_id)):
                     if match:
                         total_videos += int(match.group())
 
+            # 2b. Check learning_progress JSONB table as fallback
+            try:
+                res_lp = sb.table("learning_progress").select("completed_steps").eq("session_id", user_id).eq("skill_name", "saved_playlists").limit(1).execute()
+                if res_lp.data and len(res_lp.data) > 0:
+                    steps = res_lp.data[0].get("completed_steps", [])
+                    lp_completed = 0
+                    lp_total = 0
+                    for pl in steps:
+                        v_list = pl.get("videos", [])
+                        lp_total += len(v_list)
+                        for v in v_list:
+                            if v.get("completed") or v.get("watched"):
+                                lp_completed += 1
+                    if lp_completed > completed_count:
+                        completed_count = lp_completed
+                    if lp_total > total_videos:
+                        total_videos = lp_total
+            except Exception:
+                pass
+
             # 3. Get problems solved count from leetcode_progress table
             res_problems = (
                 sb.table("leetcode_progress")
@@ -367,17 +387,19 @@ def get_dashboard_data(user_id: str = Depends(get_current_user_id)):
             # Problems solved strictly reflects connected external coding platform stats
             problems_solved = extracted_solved
 
-            # 5. Fetch user name from academic profile if exists
+            user_attendance = 0.0
+            # 5. Fetch user name & attendance from academic profile if exists
             res_profile = (
                 sb.table("user_academic_profile")
-                .select("full_name")
+                .select("full_name, attendance_percentage")
                 .eq("user_id", user_id)
                 .execute()
             )
-            if res_profile.data and res_profile.data[0].get("full_name"):
-                name_val = res_profile.data[0].get("full_name")
-                if name_val:
-                    display_name = name_val
+            if res_profile.data and res_profile.data[0]:
+                if res_profile.data[0].get("full_name"):
+                    display_name = res_profile.data[0].get("full_name")
+                if res_profile.data[0].get("attendance_percentage") is not None:
+                    user_attendance = float(res_profile.data[0].get("attendance_percentage"))
 
             # 6. Fetch user_progress stats if present
             res_user_prog = (
@@ -426,11 +448,11 @@ def get_dashboard_data(user_id: str = Depends(get_current_user_id)):
     if total_videos > 0:
         if completed_count > total_videos:
             total_videos = completed_count
-        pct = round((completed_count / total_videos) * 100)
+        pct = min(100, round((completed_count / total_videos) * 100))
         subtitle_text = f"{completed_count}/{total_videos} videos completed"
     elif completed_count > 0:
-        pct = 0
-        subtitle_text = f"{completed_count} video{'s' if completed_count != 1 else ''} completed"
+        pct = 100
+        subtitle_text = f"{completed_count}/{completed_count} videos completed"
     else:
         pct = 0
         subtitle_text = "0 videos completed"
@@ -471,6 +493,10 @@ def get_dashboard_data(user_id: str = Depends(get_current_user_id)):
                 "nextTopic": next_topic,
                 "roadmapId": active_rm.get("roadmap_id"),
                 "roadmaps": active_rm.get("roadmaps", [])
+            },
+            "attendance": {
+                "percentage": round(user_attendance),
+                "subtitle": f"{round(user_attendance)}% Class Attendance"
             },
             "resumeReadiness": {
                 "percentage": resume_score,

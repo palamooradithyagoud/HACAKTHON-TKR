@@ -262,11 +262,7 @@ export function useYouTubePlayer({
               stopTracking();
               // Video ended naturally
               if (data === YT_ENDED) {
-                const duration = durationRef.current;
-                if (duration > 0) {
-                  const pct = (watchedSecondsRef.current / duration) * 100;
-                  if (pct >= 75) fireComplete();
-                }
+                fireComplete();
               }
             }
           },

@@ -93,7 +93,7 @@ export default function ProfilePage() {
           <div className="space-y-3 text-xs">
             <div className="flex justify-between items-center p-2.5 rounded-xl border border-white/5 bg-[#090e1a]">
               <span className="text-slate-400 font-medium">Institution</span>
-              <span className="text-slate-200 font-bold">Vardhaman College of Engineering</span>
+              <span className="text-slate-200 font-bold">TKR College of Engineering & Technology</span>
             </div>
             <div className="flex justify-between items-center p-2.5 rounded-xl border border-white/5 bg-[#090e1a]">
               <span className="text-slate-400 font-medium">Degree</span>

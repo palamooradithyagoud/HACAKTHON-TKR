@@ -6,6 +6,7 @@ from typing import List, Dict, Any, Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 
+from backend.services.supabase_service import get_supabase
 from backend.services.auth_service import get_current_user_id, get_session_or_user_id
 from backend.services.groq_service import chat_with_groq
 
@@ -16,15 +17,8 @@ router = APIRouter(prefix="/api/faculty", tags=["faculty"])
 DB_FILE = os.path.join(os.path.dirname(__file__), "..", "data", "faculty_db.json")
 
 def load_db() -> Dict[str, Any]:
-    """Helper to read our mock JSON database."""
-    try:
-        if os.path.exists(DB_FILE):
-            with open(DB_FILE, "r") as f:
-                return json.load(f)
-    except Exception as e:
-        logger.error(f"Error loading faculty DB: {e}")
-    # Default fallback DB structure
-    return {
+    """Helper to read database data and merge registered Supabase student profiles."""
+    db_data = {
         "students": [],
         "classes": [],
         "assignments": [],
@@ -34,6 +28,71 @@ def load_db() -> Dict[str, Any]:
         "announcements": [],
         "messages": []
     }
+    try:
+        if os.path.exists(DB_FILE):
+            with open(DB_FILE, "r") as f:
+                content = json.load(f)
+                db_data.update(content)
+    except Exception as e:
+        logger.error(f"Error loading faculty DB: {e}")
+
+    # Dynamically fetch real registered students from Supabase DB table
+    sb = get_supabase()
+    if sb:
+        try:
+            res_acad = sb.from_("user_academic_profile").select("*").execute()
+            if res_acad.data:
+                supabase_students = []
+                for idx, s in enumerate(res_acad.data):
+                    uid = s.get("user_id") or f"stu_{idx+1}"
+                    full_name = s.get("full_name") or f"Student {idx+1}"
+                    dept = s.get("department") or "CSE"
+                    sec = s.get("section") or "Section A"
+                    year = s.get("academic_year") or "2nd Year"
+                    
+                    # Fetch student coding profile
+                    lc_handle = ""
+                    gh_handle = ""
+                    try:
+                        res_code = sb.from_("user_coding_profiles").select("*").eq("user_id", uid).execute()
+                        if res_code.data:
+                            lc_handle = res_code.data[0].get("leetcode_url", "")
+                            gh_handle = res_code.data[0].get("github_url", "")
+                    except Exception:
+                        pass
+
+                    att_val = float(s.get("attendance_percentage") or 0.0)
+                    supabase_students.append({
+                        "id": uid,
+                        "name": full_name,
+                        "roll_number": s.get("roll_number") or f"22TK1A{(dept[:3] if dept else '05').upper()}{str(idx+1).zfill(2)}",
+                        "section": sec,
+                        "department": dept,
+                        "year": year,
+                        "academic_year": f"Year {year}",
+                        "college": s.get("college") or "TKR College of Engineering & Technology",
+                        "attendance_percentage": att_val,
+                        "coding_score": int(s.get("coding_score") or 0),
+                        "placement_readiness_score": 0.0,
+                        "faculty_notes": "",
+                        "leetcode_handle": lc_handle,
+                        "github_handle": gh_handle,
+                        "timeline": [
+                            {"date": datetime.now().strftime("%Y-%m-%d"), "title": "Account Registered", "description": "Student joined SkillsCatalyst platform."}
+                        ]
+                    })
+                if supabase_students:
+                    existing_ids = {s["id"] for s in supabase_students}
+                    rest = [s for s in db_data["students"] if s["id"] not in existing_ids and not str(s.get("id", "")).startswith("STU") and "Student (" not in str(s.get("name", ""))]
+                    db_data["students"] = supabase_students + rest
+                else:
+                    db_data["students"] = [s for s in db_data["students"] if not str(s.get("id", "")).startswith("STU") and "Student (" not in str(s.get("name", ""))]
+        except Exception as e:
+            logger.warning(f"Failed to load Supabase student profiles: {e}")
+
+    # Remove any mock STU students from db_data
+    db_data["students"] = [s for s in db_data.get("students", []) if not str(s.get("id", "")).startswith("STU") and "Student (" not in str(s.get("name", ""))]
+    return db_data
 
 def save_db(data: Dict[str, Any]) -> None:
     """Helper to write our mock JSON database."""
