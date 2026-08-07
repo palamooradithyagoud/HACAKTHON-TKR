@@ -72,6 +72,9 @@ class AssignmentCreate(BaseModel):
     title: str = Field(..., min_length=3)
     description: str
     subject: str
+    year: Optional[str] = None
+    department: Optional[str] = None
+    section: Optional[str] = None
     deadline: str  # ISO-8601 string
     max_marks: int = Field(..., gt=0)
     attachments: Optional[str] = None
@@ -324,12 +327,37 @@ async def create_assignment(req: AssignmentCreate, current_user_id: str = Depend
     }
     assignments.append(new_assign)
     
-    # Auto-generate mock pending submissions for active CSE students to make testing workflow complete
+    # Auto-generate mock pending submissions for active students matching targeted cohort
     submissions = db.get("submissions", [])
     students = db.get("students", [])
     next_sub_id = max((s["id"] for s in submissions), default=0) + 1
     
+    # Filter students matching target year, department, and section
+    target_students = []
     for student in students:
+        s_year = str(student.get("year", ""))
+        s_academic_year = str(student.get("academic_year", ""))
+        
+        year_match = True
+        if req.year:
+            year_match = (s_year == req.year) or (f"Year {req.year}" in s_academic_year) or (f"{req.year}rd" in s_academic_year) or (f"{req.year}th" in s_academic_year)
+            
+        dept_match = True
+        if req.department:
+            dept_match = (student.get("department") == req.department)
+            
+        sec_match = True
+        if req.section:
+            sec_match = (student.get("section") == req.section)
+            
+        if year_match and dept_match and sec_match:
+            target_students.append(student)
+            
+    # If no filters matched, default to all students to prevent empty submissions list
+    if not target_students:
+        target_students = students
+        
+    for student in target_students:
         submissions.append({
             "id": next_sub_id,
             "assignment_id": next_id,

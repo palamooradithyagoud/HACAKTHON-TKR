@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { 
   ClipboardCheck, Search, Filter, PlusCircle, Save, 
   X, Sparkles, CheckCircle2, Clock, AlertTriangle, FileText,
-  User, Send, MessageSquare, BookOpen
+  User, Send, MessageSquare, BookOpen, UploadCloud, File
 } from "lucide-react";
 
 import { 
@@ -30,9 +30,13 @@ export default function AssignmentsPage() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [subject, setSubject] = useState("Data Structures & Algorithms");
+  const [year, setYear] = useState("3");
+  const [department, setDepartment] = useState("CSE");
+  const [section, setSection] = useState("A");
   const [deadline, setDeadline] = useState("");
   const [maxMarks, setMaxMarks] = useState(10);
-  const [attachments, setAttachments] = useState("");
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [isGeneratingQuiz, setIsGeneratingQuiz] = useState(false);
   
   // Evaluation States
   const [gradeMarks, setGradeMarks] = useState(10);
@@ -61,7 +65,7 @@ export default function AssignmentsPage() {
       setDescription("");
       setDeadline("");
       setMaxMarks(10);
-      setAttachments("");
+      setUploadedFile(null);
     }
   });
 
@@ -101,11 +105,23 @@ export default function AssignmentsPage() {
       title,
       description,
       subject,
+      year,
+      department,
+      section,
       deadline: new Date(deadline).toISOString(),
       max_marks: maxMarks,
-      attachments
+      attachments: uploadedFile ? uploadedFile.name : ""
     });
     setIsSubmitting(false);
+  };
+
+  const generateAIQuiz = () => {
+    setIsGeneratingQuiz(true);
+    setTimeout(() => {
+      const mockQuiz = `AI Generated Quiz: ${subject || title || "General Topic"}\nPlease answer the following multiple-choice questions:\n\n1. What is the time complexity of searching in a perfectly balanced Binary Search Tree?\na) O(1)\nb) O(n)\nc) O(log n)\nd) O(n log n)\n\n2. Which data structure is typically used to implement a cache (LRU)?\na) Array\nb) Stack\nc) Doubly Linked List + Hash Map\nd) Queue\n\n3. In an AVL tree, what is the maximum allowed difference between the heights of the left and right subtrees?\na) 0\nb) 1\nc) 2\nd) No limit\n\n4. Which algorithm is used to find the shortest path in a graph with non-negative edge weights?\na) Kruskal's\nb) Prim's\nc) Dijkstra's\nd) Bellman-Ford\n\n5. A Hash Table is best for which of the following operations?\na) Sorting elements\nb) Finding the maximum element\nc) Fast lookups, insertions, and deletions\nd) Range queries\n`;
+      setDescription(mockQuiz);
+      setIsGeneratingQuiz(false);
+    }, 1500);
   };
 
   // Handle Grade Submission
@@ -287,33 +303,84 @@ export default function AssignmentsPage() {
                   <input type="text" placeholder="e.g. Advanced AVL Balance Trees" value={title} onChange={(e) => setTitle(e.target.value)} required className="w-full p-2.5 rounded-xl bg-white/5 border border-white/10 text-slate-200 text-xs font-semibold focus:outline-none" />
                 </div>
 
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Course Subject</label>
-                  <select value={subject} onChange={(e) => setSubject(e.target.value)} className="w-full p-2.5 rounded-xl bg-[#090e1a] border border-white/10 text-slate-300 text-xs font-semibold focus:outline-none">
-                    <option>Data Structures & Algorithms</option>
-                    <option>System Design & Architecture</option>
-                    <option>Web Development Lab</option>
-                  </select>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Year</label>
+                    <select value={year} onChange={(e) => setYear(e.target.value)} className="w-full p-2.5 rounded-xl bg-[#090e1a] border border-white/10 text-slate-300 text-xs font-semibold focus:outline-none">
+                      <option value="1">Year 1</option>
+                      <option value="2">Year 2</option>
+                      <option value="3">Year 3</option>
+                      <option value="4">Year 4</option>
+                    </select>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Department</label>
+                    <select value={department} onChange={(e) => setDepartment(e.target.value)} className="w-full p-2.5 rounded-xl bg-[#090e1a] border border-white/10 text-slate-300 text-xs font-semibold focus:outline-none">
+                      <option value="CSE">CSE</option>
+                      <option value="CSM">CSM</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Section</label>
+                    <select value={section} onChange={(e) => setSection(e.target.value)} className="w-full p-2.5 rounded-xl bg-[#090e1a] border border-white/10 text-slate-300 text-xs font-semibold focus:outline-none">
+                      <option value="A">Section A</option>
+                      <option value="B">Section B</option>
+                    </select>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Course Subject</label>
+                    <select value={subject} onChange={(e) => setSubject(e.target.value)} className="w-full p-2.5 rounded-xl bg-[#090e1a] border border-white/10 text-slate-300 text-xs font-semibold focus:outline-none">
+                      <option>Data Structures & Algorithms</option>
+                      <option>System Design & Architecture</option>
+                      <option>Web Development Lab</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Deadline Date & Time</label>
+                    <input type="datetime-local" value={deadline} onChange={(e) => setDeadline(e.target.value)} required className="w-full p-2.5 rounded-xl bg-white/5 border border-white/10 text-slate-200 text-xs font-semibold focus:outline-none" />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Maximum Marks</label>
+                    <input type="number" min={1} value={maxMarks} onChange={(e) => setMaxMarks(Number(e.target.value))} required className="w-full p-2.5 rounded-xl bg-white/5 border border-white/10 text-slate-200 text-xs font-semibold focus:outline-none" />
+                  </div>
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Deadline Date & Time</label>
-                  <input type="datetime-local" value={deadline} onChange={(e) => setDeadline(e.target.value)} required className="w-full p-2.5 rounded-xl bg-white/5 border border-white/10 text-slate-200 text-xs font-semibold focus:outline-none" />
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Upload Reference Material</label>
+                  <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-white/20 rounded-xl cursor-pointer bg-white/5 hover:bg-white/10 transition-colors">
+                    <div className="flex flex-col items-center justify-center pt-5 pb-6 text-center px-4">
+                      {uploadedFile ? (
+                        <>
+                          <File className="w-6 h-6 text-indigo-400 mb-2" />
+                          <p className="text-xs font-bold text-slate-300">{uploadedFile.name}</p>
+                        </>
+                      ) : (
+                        <>
+                          <UploadCloud className="w-6 h-6 text-slate-400 mb-2" />
+                          <p className="text-xs font-bold text-slate-300">Click to upload image or PDF</p>
+                          <p className="text-[10px] text-slate-500 mt-1">PNG, JPG, PDF up to 10MB</p>
+                        </>
+                      )}
+                    </div>
+                    <input type="file" className="hidden" accept=".pdf,.png,.jpg,.jpeg" onChange={(e) => setUploadedFile(e.target.files?.[0] || null)} />
+                  </label>
                 </div>
 
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Maximum Marks</label>
-                  <input type="number" min={1} value={maxMarks} onChange={(e) => setMaxMarks(Number(e.target.value))} required className="w-full p-2.5 rounded-xl bg-white/5 border border-white/10 text-slate-200 text-xs font-semibold focus:outline-none" />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Attachments / Reference PDF URL</label>
-                  <input type="text" placeholder="e.g. https://example.com/handout.pdf" value={attachments} onChange={(e) => setAttachments(e.target.value)} className="w-full p-2.5 rounded-xl bg-white/5 border border-white/10 text-slate-200 text-xs font-semibold focus:outline-none" />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Detailed Description</label>
-                  <textarea placeholder="Write instructions, grading rubrics, or coding questions..." rows={4} value={description} onChange={(e) => setDescription(e.target.value)} className="w-full p-3 rounded-xl bg-white/5 border border-white/10 text-slate-200 text-xs font-medium focus:outline-none resize-none" />
+                <div className="space-y-1 relative">
+                  <div className="flex items-center justify-between">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Detailed Description / Questions</label>
+                    <button type="button" onClick={generateAIQuiz} disabled={isGeneratingQuiz} className="text-[10px] font-bold text-purple-400 hover:text-purple-300 flex items-center gap-1 bg-purple-500/10 px-2 py-1 rounded transition-colors">
+                      <Sparkles className="w-3 h-3" />
+                      {isGeneratingQuiz ? "Generating..." : "Auto-Generate AI Quiz"}
+                    </button>
+                  </div>
+                  <textarea placeholder="Write instructions, grading rubrics, or auto-generate a quiz..." rows={6} value={description} onChange={(e) => setDescription(e.target.value)} className="w-full p-3 rounded-xl bg-white/5 border border-white/10 text-slate-200 text-xs font-medium focus:outline-none resize-none mt-1" />
                 </div>
 
                 <button type="submit" disabled={isSubmitting} className="w-full py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-xs font-bold text-white flex items-center justify-center gap-1.5 shadow-lg transition-all">
