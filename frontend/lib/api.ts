@@ -1937,6 +1937,52 @@ export async function fetchCompanyQuestions(
   limit = 100,
   offset = 0,
 ): Promise<CompanyQuestionsResult> {
+  const companySlug = company.toLowerCase().trim();
+
+  // Tier 1: Try fetching directly from Supabase DB `company_questions` table (works instantly on Vercel production)
+  if (supabase) {
+    try {
+      let query = supabase
+        .from("company_questions")
+        .select("*")
+        .eq("company_slug", companySlug);
+
+      if (period && period !== "all") {
+        query = query.eq("period", period);
+      }
+      if (difficulty && difficulty !== "All") {
+        query = query.ilike("difficulty", difficulty.trim());
+      }
+      if (search && search.trim()) {
+        query = query.ilike("title", `%${search.trim()}%`);
+      }
+
+      const { data, error } = await query.range(offset, offset + limit - 1);
+      if (!error && data && data.length > 0) {
+        const questions: PracticeQuestion[] = data.map((q: any) => ({
+          id: q.question_id || 0,
+          title: q.title || "",
+          url: q.url || "",
+          difficulty: q.difficulty || "Easy",
+          acceptance: q.acceptance || "",
+          frequency: q.frequency || "",
+        }));
+
+        return {
+          company: companySlug,
+          period,
+          total: questions.length,
+          offset,
+          limit,
+          questions,
+        };
+      }
+    } catch (sbErr) {
+      console.warn("Supabase company_questions fetch notice:", sbErr);
+    }
+  }
+
+  // Tier 2: Try fetching from FastAPI backend API (when backend server is active)
   try {
     const params = new URLSearchParams({ period, limit: String(limit), offset: String(offset) });
     if (difficulty) params.set("difficulty", difficulty);
@@ -1944,19 +1990,21 @@ export async function fetchCompanyQuestions(
 
     const authHeaders = await getAuthHeaders();
     const res = await apiFetch(
-      `${API_BASE}/api/practice/questions/${encodeURIComponent(company)}?${params}`,
+      `${API_BASE}/api/practice/questions/${encodeURIComponent(companySlug)}?${params}`,
       { headers: { ...authHeaders }, cache: "no-store" },
     );
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
-    if (data && Array.isArray(data.questions) && data.questions.length > 0) {
-      return data;
+    if (res.ok) {
+      const data = await res.json();
+      if (data && Array.isArray(data.questions) && data.questions.length > 0) {
+        return data;
+      }
     }
-    return getFallbackQuestionsForCompany(company, period, difficulty, search, limit, offset);
   } catch (e) {
-    console.warn(`Failed to fetch questions from backend for '${company}', using curated fallback:`, e);
-    return getFallbackQuestionsForCompany(company, period, difficulty, search, limit, offset);
+    console.warn(`Backend fetch notice for '${companySlug}':`, e);
   }
+
+  // Tier 3: Curated Fallback Question Dataset (guarantees questions always show on Vercel deployment)
+  return getFallbackQuestionsForCompany(companySlug, period, difficulty, search, limit, offset);
 }
 
 // ── Profile & Developer Coding Platforms API ─────────────────────────────────
