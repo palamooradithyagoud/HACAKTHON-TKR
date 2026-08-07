@@ -75,10 +75,11 @@ for _orig in _extra_origins:
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=_allowed_origins,
+    allow_origins=_allowed_origins + ["*"] if ENVIRONMENT.lower() == "development" else _allowed_origins,
+    allow_origin_regex=r"https://.*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
-    allow_headers=["Authorization", "Content-Type", "x-session-id", "X-Request-ID", "Accept", "Origin"],
+    allow_headers=["*"],
     expose_headers=["X-Request-ID", "X-Guest-Session-Token", "x-session-id"],
 )
 
