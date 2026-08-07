@@ -16,12 +16,12 @@ const containerVariants = {
     opacity: 1,
     transition: { staggerChildren: 0.05 }
   }
-};
+} as const;
 
 const cardVariants = {
   hidden: { opacity: 0, y: 15 },
   show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 25 } }
-};
+} as const;
 
 export default function FacultyAnalytics() {
   const { data: students = [], isLoading: loadingStudents } = useQuery({

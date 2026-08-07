@@ -1,102 +1,1922 @@
 {
   "students": [
     {
-      "id": "student_student_demo_com",
-      "name": "Alex Student",
-      "roll_number": "CSE-2026-001",
-      "department": "CSE",
-      "academic_year": "3rd Year",
+      "id": "STU1CSEA1",
+      "name": "Student 1 (CSE)",
+      "roll_number": "22XX1A0501",
       "section": "A",
-      "attendance_percentage": 92.5,
-      "coding_score": 850,
-      "placement_readiness_score": 88.0,
-      "faculty_notes": "Very active in class. Needs to focus a bit more on advanced system design patterns.",
-      "github_handle": "alex-student",
-      "leetcode_handle": "alex_leet",
-      "hackerrank_handle": "alex_hr",
-      "certifications": [
-        "AWS Cloud Practitioner",
-        "Google Data Analytics Certificate"
-      ],
-      "projects": [
-        "E-Commerce Microservice App",
-        "Personal Coding Blog"
-      ],
+      "department": "CSE",
+      "year": "1",
+      "academic_year": "Year 1",
+      "attendance_percentage": 100.0,
+      "coding_score": 314,
+      "placement_readiness_score": 51.0,
+      "faculty_notes": "",
+      "leetcode_handle": "student1_lc",
+      "github_handle": "student1_gh",
+      "certifications": [],
+      "projects": [],
       "timeline": [
         {
           "date": "2026-08-05",
-          "title": "Assignment Evaluated",
-          "description": "Scored 9/10 in Trees & Graphs assignment."
-        },
-        {
-          "date": "2026-08-03",
-          "title": "LeetCode Benchmark Reached",
-          "description": "Solved 250 problems on LeetCode."
+          "title": "Platform Joined",
+          "description": "Linked LeetCode account."
         }
       ]
     },
     {
-      "id": "student_alice_college_edu",
-      "name": "Alice Johnson",
-      "roll_number": "CSE-2026-002",
-      "department": "CSE",
-      "academic_year": "3rd Year",
+      "id": "STU1CSEA2",
+      "name": "Student 2 (CSE)",
+      "roll_number": "22XX1A0502",
       "section": "A",
-      "attendance_percentage": 73.0,
-      "coding_score": 980,
-      "placement_readiness_score": 91.5,
-      "faculty_notes": "Coding skills are outstanding. However, attendance is currently below the 75% threshold. Spoke with her regarding the same.",
-      "github_handle": "alice-j",
-      "leetcode_handle": "alice_codes",
-      "hackerrank_handle": "alice_hr",
-      "certifications": [
-        "Certified Kubernetes Administrator (CKA)"
-      ],
-      "projects": [
-        "Distributed KV Store in Go",
-        "AI Image Generator Webapp"
-      ],
+      "department": "CSE",
+      "year": "1",
+      "academic_year": "Year 1",
+      "attendance_percentage": 75.0,
+      "coding_score": 428,
+      "placement_readiness_score": 58.0,
+      "faculty_notes": "",
+      "leetcode_handle": "student2_lc",
+      "github_handle": "student2_gh",
+      "certifications": [],
+      "projects": [],
       "timeline": [
         {
-          "date": "2026-08-04",
-          "title": "Attendance Warning",
-          "description": "Marked absent for 3 consecutive lectures. Warning sent."
-        },
-        {
-          "date": "2026-08-01",
-          "title": "Contest Rank #12",
-          "description": "Achieved global rank 12 in weekly university coding cup."
+          "date": "2026-08-05",
+          "title": "Platform Joined",
+          "description": "Linked LeetCode account."
         }
       ]
     },
     {
-      "id": "student_bob_college_edu",
-      "name": "Bob Smith",
-      "roll_number": "CSE-2026-003",
+      "id": "STU1CSEA3",
+      "name": "Student 3 (CSE)",
+      "roll_number": "22XX1A0503",
+      "section": "A",
       "department": "CSE",
-      "academic_year": "3rd Year",
-      "section": "B",
-      "attendance_percentage": 88.0,
-      "coding_score": 310,
-      "placement_readiness_score": 42.0,
-      "faculty_notes": "Struggling with basic DSA questions. Recommended daily practice sheet and office hours.",
-      "github_handle": "bob-smith",
-      "leetcode_handle": "bob_builds",
-      "hackerrank_handle": "bob_hr",
+      "year": "1",
+      "academic_year": "Year 1",
+      "attendance_percentage": 94.0,
+      "coding_score": 289,
+      "placement_readiness_score": 87.0,
+      "faculty_notes": "",
+      "leetcode_handle": "student3_lc",
+      "github_handle": "student3_gh",
       "certifications": [],
-      "projects": [
-        "Simple Weather CLI Dashboard"
-      ],
+      "projects": [],
       "timeline": [
         {
-          "date": "2026-08-06",
-          "title": "Low Coding Alert",
-          "description": "Coding activity score remains under critical benchmark."
-        },
+          "date": "2026-08-05",
+          "title": "Platform Joined",
+          "description": "Linked LeetCode account."
+        }
+      ]
+    },
+    {
+      "id": "STU1CSEA4",
+      "name": "Student 4 (CSE)",
+      "roll_number": "22XX1A0504",
+      "section": "A",
+      "department": "CSE",
+      "year": "1",
+      "academic_year": "Year 1",
+      "attendance_percentage": 61.0,
+      "coding_score": 295,
+      "placement_readiness_score": 63.0,
+      "faculty_notes": "",
+      "leetcode_handle": "student4_lc",
+      "github_handle": "student4_gh",
+      "certifications": [],
+      "projects": [],
+      "timeline": [
         {
-          "date": "2026-08-02",
-          "title": "Assignment Submitted",
-          "description": "Submitted URL Shortener System Design assignment."
+          "date": "2026-08-05",
+          "title": "Platform Joined",
+          "description": "Linked LeetCode account."
+        }
+      ]
+    },
+    {
+      "id": "STU1CSEA5",
+      "name": "Student 5 (CSE)",
+      "roll_number": "22XX1A0505",
+      "section": "A",
+      "department": "CSE",
+      "year": "1",
+      "academic_year": "Year 1",
+      "attendance_percentage": 98.0,
+      "coding_score": 227,
+      "placement_readiness_score": 85.0,
+      "faculty_notes": "",
+      "leetcode_handle": "student5_lc",
+      "github_handle": "student5_gh",
+      "certifications": [],
+      "projects": [],
+      "timeline": [
+        {
+          "date": "2026-08-05",
+          "title": "Platform Joined",
+          "description": "Linked LeetCode account."
+        }
+      ]
+    },
+    {
+      "id": "STU1CSEB1",
+      "name": "Student 6 (CSE)",
+      "roll_number": "22XX1A0506",
+      "section": "B",
+      "department": "CSE",
+      "year": "1",
+      "academic_year": "Year 1",
+      "attendance_percentage": 94.0,
+      "coding_score": 629,
+      "placement_readiness_score": 64.0,
+      "faculty_notes": "",
+      "leetcode_handle": "student6_lc",
+      "github_handle": "student6_gh",
+      "certifications": [],
+      "projects": [],
+      "timeline": [
+        {
+          "date": "2026-08-05",
+          "title": "Platform Joined",
+          "description": "Linked LeetCode account."
+        }
+      ]
+    },
+    {
+      "id": "STU1CSEB2",
+      "name": "Student 7 (CSE)",
+      "roll_number": "22XX1A0507",
+      "section": "B",
+      "department": "CSE",
+      "year": "1",
+      "academic_year": "Year 1",
+      "attendance_percentage": 77.0,
+      "coding_score": 206,
+      "placement_readiness_score": 98.0,
+      "faculty_notes": "",
+      "leetcode_handle": "student7_lc",
+      "github_handle": "student7_gh",
+      "certifications": [],
+      "projects": [],
+      "timeline": [
+        {
+          "date": "2026-08-05",
+          "title": "Platform Joined",
+          "description": "Linked LeetCode account."
+        }
+      ]
+    },
+    {
+      "id": "STU1CSEB3",
+      "name": "Student 8 (CSE)",
+      "roll_number": "22XX1A0508",
+      "section": "B",
+      "department": "CSE",
+      "year": "1",
+      "academic_year": "Year 1",
+      "attendance_percentage": 87.0,
+      "coding_score": 548,
+      "placement_readiness_score": 67.0,
+      "faculty_notes": "",
+      "leetcode_handle": "student8_lc",
+      "github_handle": "student8_gh",
+      "certifications": [],
+      "projects": [],
+      "timeline": [
+        {
+          "date": "2026-08-05",
+          "title": "Platform Joined",
+          "description": "Linked LeetCode account."
+        }
+      ]
+    },
+    {
+      "id": "STU1CSEB4",
+      "name": "Student 9 (CSE)",
+      "roll_number": "22XX1A0509",
+      "section": "B",
+      "department": "CSE",
+      "year": "1",
+      "academic_year": "Year 1",
+      "attendance_percentage": 81.0,
+      "coding_score": 304,
+      "placement_readiness_score": 55.0,
+      "faculty_notes": "",
+      "leetcode_handle": "student9_lc",
+      "github_handle": "student9_gh",
+      "certifications": [],
+      "projects": [],
+      "timeline": [
+        {
+          "date": "2026-08-05",
+          "title": "Platform Joined",
+          "description": "Linked LeetCode account."
+        }
+      ]
+    },
+    {
+      "id": "STU1CSEB5",
+      "name": "Student 10 (CSE)",
+      "roll_number": "22XX1A0510",
+      "section": "B",
+      "department": "CSE",
+      "year": "1",
+      "academic_year": "Year 1",
+      "attendance_percentage": 82.0,
+      "coding_score": 552,
+      "placement_readiness_score": 88.0,
+      "faculty_notes": "",
+      "leetcode_handle": "student10_lc",
+      "github_handle": "student10_gh",
+      "certifications": [],
+      "projects": [],
+      "timeline": [
+        {
+          "date": "2026-08-05",
+          "title": "Platform Joined",
+          "description": "Linked LeetCode account."
+        }
+      ]
+    },
+    {
+      "id": "STU1CSMA1",
+      "name": "Student 11 (CSM)",
+      "roll_number": "22XX1A0611",
+      "section": "A",
+      "department": "CSM",
+      "year": "1",
+      "academic_year": "Year 1",
+      "attendance_percentage": 62.0,
+      "coding_score": 670,
+      "placement_readiness_score": 84.0,
+      "faculty_notes": "",
+      "leetcode_handle": "student11_lc",
+      "github_handle": "student11_gh",
+      "certifications": [],
+      "projects": [],
+      "timeline": [
+        {
+          "date": "2026-08-05",
+          "title": "Platform Joined",
+          "description": "Linked LeetCode account."
+        }
+      ]
+    },
+    {
+      "id": "STU1CSMA2",
+      "name": "Student 12 (CSM)",
+      "roll_number": "22XX1A0612",
+      "section": "A",
+      "department": "CSM",
+      "year": "1",
+      "academic_year": "Year 1",
+      "attendance_percentage": 84.0,
+      "coding_score": 280,
+      "placement_readiness_score": 85.0,
+      "faculty_notes": "",
+      "leetcode_handle": "student12_lc",
+      "github_handle": "student12_gh",
+      "certifications": [],
+      "projects": [],
+      "timeline": [
+        {
+          "date": "2026-08-05",
+          "title": "Platform Joined",
+          "description": "Linked LeetCode account."
+        }
+      ]
+    },
+    {
+      "id": "STU1CSMA3",
+      "name": "Student 13 (CSM)",
+      "roll_number": "22XX1A0613",
+      "section": "A",
+      "department": "CSM",
+      "year": "1",
+      "academic_year": "Year 1",
+      "attendance_percentage": 100.0,
+      "coding_score": 570,
+      "placement_readiness_score": 86.0,
+      "faculty_notes": "",
+      "leetcode_handle": "student13_lc",
+      "github_handle": "student13_gh",
+      "certifications": [],
+      "projects": [],
+      "timeline": [
+        {
+          "date": "2026-08-05",
+          "title": "Platform Joined",
+          "description": "Linked LeetCode account."
+        }
+      ]
+    },
+    {
+      "id": "STU1CSMA4",
+      "name": "Student 14 (CSM)",
+      "roll_number": "22XX1A0614",
+      "section": "A",
+      "department": "CSM",
+      "year": "1",
+      "academic_year": "Year 1",
+      "attendance_percentage": 64.0,
+      "coding_score": 246,
+      "placement_readiness_score": 92.0,
+      "faculty_notes": "",
+      "leetcode_handle": "student14_lc",
+      "github_handle": "student14_gh",
+      "certifications": [],
+      "projects": [],
+      "timeline": [
+        {
+          "date": "2026-08-05",
+          "title": "Platform Joined",
+          "description": "Linked LeetCode account."
+        }
+      ]
+    },
+    {
+      "id": "STU1CSMA5",
+      "name": "Student 15 (CSM)",
+      "roll_number": "22XX1A0615",
+      "section": "A",
+      "department": "CSM",
+      "year": "1",
+      "academic_year": "Year 1",
+      "attendance_percentage": 78.0,
+      "coding_score": 281,
+      "placement_readiness_score": 64.0,
+      "faculty_notes": "",
+      "leetcode_handle": "student15_lc",
+      "github_handle": "student15_gh",
+      "certifications": [],
+      "projects": [],
+      "timeline": [
+        {
+          "date": "2026-08-05",
+          "title": "Platform Joined",
+          "description": "Linked LeetCode account."
+        }
+      ]
+    },
+    {
+      "id": "STU1CSMB1",
+      "name": "Student 16 (CSM)",
+      "roll_number": "22XX1A0616",
+      "section": "B",
+      "department": "CSM",
+      "year": "1",
+      "academic_year": "Year 1",
+      "attendance_percentage": 84.0,
+      "coding_score": 484,
+      "placement_readiness_score": 79.0,
+      "faculty_notes": "",
+      "leetcode_handle": "student16_lc",
+      "github_handle": "student16_gh",
+      "certifications": [],
+      "projects": [],
+      "timeline": [
+        {
+          "date": "2026-08-05",
+          "title": "Platform Joined",
+          "description": "Linked LeetCode account."
+        }
+      ]
+    },
+    {
+      "id": "STU1CSMB2",
+      "name": "Student 17 (CSM)",
+      "roll_number": "22XX1A0617",
+      "section": "B",
+      "department": "CSM",
+      "year": "1",
+      "academic_year": "Year 1",
+      "attendance_percentage": 83.0,
+      "coding_score": 366,
+      "placement_readiness_score": 73.0,
+      "faculty_notes": "",
+      "leetcode_handle": "student17_lc",
+      "github_handle": "student17_gh",
+      "certifications": [],
+      "projects": [],
+      "timeline": [
+        {
+          "date": "2026-08-05",
+          "title": "Platform Joined",
+          "description": "Linked LeetCode account."
+        }
+      ]
+    },
+    {
+      "id": "STU1CSMB3",
+      "name": "Student 18 (CSM)",
+      "roll_number": "22XX1A0618",
+      "section": "B",
+      "department": "CSM",
+      "year": "1",
+      "academic_year": "Year 1",
+      "attendance_percentage": 77.0,
+      "coding_score": 273,
+      "placement_readiness_score": 88.0,
+      "faculty_notes": "",
+      "leetcode_handle": "student18_lc",
+      "github_handle": "student18_gh",
+      "certifications": [],
+      "projects": [],
+      "timeline": [
+        {
+          "date": "2026-08-05",
+          "title": "Platform Joined",
+          "description": "Linked LeetCode account."
+        }
+      ]
+    },
+    {
+      "id": "STU1CSMB4",
+      "name": "Student 19 (CSM)",
+      "roll_number": "22XX1A0619",
+      "section": "B",
+      "department": "CSM",
+      "year": "1",
+      "academic_year": "Year 1",
+      "attendance_percentage": 94.0,
+      "coding_score": 450,
+      "placement_readiness_score": 60.0,
+      "faculty_notes": "",
+      "leetcode_handle": "student19_lc",
+      "github_handle": "student19_gh",
+      "certifications": [],
+      "projects": [],
+      "timeline": [
+        {
+          "date": "2026-08-05",
+          "title": "Platform Joined",
+          "description": "Linked LeetCode account."
+        }
+      ]
+    },
+    {
+      "id": "STU1CSMB5",
+      "name": "Student 20 (CSM)",
+      "roll_number": "22XX1A0620",
+      "section": "B",
+      "department": "CSM",
+      "year": "1",
+      "academic_year": "Year 1",
+      "attendance_percentage": 77.0,
+      "coding_score": 770,
+      "placement_readiness_score": 64.0,
+      "faculty_notes": "",
+      "leetcode_handle": "student20_lc",
+      "github_handle": "student20_gh",
+      "certifications": [],
+      "projects": [],
+      "timeline": [
+        {
+          "date": "2026-08-05",
+          "title": "Platform Joined",
+          "description": "Linked LeetCode account."
+        }
+      ]
+    },
+    {
+      "id": "STU2CSEA1",
+      "name": "Student 21 (CSE)",
+      "roll_number": "22XX1A0521",
+      "section": "A",
+      "department": "CSE",
+      "year": "2",
+      "academic_year": "Year 2",
+      "attendance_percentage": 63.0,
+      "coding_score": 434,
+      "placement_readiness_score": 52.0,
+      "faculty_notes": "",
+      "leetcode_handle": "student21_lc",
+      "github_handle": "student21_gh",
+      "certifications": [],
+      "projects": [],
+      "timeline": [
+        {
+          "date": "2026-08-05",
+          "title": "Platform Joined",
+          "description": "Linked LeetCode account."
+        }
+      ]
+    },
+    {
+      "id": "STU2CSEA2",
+      "name": "Student 22 (CSE)",
+      "roll_number": "22XX1A0522",
+      "section": "A",
+      "department": "CSE",
+      "year": "2",
+      "academic_year": "Year 2",
+      "attendance_percentage": 85.0,
+      "coding_score": 474,
+      "placement_readiness_score": 54.0,
+      "faculty_notes": "",
+      "leetcode_handle": "student22_lc",
+      "github_handle": "student22_gh",
+      "certifications": [],
+      "projects": [],
+      "timeline": [
+        {
+          "date": "2026-08-05",
+          "title": "Platform Joined",
+          "description": "Linked LeetCode account."
+        }
+      ]
+    },
+    {
+      "id": "STU2CSEA3",
+      "name": "Student 23 (CSE)",
+      "roll_number": "22XX1A0523",
+      "section": "A",
+      "department": "CSE",
+      "year": "2",
+      "academic_year": "Year 2",
+      "attendance_percentage": 96.0,
+      "coding_score": 522,
+      "placement_readiness_score": 63.0,
+      "faculty_notes": "",
+      "leetcode_handle": "student23_lc",
+      "github_handle": "student23_gh",
+      "certifications": [],
+      "projects": [],
+      "timeline": [
+        {
+          "date": "2026-08-05",
+          "title": "Platform Joined",
+          "description": "Linked LeetCode account."
+        }
+      ]
+    },
+    {
+      "id": "STU2CSEA4",
+      "name": "Student 24 (CSE)",
+      "roll_number": "22XX1A0524",
+      "section": "A",
+      "department": "CSE",
+      "year": "2",
+      "academic_year": "Year 2",
+      "attendance_percentage": 85.0,
+      "coding_score": 669,
+      "placement_readiness_score": 59.0,
+      "faculty_notes": "",
+      "leetcode_handle": "student24_lc",
+      "github_handle": "student24_gh",
+      "certifications": [],
+      "projects": [],
+      "timeline": [
+        {
+          "date": "2026-08-05",
+          "title": "Platform Joined",
+          "description": "Linked LeetCode account."
+        }
+      ]
+    },
+    {
+      "id": "STU2CSEA5",
+      "name": "Student 25 (CSE)",
+      "roll_number": "22XX1A0525",
+      "section": "A",
+      "department": "CSE",
+      "year": "2",
+      "academic_year": "Year 2",
+      "attendance_percentage": 75.0,
+      "coding_score": 774,
+      "placement_readiness_score": 84.0,
+      "faculty_notes": "",
+      "leetcode_handle": "student25_lc",
+      "github_handle": "student25_gh",
+      "certifications": [],
+      "projects": [],
+      "timeline": [
+        {
+          "date": "2026-08-05",
+          "title": "Platform Joined",
+          "description": "Linked LeetCode account."
+        }
+      ]
+    },
+    {
+      "id": "STU2CSEB1",
+      "name": "Student 26 (CSE)",
+      "roll_number": "22XX1A0526",
+      "section": "B",
+      "department": "CSE",
+      "year": "2",
+      "academic_year": "Year 2",
+      "attendance_percentage": 97.0,
+      "coding_score": 638,
+      "placement_readiness_score": 87.0,
+      "faculty_notes": "",
+      "leetcode_handle": "student26_lc",
+      "github_handle": "student26_gh",
+      "certifications": [],
+      "projects": [],
+      "timeline": [
+        {
+          "date": "2026-08-05",
+          "title": "Platform Joined",
+          "description": "Linked LeetCode account."
+        }
+      ]
+    },
+    {
+      "id": "STU2CSEB2",
+      "name": "Student 27 (CSE)",
+      "roll_number": "22XX1A0527",
+      "section": "B",
+      "department": "CSE",
+      "year": "2",
+      "academic_year": "Year 2",
+      "attendance_percentage": 74.0,
+      "coding_score": 341,
+      "placement_readiness_score": 82.0,
+      "faculty_notes": "",
+      "leetcode_handle": "student27_lc",
+      "github_handle": "student27_gh",
+      "certifications": [],
+      "projects": [],
+      "timeline": [
+        {
+          "date": "2026-08-05",
+          "title": "Platform Joined",
+          "description": "Linked LeetCode account."
+        }
+      ]
+    },
+    {
+      "id": "STU2CSEB3",
+      "name": "Student 28 (CSE)",
+      "roll_number": "22XX1A0528",
+      "section": "B",
+      "department": "CSE",
+      "year": "2",
+      "academic_year": "Year 2",
+      "attendance_percentage": 63.0,
+      "coding_score": 312,
+      "placement_readiness_score": 59.0,
+      "faculty_notes": "",
+      "leetcode_handle": "student28_lc",
+      "github_handle": "student28_gh",
+      "certifications": [],
+      "projects": [],
+      "timeline": [
+        {
+          "date": "2026-08-05",
+          "title": "Platform Joined",
+          "description": "Linked LeetCode account."
+        }
+      ]
+    },
+    {
+      "id": "STU2CSEB4",
+      "name": "Student 29 (CSE)",
+      "roll_number": "22XX1A0529",
+      "section": "B",
+      "department": "CSE",
+      "year": "2",
+      "academic_year": "Year 2",
+      "attendance_percentage": 87.0,
+      "coding_score": 265,
+      "placement_readiness_score": 74.0,
+      "faculty_notes": "",
+      "leetcode_handle": "student29_lc",
+      "github_handle": "student29_gh",
+      "certifications": [],
+      "projects": [],
+      "timeline": [
+        {
+          "date": "2026-08-05",
+          "title": "Platform Joined",
+          "description": "Linked LeetCode account."
+        }
+      ]
+    },
+    {
+      "id": "STU2CSEB5",
+      "name": "Student 30 (CSE)",
+      "roll_number": "22XX1A0530",
+      "section": "B",
+      "department": "CSE",
+      "year": "2",
+      "academic_year": "Year 2",
+      "attendance_percentage": 89.0,
+      "coding_score": 741,
+      "placement_readiness_score": 66.0,
+      "faculty_notes": "",
+      "leetcode_handle": "student30_lc",
+      "github_handle": "student30_gh",
+      "certifications": [],
+      "projects": [],
+      "timeline": [
+        {
+          "date": "2026-08-05",
+          "title": "Platform Joined",
+          "description": "Linked LeetCode account."
+        }
+      ]
+    },
+    {
+      "id": "STU2CSMA1",
+      "name": "Student 31 (CSM)",
+      "roll_number": "22XX1A0631",
+      "section": "A",
+      "department": "CSM",
+      "year": "2",
+      "academic_year": "Year 2",
+      "attendance_percentage": 60.0,
+      "coding_score": 317,
+      "placement_readiness_score": 93.0,
+      "faculty_notes": "",
+      "leetcode_handle": "student31_lc",
+      "github_handle": "student31_gh",
+      "certifications": [],
+      "projects": [],
+      "timeline": [
+        {
+          "date": "2026-08-05",
+          "title": "Platform Joined",
+          "description": "Linked LeetCode account."
+        }
+      ]
+    },
+    {
+      "id": "STU2CSMA2",
+      "name": "Student 32 (CSM)",
+      "roll_number": "22XX1A0632",
+      "section": "A",
+      "department": "CSM",
+      "year": "2",
+      "academic_year": "Year 2",
+      "attendance_percentage": 77.0,
+      "coding_score": 548,
+      "placement_readiness_score": 57.0,
+      "faculty_notes": "",
+      "leetcode_handle": "student32_lc",
+      "github_handle": "student32_gh",
+      "certifications": [],
+      "projects": [],
+      "timeline": [
+        {
+          "date": "2026-08-05",
+          "title": "Platform Joined",
+          "description": "Linked LeetCode account."
+        }
+      ]
+    },
+    {
+      "id": "STU2CSMA3",
+      "name": "Student 33 (CSM)",
+      "roll_number": "22XX1A0633",
+      "section": "A",
+      "department": "CSM",
+      "year": "2",
+      "academic_year": "Year 2",
+      "attendance_percentage": 70.0,
+      "coding_score": 664,
+      "placement_readiness_score": 50.0,
+      "faculty_notes": "",
+      "leetcode_handle": "student33_lc",
+      "github_handle": "student33_gh",
+      "certifications": [],
+      "projects": [],
+      "timeline": [
+        {
+          "date": "2026-08-05",
+          "title": "Platform Joined",
+          "description": "Linked LeetCode account."
+        }
+      ]
+    },
+    {
+      "id": "STU2CSMA4",
+      "name": "Student 34 (CSM)",
+      "roll_number": "22XX1A0634",
+      "section": "A",
+      "department": "CSM",
+      "year": "2",
+      "academic_year": "Year 2",
+      "attendance_percentage": 76.0,
+      "coding_score": 712,
+      "placement_readiness_score": 98.0,
+      "faculty_notes": "",
+      "leetcode_handle": "student34_lc",
+      "github_handle": "student34_gh",
+      "certifications": [],
+      "projects": [],
+      "timeline": [
+        {
+          "date": "2026-08-05",
+          "title": "Platform Joined",
+          "description": "Linked LeetCode account."
+        }
+      ]
+    },
+    {
+      "id": "STU2CSMA5",
+      "name": "Student 35 (CSM)",
+      "roll_number": "22XX1A0635",
+      "section": "A",
+      "department": "CSM",
+      "year": "2",
+      "academic_year": "Year 2",
+      "attendance_percentage": 66.0,
+      "coding_score": 505,
+      "placement_readiness_score": 90.0,
+      "faculty_notes": "",
+      "leetcode_handle": "student35_lc",
+      "github_handle": "student35_gh",
+      "certifications": [],
+      "projects": [],
+      "timeline": [
+        {
+          "date": "2026-08-05",
+          "title": "Platform Joined",
+          "description": "Linked LeetCode account."
+        }
+      ]
+    },
+    {
+      "id": "STU2CSMB1",
+      "name": "Student 36 (CSM)",
+      "roll_number": "22XX1A0636",
+      "section": "B",
+      "department": "CSM",
+      "year": "2",
+      "academic_year": "Year 2",
+      "attendance_percentage": 72.0,
+      "coding_score": 356,
+      "placement_readiness_score": 73.0,
+      "faculty_notes": "",
+      "leetcode_handle": "student36_lc",
+      "github_handle": "student36_gh",
+      "certifications": [],
+      "projects": [],
+      "timeline": [
+        {
+          "date": "2026-08-05",
+          "title": "Platform Joined",
+          "description": "Linked LeetCode account."
+        }
+      ]
+    },
+    {
+      "id": "STU2CSMB2",
+      "name": "Student 37 (CSM)",
+      "roll_number": "22XX1A0637",
+      "section": "B",
+      "department": "CSM",
+      "year": "2",
+      "academic_year": "Year 2",
+      "attendance_percentage": 94.0,
+      "coding_score": 743,
+      "placement_readiness_score": 50.0,
+      "faculty_notes": "",
+      "leetcode_handle": "student37_lc",
+      "github_handle": "student37_gh",
+      "certifications": [],
+      "projects": [],
+      "timeline": [
+        {
+          "date": "2026-08-05",
+          "title": "Platform Joined",
+          "description": "Linked LeetCode account."
+        }
+      ]
+    },
+    {
+      "id": "STU2CSMB3",
+      "name": "Student 38 (CSM)",
+      "roll_number": "22XX1A0638",
+      "section": "B",
+      "department": "CSM",
+      "year": "2",
+      "academic_year": "Year 2",
+      "attendance_percentage": 91.0,
+      "coding_score": 219,
+      "placement_readiness_score": 57.0,
+      "faculty_notes": "",
+      "leetcode_handle": "student38_lc",
+      "github_handle": "student38_gh",
+      "certifications": [],
+      "projects": [],
+      "timeline": [
+        {
+          "date": "2026-08-05",
+          "title": "Platform Joined",
+          "description": "Linked LeetCode account."
+        }
+      ]
+    },
+    {
+      "id": "STU2CSMB4",
+      "name": "Student 39 (CSM)",
+      "roll_number": "22XX1A0639",
+      "section": "B",
+      "department": "CSM",
+      "year": "2",
+      "academic_year": "Year 2",
+      "attendance_percentage": 79.0,
+      "coding_score": 445,
+      "placement_readiness_score": 53.0,
+      "faculty_notes": "",
+      "leetcode_handle": "student39_lc",
+      "github_handle": "student39_gh",
+      "certifications": [],
+      "projects": [],
+      "timeline": [
+        {
+          "date": "2026-08-05",
+          "title": "Platform Joined",
+          "description": "Linked LeetCode account."
+        }
+      ]
+    },
+    {
+      "id": "STU2CSMB5",
+      "name": "Student 40 (CSM)",
+      "roll_number": "22XX1A0640",
+      "section": "B",
+      "department": "CSM",
+      "year": "2",
+      "academic_year": "Year 2",
+      "attendance_percentage": 96.0,
+      "coding_score": 280,
+      "placement_readiness_score": 55.0,
+      "faculty_notes": "",
+      "leetcode_handle": "student40_lc",
+      "github_handle": "student40_gh",
+      "certifications": [],
+      "projects": [],
+      "timeline": [
+        {
+          "date": "2026-08-05",
+          "title": "Platform Joined",
+          "description": "Linked LeetCode account."
+        }
+      ]
+    },
+    {
+      "id": "STU3CSEA1",
+      "name": "Student 41 (CSE)",
+      "roll_number": "22XX1A0541",
+      "section": "A",
+      "department": "CSE",
+      "year": "3",
+      "academic_year": "Year 3",
+      "attendance_percentage": 64.0,
+      "coding_score": 745,
+      "placement_readiness_score": 99.0,
+      "faculty_notes": "",
+      "leetcode_handle": "student41_lc",
+      "github_handle": "student41_gh",
+      "certifications": [],
+      "projects": [],
+      "timeline": [
+        {
+          "date": "2026-08-05",
+          "title": "Platform Joined",
+          "description": "Linked LeetCode account."
+        }
+      ]
+    },
+    {
+      "id": "STU3CSEA2",
+      "name": "Student 42 (CSE)",
+      "roll_number": "22XX1A0542",
+      "section": "A",
+      "department": "CSE",
+      "year": "3",
+      "academic_year": "Year 3",
+      "attendance_percentage": 90.0,
+      "coding_score": 762,
+      "placement_readiness_score": 60.0,
+      "faculty_notes": "",
+      "leetcode_handle": "student42_lc",
+      "github_handle": "student42_gh",
+      "certifications": [],
+      "projects": [],
+      "timeline": [
+        {
+          "date": "2026-08-05",
+          "title": "Platform Joined",
+          "description": "Linked LeetCode account."
+        }
+      ]
+    },
+    {
+      "id": "STU3CSEA3",
+      "name": "Student 43 (CSE)",
+      "roll_number": "22XX1A0543",
+      "section": "A",
+      "department": "CSE",
+      "year": "3",
+      "academic_year": "Year 3",
+      "attendance_percentage": 98.0,
+      "coding_score": 633,
+      "placement_readiness_score": 63.0,
+      "faculty_notes": "",
+      "leetcode_handle": "student43_lc",
+      "github_handle": "student43_gh",
+      "certifications": [],
+      "projects": [],
+      "timeline": [
+        {
+          "date": "2026-08-05",
+          "title": "Platform Joined",
+          "description": "Linked LeetCode account."
+        }
+      ]
+    },
+    {
+      "id": "STU3CSEA4",
+      "name": "Student 44 (CSE)",
+      "roll_number": "22XX1A0544",
+      "section": "A",
+      "department": "CSE",
+      "year": "3",
+      "academic_year": "Year 3",
+      "attendance_percentage": 72.0,
+      "coding_score": 519,
+      "placement_readiness_score": 75.0,
+      "faculty_notes": "",
+      "leetcode_handle": "student44_lc",
+      "github_handle": "student44_gh",
+      "certifications": [],
+      "projects": [],
+      "timeline": [
+        {
+          "date": "2026-08-05",
+          "title": "Platform Joined",
+          "description": "Linked LeetCode account."
+        }
+      ]
+    },
+    {
+      "id": "STU3CSEA5",
+      "name": "Student 45 (CSE)",
+      "roll_number": "22XX1A0545",
+      "section": "A",
+      "department": "CSE",
+      "year": "3",
+      "academic_year": "Year 3",
+      "attendance_percentage": 83.0,
+      "coding_score": 648,
+      "placement_readiness_score": 83.0,
+      "faculty_notes": "",
+      "leetcode_handle": "student45_lc",
+      "github_handle": "student45_gh",
+      "certifications": [],
+      "projects": [],
+      "timeline": [
+        {
+          "date": "2026-08-05",
+          "title": "Platform Joined",
+          "description": "Linked LeetCode account."
+        }
+      ]
+    },
+    {
+      "id": "STU3CSEB1",
+      "name": "Student 46 (CSE)",
+      "roll_number": "22XX1A0546",
+      "section": "B",
+      "department": "CSE",
+      "year": "3",
+      "academic_year": "Year 3",
+      "attendance_percentage": 75.0,
+      "coding_score": 430,
+      "placement_readiness_score": 54.0,
+      "faculty_notes": "",
+      "leetcode_handle": "student46_lc",
+      "github_handle": "student46_gh",
+      "certifications": [],
+      "projects": [],
+      "timeline": [
+        {
+          "date": "2026-08-05",
+          "title": "Platform Joined",
+          "description": "Linked LeetCode account."
+        }
+      ]
+    },
+    {
+      "id": "STU3CSEB2",
+      "name": "Student 47 (CSE)",
+      "roll_number": "22XX1A0547",
+      "section": "B",
+      "department": "CSE",
+      "year": "3",
+      "academic_year": "Year 3",
+      "attendance_percentage": 97.0,
+      "coding_score": 767,
+      "placement_readiness_score": 64.0,
+      "faculty_notes": "",
+      "leetcode_handle": "student47_lc",
+      "github_handle": "student47_gh",
+      "certifications": [],
+      "projects": [],
+      "timeline": [
+        {
+          "date": "2026-08-05",
+          "title": "Platform Joined",
+          "description": "Linked LeetCode account."
+        }
+      ]
+    },
+    {
+      "id": "STU3CSEB3",
+      "name": "Student 48 (CSE)",
+      "roll_number": "22XX1A0548",
+      "section": "B",
+      "department": "CSE",
+      "year": "3",
+      "academic_year": "Year 3",
+      "attendance_percentage": 60.0,
+      "coding_score": 272,
+      "placement_readiness_score": 95.0,
+      "faculty_notes": "",
+      "leetcode_handle": "student48_lc",
+      "github_handle": "student48_gh",
+      "certifications": [],
+      "projects": [],
+      "timeline": [
+        {
+          "date": "2026-08-05",
+          "title": "Platform Joined",
+          "description": "Linked LeetCode account."
+        }
+      ]
+    },
+    {
+      "id": "STU3CSEB4",
+      "name": "Student 49 (CSE)",
+      "roll_number": "22XX1A0549",
+      "section": "B",
+      "department": "CSE",
+      "year": "3",
+      "academic_year": "Year 3",
+      "attendance_percentage": 74.0,
+      "coding_score": 269,
+      "placement_readiness_score": 52.0,
+      "faculty_notes": "",
+      "leetcode_handle": "student49_lc",
+      "github_handle": "student49_gh",
+      "certifications": [],
+      "projects": [],
+      "timeline": [
+        {
+          "date": "2026-08-05",
+          "title": "Platform Joined",
+          "description": "Linked LeetCode account."
+        }
+      ]
+    },
+    {
+      "id": "STU3CSEB5",
+      "name": "Student 50 (CSE)",
+      "roll_number": "22XX1A0550",
+      "section": "B",
+      "department": "CSE",
+      "year": "3",
+      "academic_year": "Year 3",
+      "attendance_percentage": 64.0,
+      "coding_score": 726,
+      "placement_readiness_score": 65.0,
+      "faculty_notes": "",
+      "leetcode_handle": "student50_lc",
+      "github_handle": "student50_gh",
+      "certifications": [],
+      "projects": [],
+      "timeline": [
+        {
+          "date": "2026-08-05",
+          "title": "Platform Joined",
+          "description": "Linked LeetCode account."
+        }
+      ]
+    },
+    {
+      "id": "STU3CSMA1",
+      "name": "Student 51 (CSM)",
+      "roll_number": "22XX1A0651",
+      "section": "A",
+      "department": "CSM",
+      "year": "3",
+      "academic_year": "Year 3",
+      "attendance_percentage": 91.0,
+      "coding_score": 419,
+      "placement_readiness_score": 84.0,
+      "faculty_notes": "",
+      "leetcode_handle": "student51_lc",
+      "github_handle": "student51_gh",
+      "certifications": [],
+      "projects": [],
+      "timeline": [
+        {
+          "date": "2026-08-05",
+          "title": "Platform Joined",
+          "description": "Linked LeetCode account."
+        }
+      ]
+    },
+    {
+      "id": "STU3CSMA2",
+      "name": "Student 52 (CSM)",
+      "roll_number": "22XX1A0652",
+      "section": "A",
+      "department": "CSM",
+      "year": "3",
+      "academic_year": "Year 3",
+      "attendance_percentage": 96.0,
+      "coding_score": 790,
+      "placement_readiness_score": 80.0,
+      "faculty_notes": "",
+      "leetcode_handle": "student52_lc",
+      "github_handle": "student52_gh",
+      "certifications": [],
+      "projects": [],
+      "timeline": [
+        {
+          "date": "2026-08-05",
+          "title": "Platform Joined",
+          "description": "Linked LeetCode account."
+        }
+      ]
+    },
+    {
+      "id": "STU3CSMA3",
+      "name": "Student 53 (CSM)",
+      "roll_number": "22XX1A0653",
+      "section": "A",
+      "department": "CSM",
+      "year": "3",
+      "academic_year": "Year 3",
+      "attendance_percentage": 90.0,
+      "coding_score": 616,
+      "placement_readiness_score": 62.0,
+      "faculty_notes": "",
+      "leetcode_handle": "student53_lc",
+      "github_handle": "student53_gh",
+      "certifications": [],
+      "projects": [],
+      "timeline": [
+        {
+          "date": "2026-08-05",
+          "title": "Platform Joined",
+          "description": "Linked LeetCode account."
+        }
+      ]
+    },
+    {
+      "id": "STU3CSMA4",
+      "name": "Student 54 (CSM)",
+      "roll_number": "22XX1A0654",
+      "section": "A",
+      "department": "CSM",
+      "year": "3",
+      "academic_year": "Year 3",
+      "attendance_percentage": 87.0,
+      "coding_score": 562,
+      "placement_readiness_score": 77.0,
+      "faculty_notes": "",
+      "leetcode_handle": "student54_lc",
+      "github_handle": "student54_gh",
+      "certifications": [],
+      "projects": [],
+      "timeline": [
+        {
+          "date": "2026-08-05",
+          "title": "Platform Joined",
+          "description": "Linked LeetCode account."
+        }
+      ]
+    },
+    {
+      "id": "STU3CSMA5",
+      "name": "Student 55 (CSM)",
+      "roll_number": "22XX1A0655",
+      "section": "A",
+      "department": "CSM",
+      "year": "3",
+      "academic_year": "Year 3",
+      "attendance_percentage": 63.0,
+      "coding_score": 300,
+      "placement_readiness_score": 53.0,
+      "faculty_notes": "",
+      "leetcode_handle": "student55_lc",
+      "github_handle": "student55_gh",
+      "certifications": [],
+      "projects": [],
+      "timeline": [
+        {
+          "date": "2026-08-05",
+          "title": "Platform Joined",
+          "description": "Linked LeetCode account."
+        }
+      ]
+    },
+    {
+      "id": "STU3CSMB1",
+      "name": "Student 56 (CSM)",
+      "roll_number": "22XX1A0656",
+      "section": "B",
+      "department": "CSM",
+      "year": "3",
+      "academic_year": "Year 3",
+      "attendance_percentage": 81.0,
+      "coding_score": 311,
+      "placement_readiness_score": 65.0,
+      "faculty_notes": "",
+      "leetcode_handle": "student56_lc",
+      "github_handle": "student56_gh",
+      "certifications": [],
+      "projects": [],
+      "timeline": [
+        {
+          "date": "2026-08-05",
+          "title": "Platform Joined",
+          "description": "Linked LeetCode account."
+        }
+      ]
+    },
+    {
+      "id": "STU3CSMB2",
+      "name": "Student 57 (CSM)",
+      "roll_number": "22XX1A0657",
+      "section": "B",
+      "department": "CSM",
+      "year": "3",
+      "academic_year": "Year 3",
+      "attendance_percentage": 94.0,
+      "coding_score": 659,
+      "placement_readiness_score": 58.0,
+      "faculty_notes": "",
+      "leetcode_handle": "student57_lc",
+      "github_handle": "student57_gh",
+      "certifications": [],
+      "projects": [],
+      "timeline": [
+        {
+          "date": "2026-08-05",
+          "title": "Platform Joined",
+          "description": "Linked LeetCode account."
+        }
+      ]
+    },
+    {
+      "id": "STU3CSMB3",
+      "name": "Student 58 (CSM)",
+      "roll_number": "22XX1A0658",
+      "section": "B",
+      "department": "CSM",
+      "year": "3",
+      "academic_year": "Year 3",
+      "attendance_percentage": 77.0,
+      "coding_score": 673,
+      "placement_readiness_score": 65.0,
+      "faculty_notes": "",
+      "leetcode_handle": "student58_lc",
+      "github_handle": "student58_gh",
+      "certifications": [],
+      "projects": [],
+      "timeline": [
+        {
+          "date": "2026-08-05",
+          "title": "Platform Joined",
+          "description": "Linked LeetCode account."
+        }
+      ]
+    },
+    {
+      "id": "STU3CSMB4",
+      "name": "Student 59 (CSM)",
+      "roll_number": "22XX1A0659",
+      "section": "B",
+      "department": "CSM",
+      "year": "3",
+      "academic_year": "Year 3",
+      "attendance_percentage": 64.0,
+      "coding_score": 653,
+      "placement_readiness_score": 85.0,
+      "faculty_notes": "",
+      "leetcode_handle": "student59_lc",
+      "github_handle": "student59_gh",
+      "certifications": [],
+      "projects": [],
+      "timeline": [
+        {
+          "date": "2026-08-05",
+          "title": "Platform Joined",
+          "description": "Linked LeetCode account."
+        }
+      ]
+    },
+    {
+      "id": "STU3CSMB5",
+      "name": "Student 60 (CSM)",
+      "roll_number": "22XX1A0660",
+      "section": "B",
+      "department": "CSM",
+      "year": "3",
+      "academic_year": "Year 3",
+      "attendance_percentage": 94.0,
+      "coding_score": 215,
+      "placement_readiness_score": 55.0,
+      "faculty_notes": "",
+      "leetcode_handle": "student60_lc",
+      "github_handle": "student60_gh",
+      "certifications": [],
+      "projects": [],
+      "timeline": [
+        {
+          "date": "2026-08-05",
+          "title": "Platform Joined",
+          "description": "Linked LeetCode account."
+        }
+      ]
+    },
+    {
+      "id": "STU4CSEA1",
+      "name": "Student 61 (CSE)",
+      "roll_number": "22XX1A0561",
+      "section": "A",
+      "department": "CSE",
+      "year": "4",
+      "academic_year": "Year 4",
+      "attendance_percentage": 75.0,
+      "coding_score": 370,
+      "placement_readiness_score": 76.0,
+      "faculty_notes": "",
+      "leetcode_handle": "student61_lc",
+      "github_handle": "student61_gh",
+      "certifications": [],
+      "projects": [],
+      "timeline": [
+        {
+          "date": "2026-08-05",
+          "title": "Platform Joined",
+          "description": "Linked LeetCode account."
+        }
+      ]
+    },
+    {
+      "id": "STU4CSEA2",
+      "name": "Student 62 (CSE)",
+      "roll_number": "22XX1A0562",
+      "section": "A",
+      "department": "CSE",
+      "year": "4",
+      "academic_year": "Year 4",
+      "attendance_percentage": 73.0,
+      "coding_score": 610,
+      "placement_readiness_score": 53.0,
+      "faculty_notes": "",
+      "leetcode_handle": "student62_lc",
+      "github_handle": "student62_gh",
+      "certifications": [],
+      "projects": [],
+      "timeline": [
+        {
+          "date": "2026-08-05",
+          "title": "Platform Joined",
+          "description": "Linked LeetCode account."
+        }
+      ]
+    },
+    {
+      "id": "STU4CSEA3",
+      "name": "Student 63 (CSE)",
+      "roll_number": "22XX1A0563",
+      "section": "A",
+      "department": "CSE",
+      "year": "4",
+      "academic_year": "Year 4",
+      "attendance_percentage": 60.0,
+      "coding_score": 599,
+      "placement_readiness_score": 66.0,
+      "faculty_notes": "",
+      "leetcode_handle": "student63_lc",
+      "github_handle": "student63_gh",
+      "certifications": [],
+      "projects": [],
+      "timeline": [
+        {
+          "date": "2026-08-05",
+          "title": "Platform Joined",
+          "description": "Linked LeetCode account."
+        }
+      ]
+    },
+    {
+      "id": "STU4CSEA4",
+      "name": "Student 64 (CSE)",
+      "roll_number": "22XX1A0564",
+      "section": "A",
+      "department": "CSE",
+      "year": "4",
+      "academic_year": "Year 4",
+      "attendance_percentage": 89.0,
+      "coding_score": 492,
+      "placement_readiness_score": 77.0,
+      "faculty_notes": "",
+      "leetcode_handle": "student64_lc",
+      "github_handle": "student64_gh",
+      "certifications": [],
+      "projects": [],
+      "timeline": [
+        {
+          "date": "2026-08-05",
+          "title": "Platform Joined",
+          "description": "Linked LeetCode account."
+        }
+      ]
+    },
+    {
+      "id": "STU4CSEA5",
+      "name": "Student 65 (CSE)",
+      "roll_number": "22XX1A0565",
+      "section": "A",
+      "department": "CSE",
+      "year": "4",
+      "academic_year": "Year 4",
+      "attendance_percentage": 95.0,
+      "coding_score": 698,
+      "placement_readiness_score": 59.0,
+      "faculty_notes": "",
+      "leetcode_handle": "student65_lc",
+      "github_handle": "student65_gh",
+      "certifications": [],
+      "projects": [],
+      "timeline": [
+        {
+          "date": "2026-08-05",
+          "title": "Platform Joined",
+          "description": "Linked LeetCode account."
+        }
+      ]
+    },
+    {
+      "id": "STU4CSEB1",
+      "name": "Student 66 (CSE)",
+      "roll_number": "22XX1A0566",
+      "section": "B",
+      "department": "CSE",
+      "year": "4",
+      "academic_year": "Year 4",
+      "attendance_percentage": 73.0,
+      "coding_score": 259,
+      "placement_readiness_score": 87.0,
+      "faculty_notes": "",
+      "leetcode_handle": "student66_lc",
+      "github_handle": "student66_gh",
+      "certifications": [],
+      "projects": [],
+      "timeline": [
+        {
+          "date": "2026-08-05",
+          "title": "Platform Joined",
+          "description": "Linked LeetCode account."
+        }
+      ]
+    },
+    {
+      "id": "STU4CSEB2",
+      "name": "Student 67 (CSE)",
+      "roll_number": "22XX1A0567",
+      "section": "B",
+      "department": "CSE",
+      "year": "4",
+      "academic_year": "Year 4",
+      "attendance_percentage": 63.0,
+      "coding_score": 521,
+      "placement_readiness_score": 53.0,
+      "faculty_notes": "",
+      "leetcode_handle": "student67_lc",
+      "github_handle": "student67_gh",
+      "certifications": [],
+      "projects": [],
+      "timeline": [
+        {
+          "date": "2026-08-05",
+          "title": "Platform Joined",
+          "description": "Linked LeetCode account."
+        }
+      ]
+    },
+    {
+      "id": "STU4CSEB3",
+      "name": "Student 68 (CSE)",
+      "roll_number": "22XX1A0568",
+      "section": "B",
+      "department": "CSE",
+      "year": "4",
+      "academic_year": "Year 4",
+      "attendance_percentage": 90.0,
+      "coding_score": 714,
+      "placement_readiness_score": 83.0,
+      "faculty_notes": "",
+      "leetcode_handle": "student68_lc",
+      "github_handle": "student68_gh",
+      "certifications": [],
+      "projects": [],
+      "timeline": [
+        {
+          "date": "2026-08-05",
+          "title": "Platform Joined",
+          "description": "Linked LeetCode account."
+        }
+      ]
+    },
+    {
+      "id": "STU4CSEB4",
+      "name": "Student 69 (CSE)",
+      "roll_number": "22XX1A0569",
+      "section": "B",
+      "department": "CSE",
+      "year": "4",
+      "academic_year": "Year 4",
+      "attendance_percentage": 92.0,
+      "coding_score": 282,
+      "placement_readiness_score": 61.0,
+      "faculty_notes": "",
+      "leetcode_handle": "student69_lc",
+      "github_handle": "student69_gh",
+      "certifications": [],
+      "projects": [],
+      "timeline": [
+        {
+          "date": "2026-08-05",
+          "title": "Platform Joined",
+          "description": "Linked LeetCode account."
+        }
+      ]
+    },
+    {
+      "id": "STU4CSEB5",
+      "name": "Student 70 (CSE)",
+      "roll_number": "22XX1A0570",
+      "section": "B",
+      "department": "CSE",
+      "year": "4",
+      "academic_year": "Year 4",
+      "attendance_percentage": 64.0,
+      "coding_score": 440,
+      "placement_readiness_score": 75.0,
+      "faculty_notes": "",
+      "leetcode_handle": "student70_lc",
+      "github_handle": "student70_gh",
+      "certifications": [],
+      "projects": [],
+      "timeline": [
+        {
+          "date": "2026-08-05",
+          "title": "Platform Joined",
+          "description": "Linked LeetCode account."
+        }
+      ]
+    },
+    {
+      "id": "STU4CSMA1",
+      "name": "Student 71 (CSM)",
+      "roll_number": "22XX1A0671",
+      "section": "A",
+      "department": "CSM",
+      "year": "4",
+      "academic_year": "Year 4",
+      "attendance_percentage": 96.0,
+      "coding_score": 452,
+      "placement_readiness_score": 87.0,
+      "faculty_notes": "",
+      "leetcode_handle": "student71_lc",
+      "github_handle": "student71_gh",
+      "certifications": [],
+      "projects": [],
+      "timeline": [
+        {
+          "date": "2026-08-05",
+          "title": "Platform Joined",
+          "description": "Linked LeetCode account."
+        }
+      ]
+    },
+    {
+      "id": "STU4CSMA2",
+      "name": "Student 72 (CSM)",
+      "roll_number": "22XX1A0672",
+      "section": "A",
+      "department": "CSM",
+      "year": "4",
+      "academic_year": "Year 4",
+      "attendance_percentage": 99.0,
+      "coding_score": 283,
+      "placement_readiness_score": 76.0,
+      "faculty_notes": "",
+      "leetcode_handle": "student72_lc",
+      "github_handle": "student72_gh",
+      "certifications": [],
+      "projects": [],
+      "timeline": [
+        {
+          "date": "2026-08-05",
+          "title": "Platform Joined",
+          "description": "Linked LeetCode account."
+        }
+      ]
+    },
+    {
+      "id": "STU4CSMA3",
+      "name": "Student 73 (CSM)",
+      "roll_number": "22XX1A0673",
+      "section": "A",
+      "department": "CSM",
+      "year": "4",
+      "academic_year": "Year 4",
+      "attendance_percentage": 96.0,
+      "coding_score": 735,
+      "placement_readiness_score": 70.0,
+      "faculty_notes": "",
+      "leetcode_handle": "student73_lc",
+      "github_handle": "student73_gh",
+      "certifications": [],
+      "projects": [],
+      "timeline": [
+        {
+          "date": "2026-08-05",
+          "title": "Platform Joined",
+          "description": "Linked LeetCode account."
+        }
+      ]
+    },
+    {
+      "id": "STU4CSMA4",
+      "name": "Student 74 (CSM)",
+      "roll_number": "22XX1A0674",
+      "section": "A",
+      "department": "CSM",
+      "year": "4",
+      "academic_year": "Year 4",
+      "attendance_percentage": 73.0,
+      "coding_score": 521,
+      "placement_readiness_score": 65.0,
+      "faculty_notes": "",
+      "leetcode_handle": "student74_lc",
+      "github_handle": "student74_gh",
+      "certifications": [],
+      "projects": [],
+      "timeline": [
+        {
+          "date": "2026-08-05",
+          "title": "Platform Joined",
+          "description": "Linked LeetCode account."
+        }
+      ]
+    },
+    {
+      "id": "STU4CSMA5",
+      "name": "Student 75 (CSM)",
+      "roll_number": "22XX1A0675",
+      "section": "A",
+      "department": "CSM",
+      "year": "4",
+      "academic_year": "Year 4",
+      "attendance_percentage": 68.0,
+      "coding_score": 507,
+      "placement_readiness_score": 79.0,
+      "faculty_notes": "",
+      "leetcode_handle": "student75_lc",
+      "github_handle": "student75_gh",
+      "certifications": [],
+      "projects": [],
+      "timeline": [
+        {
+          "date": "2026-08-05",
+          "title": "Platform Joined",
+          "description": "Linked LeetCode account."
+        }
+      ]
+    },
+    {
+      "id": "STU4CSMB1",
+      "name": "Student 76 (CSM)",
+      "roll_number": "22XX1A0676",
+      "section": "B",
+      "department": "CSM",
+      "year": "4",
+      "academic_year": "Year 4",
+      "attendance_percentage": 64.0,
+      "coding_score": 209,
+      "placement_readiness_score": 79.0,
+      "faculty_notes": "",
+      "leetcode_handle": "student76_lc",
+      "github_handle": "student76_gh",
+      "certifications": [],
+      "projects": [],
+      "timeline": [
+        {
+          "date": "2026-08-05",
+          "title": "Platform Joined",
+          "description": "Linked LeetCode account."
+        }
+      ]
+    },
+    {
+      "id": "STU4CSMB2",
+      "name": "Student 77 (CSM)",
+      "roll_number": "22XX1A0677",
+      "section": "B",
+      "department": "CSM",
+      "year": "4",
+      "academic_year": "Year 4",
+      "attendance_percentage": 96.0,
+      "coding_score": 302,
+      "placement_readiness_score": 54.0,
+      "faculty_notes": "",
+      "leetcode_handle": "student77_lc",
+      "github_handle": "student77_gh",
+      "certifications": [],
+      "projects": [],
+      "timeline": [
+        {
+          "date": "2026-08-05",
+          "title": "Platform Joined",
+          "description": "Linked LeetCode account."
+        }
+      ]
+    },
+    {
+      "id": "STU4CSMB3",
+      "name": "Student 78 (CSM)",
+      "roll_number": "22XX1A0678",
+      "section": "B",
+      "department": "CSM",
+      "year": "4",
+      "academic_year": "Year 4",
+      "attendance_percentage": 92.0,
+      "coding_score": 471,
+      "placement_readiness_score": 58.0,
+      "faculty_notes": "",
+      "leetcode_handle": "student78_lc",
+      "github_handle": "student78_gh",
+      "certifications": [],
+      "projects": [],
+      "timeline": [
+        {
+          "date": "2026-08-05",
+          "title": "Platform Joined",
+          "description": "Linked LeetCode account."
+        }
+      ]
+    },
+    {
+      "id": "STU4CSMB4",
+      "name": "Student 79 (CSM)",
+      "roll_number": "22XX1A0679",
+      "section": "B",
+      "department": "CSM",
+      "year": "4",
+      "academic_year": "Year 4",
+      "attendance_percentage": 64.0,
+      "coding_score": 450,
+      "placement_readiness_score": 73.0,
+      "faculty_notes": "",
+      "leetcode_handle": "student79_lc",
+      "github_handle": "student79_gh",
+      "certifications": [],
+      "projects": [],
+      "timeline": [
+        {
+          "date": "2026-08-05",
+          "title": "Platform Joined",
+          "description": "Linked LeetCode account."
+        }
+      ]
+    },
+    {
+      "id": "STU4CSMB5",
+      "name": "Student 80 (CSM)",
+      "roll_number": "22XX1A0680",
+      "section": "B",
+      "department": "CSM",
+      "year": "4",
+      "academic_year": "Year 4",
+      "attendance_percentage": 88.0,
+      "coding_score": 756,
+      "placement_readiness_score": 95.0,
+      "faculty_notes": "",
+      "leetcode_handle": "student80_lc",
+      "github_handle": "student80_gh",
+      "certifications": [],
+      "projects": [],
+      "timeline": [
+        {
+          "date": "2026-08-05",
+          "title": "Platform Joined",
+          "description": "Linked LeetCode account."
         }
       ]
     }
@@ -106,7 +1926,7 @@
       "id": 1,
       "subject": "Data Structures & Algorithms",
       "department": "CSE",
-      "year": "3rd Year",
+      "year": "3",
       "section": "A",
       "time": "09:00 AM - 10:00 AM",
       "room": "Seminar Hall-2"
@@ -115,7 +1935,7 @@
       "id": 2,
       "subject": "System Design & Architecture",
       "department": "CSE",
-      "year": "3rd Year",
+      "year": "3",
       "section": "B",
       "time": "11:30 AM - 12:30 PM",
       "room": "Lab-4"
@@ -124,7 +1944,7 @@
       "id": 3,
       "subject": "Web Development Lab",
       "department": "CSE",
-      "year": "2nd Year",
+      "year": "2",
       "section": "A",
       "time": "02:00 PM - 04:00 PM",
       "room": "Programming Lab"
@@ -150,63 +1970,171 @@
       "max_marks": 20,
       "attachments": "url_shortener_guide.pdf",
       "created_at": "2026-08-03T11:00:00Z"
+    },
+    {
+      "id": 3,
+      "title": "shiva",
+      "description": "AI Generated Quiz: Data Structures & Algorithms\nPlease answer the following multiple-choice questions:\n\n",
+      "subject": "Data Structures & Algorithms",
+      "deadline": "2026-08-07T06:51:00.000Z",
+      "max_marks": 10,
+      "attachments": "Mani_LAptop3.pdf",
+      "created_at": "2026-08-07T06:52:29.004945+00:00"
     }
   ],
   "submissions": [
     {
       "id": 1,
       "assignment_id": 1,
-      "student_id": "student_student_demo_com",
-      "submitted_at": "2026-08-04T16:30:00Z",
+      "student_id": "STU3CSEA1",
+      "submitted_at": "2026-08-05T14:30:00Z",
       "status": "graded",
       "marks_obtained": 9.0,
-      "feedback": "Perfect logic and graph traversals. Your AVL balance checking function is extremely concise. Well done!",
-      "submission_content": "See attached github link for repository: github.com/alex-student/avl-tree-graph-dsa"
+      "feedback": "Perfect logic and graph traversals.",
+      "submission_content": "Attached code implementation in Python for BFS/DFS traversal."
     },
     {
       "id": 2,
       "assignment_id": 1,
-      "student_id": "student_alice_college_edu",
-      "submitted_at": "2026-08-05T09:12:00Z",
+      "student_id": "STU3CSEA2",
+      "submitted_at": "2026-08-05T14:30:00Z",
       "status": "pending",
       "marks_obtained": 0.0,
       "feedback": "",
-      "submission_content": "Submission file upload: alice_johnson_dsa_assignment_1.pdf"
+      "submission_content": "Attached code implementation in Python for BFS/DFS traversal."
     },
     {
       "id": 3,
       "assignment_id": 1,
-      "student_id": "student_bob_college_edu",
-      "submitted_at": "2026-08-06T14:40:00Z",
+      "student_id": "STU3CSEA3",
+      "submitted_at": "2026-08-05T14:30:00Z",
       "status": "pending",
       "marks_obtained": 0.0,
       "feedback": "",
-      "submission_content": "Attached code implementation in Python for BST, AVL and BFS traversal. Hoping for quick review!"
-    }
-  ],
-  "attendance_records": [
-    {
-      "id": 1,
-      "student_id": "student_student_demo_com",
-      "subject": "Data Structures & Algorithms",
-      "date": "2026-08-06",
-      "status": "present"
+      "submission_content": "Attached code implementation in Python for BFS/DFS traversal."
     },
     {
-      "id": 2,
-      "student_id": "student_alice_college_edu",
-      "subject": "Data Structures & Algorithms",
-      "date": "2026-08-06",
-      "status": "absent"
+      "id": 4,
+      "assignment_id": 1,
+      "student_id": "STU3CSEA4",
+      "submitted_at": "2026-08-05T14:30:00Z",
+      "status": "pending",
+      "marks_obtained": 0.0,
+      "feedback": "",
+      "submission_content": "Attached code implementation in Python for BFS/DFS traversal."
     },
     {
-      "id": 3,
-      "student_id": "student_bob_college_edu",
-      "subject": "Data Structures & Algorithms",
-      "date": "2026-08-06",
-      "status": "present"
+      "id": 5,
+      "assignment_id": 1,
+      "student_id": "STU3CSEA5",
+      "submitted_at": "2026-08-05T14:30:00Z",
+      "status": "graded",
+      "marks_obtained": 8.0,
+      "feedback": "Good effort, check AVL balancing logic.",
+      "submission_content": "Attached code implementation in Python for BFS/DFS traversal."
+    },
+    {
+      "id": 6,
+      "assignment_id": 2,
+      "student_id": "STU3CSEB1",
+      "submitted_at": "2026-08-06T10:00:00Z",
+      "status": "graded",
+      "marks_obtained": 18.0,
+      "feedback": "Excellent scaling strategies and DB choices.",
+      "submission_content": "System design PDF document uploaded."
+    },
+    {
+      "id": 7,
+      "assignment_id": 2,
+      "student_id": "STU3CSEB2",
+      "submitted_at": "2026-08-06T10:00:00Z",
+      "status": "pending",
+      "marks_obtained": 0.0,
+      "feedback": "",
+      "submission_content": "System design PDF document uploaded."
+    },
+    {
+      "id": 8,
+      "assignment_id": 2,
+      "student_id": "STU3CSEB3",
+      "submitted_at": "2026-08-06T10:00:00Z",
+      "status": "graded",
+      "marks_obtained": 15.0,
+      "feedback": "Overall good design, but explain caching strategies more.",
+      "submission_content": "System design PDF document uploaded."
+    },
+    {
+      "id": 9,
+      "assignment_id": 2,
+      "student_id": "STU3CSEB4",
+      "submitted_at": "2026-08-06T10:00:00Z",
+      "status": "pending",
+      "marks_obtained": 0.0,
+      "feedback": "",
+      "submission_content": "System design PDF document uploaded."
+    },
+    {
+      "id": 10,
+      "assignment_id": 2,
+      "student_id": "STU3CSEB5",
+      "submitted_at": "2026-08-06T10:00:00Z",
+      "status": "pending",
+      "marks_obtained": 0.0,
+      "feedback": "",
+      "submission_content": "System design PDF document uploaded."
+    },
+    {
+      "id": 11,
+      "assignment_id": 3,
+      "student_id": "STU4CSEA1",
+      "submitted_at": "",
+      "status": "pending",
+      "marks_obtained": 0.0,
+      "feedback": "",
+      "submission_content": ""
+    },
+    {
+      "id": 12,
+      "assignment_id": 3,
+      "student_id": "STU4CSEA2",
+      "submitted_at": "",
+      "status": "pending",
+      "marks_obtained": 0.0,
+      "feedback": "",
+      "submission_content": ""
+    },
+    {
+      "id": 13,
+      "assignment_id": 3,
+      "student_id": "STU4CSEA3",
+      "submitted_at": "",
+      "status": "pending",
+      "marks_obtained": 0.0,
+      "feedback": "",
+      "submission_content": ""
+    },
+    {
+      "id": 14,
+      "assignment_id": 3,
+      "student_id": "STU4CSEA4",
+      "submitted_at": "",
+      "status": "pending",
+      "marks_obtained": 0.0,
+      "feedback": "",
+      "submission_content": ""
+    },
+    {
+      "id": 15,
+      "assignment_id": 3,
+      "student_id": "STU4CSEA5",
+      "submitted_at": "",
+      "status": "pending",
+      "marks_obtained": 0.0,
+      "feedback": "",
+      "submission_content": ""
     }
   ],
+  "attendance_records": [],
   "learning_materials": [
     {
       "id": 1,
@@ -235,44 +2163,20 @@
     {
       "id": 1,
       "title": "Internal Hackathon 2026 Registration Open",
-      "content": "All CSE students in 3rd year are required to form groups of 3-4 and register for the upcoming Hackathon on or before August 15. Great prizes and placement interviews up for grabs!",
+      "content": "All CSE students in 3rd year are required to form groups of 3-4 and register for the upcoming Hackathon on or before August 15.",
       "target_scope": "department",
       "target_value": "CSE",
       "created_at": "2026-08-04T12:00:00Z"
-    },
-    {
-      "id": 2,
-      "title": "Special Session on System Architecture Design",
-      "content": "A special lecture on Microservices and Event-Driven Architecture will be conducted on Saturday at 10 AM. Recommended for all placement aspirants.",
-      "target_scope": "section",
-      "target_value": "A",
-      "created_at": "2026-08-05T08:30:00Z"
     }
   ],
   "messages": [
     {
       "id": 1,
       "sender_id": "faculty_demo",
-      "receiver_id": "student_alice_college_edu",
-      "content": "Hello Alice, I noticed your attendance is currently 73%. Please make sure you attend the next few lectures to stay above the 75% placement cutoff.",
+      "receiver_id": "STU3CSEA2",
+      "content": "Please make sure you submit the graph implementation assignment on time.",
       "created_at": "2026-08-04T10:00:00Z",
       "is_read": true
-    },
-    {
-      "id": 2,
-      "sender_id": "student_alice_college_edu",
-      "receiver_id": "faculty_demo",
-      "content": "Hello Dr. Faculty, sorry about that. I was unwell last week. I will make sure to catch up and attend all future lectures.",
-      "created_at": "2026-08-04T11:30:00Z",
-      "is_read": true
-    },
-    {
-      "id": 3,
-      "sender_id": "faculty_demo",
-      "receiver_id": "student_bob_college_edu",
-      "content": "Hi Bob, let's schedule a time to go over your graph traversal algorithms assignment. Please review DFS/BFS.",
-      "created_at": "2026-08-05T14:00:00Z",
-      "is_read": false
     }
   ]
 }

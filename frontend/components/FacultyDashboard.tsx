@@ -14,23 +14,31 @@ import {
   Zap,
   BarChart2,
   ClipboardCheck,
-  Mail
+  Mail,
+  AlertTriangle
 } from "lucide-react";
 
 import { useAuth } from "@/lib/auth";
+import { getSharedMockStudents } from "@/lib/mockData";
 
 // --- ANIMATION VARIANTS ---
 const containerVariants = {
   hidden: { opacity: 0 },
   show: { opacity: 1, transition: { staggerChildren: 0.1 } }
-};
+} as const;
 const itemVariants = {
   hidden: { opacity: 0, y: 20 },
   show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24 } }
-};
+} as const;
 
 export default function FacultyDashboard() {
   const { session } = useAuth();
+  
+  const students = getSharedMockStudents();
+  const attendanceWarnings = students.filter(s => s.attendance_percentage < 65).slice(0, 3);
+  const assignmentWarnings = students.filter(s => s.unsubmitted_assignments && s.unsubmitted_assignments.length > 0).slice(0, 3);
+  const totalAttendanceWarnings = students.filter(s => s.attendance_percentage < 65).length;
+  const totalAssignmentWarnings = students.filter(s => s.unsubmitted_assignments && s.unsubmitted_assignments.length > 0).length;
 
   return (
     <motion.div variants={containerVariants} initial="hidden" animate="show" className="w-full max-w-5xl mx-auto space-y-8 text-[#f0f4ff] font-sans antialiased mt-6 px-2">
@@ -119,6 +127,58 @@ export default function FacultyDashboard() {
               <div className="text-4xl font-bold text-white tracking-tight mb-1">5</div>
               <div className="text-[13px] font-medium text-[#8a94a6]">New Messages</div>
             </div>
+          </div>
+
+        </div>
+      </motion.div>
+
+      {/* 4. Active Warnings */}
+      <motion.div variants={itemVariants} className="space-y-4">
+        <h3 className="text-[15px] font-bold text-rose-400 flex items-center gap-2">
+          <AlertTriangle className="w-4 h-4" /> Active Warnings
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          
+          {/* Attendance Warning */}
+          <div className="flex flex-col p-6 rounded-2xl bg-[#1a1f2d] border border-rose-500/10 h-auto">
+            <h4 className="text-sm font-bold text-white mb-3 flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-rose-500"></span> Attendance Below 65%
+            </h4>
+            <div className="space-y-2">
+              {attendanceWarnings.map((s, i) => (
+                <div key={i} className="flex justify-between items-center bg-white/[0.02] p-2 rounded-lg border border-white/5">
+                  <div>
+                    <div className="text-xs font-bold text-slate-200">{s.name}</div>
+                    <div className="text-[10px] text-slate-500 font-mono">{s.roll_number}</div>
+                  </div>
+                  <span className="text-xs font-black font-mono text-rose-400">{s.attendance_percentage}%</span>
+                </div>
+              ))}
+            </div>
+            <Link href="/warnings" className="text-[11px] text-slate-400 hover:text-white mt-4 font-semibold transition-colors">
+              View all {totalAttendanceWarnings} attendance warnings &rarr;
+            </Link>
+          </div>
+
+          {/* Assignment Warning */}
+          <div className="flex flex-col p-6 rounded-2xl bg-[#1a1f2d] border border-amber-500/10 h-auto">
+            <h4 className="text-sm font-bold text-white mb-3 flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-amber-500"></span> Assignments Not Submitted
+            </h4>
+            <div className="space-y-2">
+              {assignmentWarnings.map((s, i) => (
+                <div key={i} className="flex justify-between items-center bg-white/[0.02] p-2 rounded-lg border border-white/5">
+                  <div>
+                    <div className="text-xs font-bold text-slate-200">{s.name}</div>
+                    <div className="text-[10px] text-slate-500 font-mono">{s.roll_number}</div>
+                  </div>
+                  <span className="text-xs font-black text-amber-400 truncate max-w-[80px]">{s.unsubmitted_assignments[0]}</span>
+                </div>
+              ))}
+            </div>
+            <Link href="/warnings" className="text-[11px] text-slate-400 hover:text-white mt-4 font-semibold transition-colors">
+              View all {totalAssignmentWarnings} assignment warnings &rarr;
+            </Link>
           </div>
 
         </div>

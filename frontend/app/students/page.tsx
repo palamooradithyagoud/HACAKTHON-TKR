@@ -7,63 +7,9 @@ import {
   ChevronRight, X, Sparkles, Code, Award, Calendar, Clock, Save, Edit3, Globe
 } from "lucide-react";
 
-// 1. Generate exactly 80 mock students (4 Years, 2 Depts, 2 Sections, 5 Students each)
-const generateMockStudents = () => {
-  const students = [];
-  const years = [1, 2, 3, 4];
-  const depts = ["CSE", "CSM"];
-  const sections = ["A", "B"];
-  
-  let idCounter = 1;
-  years.forEach(year => {
-    depts.forEach(dept => {
-      sections.forEach(section => {
-        for (let i = 1; i <= 5; i++) {
-          const attendance = Math.floor(Math.random() * 40) + 60; // 60-100%
-          const codingScore = Math.floor(Math.random() * 600) + 200; // 200-800
-          const placement = Math.floor(Math.random() * 50) + 50; // 50-100%
-          
-          const isRisk = attendance < 75 || codingScore < 400;
-          const riskReasons = [];
-          if (attendance < 75) riskReasons.push("Attendance is below 75% threshold.");
-          if (codingScore < 400) riskReasons.push("Coding performance is below average.");
+import { getSharedMockStudents } from "@/lib/mockData";
 
-          students.push({
-            id: `STU${year}${dept}${section}${i}`,
-            name: `Student ${idCounter} (${dept})`,
-            roll_number: `22XX1A${dept === 'CSE' ? '05' : '06'}${idCounter.toString().padStart(2, '0')}`,
-            section,
-            department: dept,
-            year: year.toString(),
-            academic_year: `Year ${year}`,
-            attendance_percentage: attendance,
-            coding_score: codingScore,
-            placement_readiness_score: placement,
-            faculty_notes: "",
-            ai_insights: {
-              risk_level: isRisk ? "high" : "low",
-              risk_reasons: riskReasons
-            },
-            leetcode_handle: `student${idCounter}_lc`,
-            github_handle: `student${idCounter}_gh`,
-            assignment_history: [
-              { submission_id: 1, title: "Data Structures Lab 1", status: "graded", marks_obtained: Math.floor(Math.random() * 5) + 5, max_marks: 10, subject: "DSA" },
-              { submission_id: 2, title: "Mid Term Evaluation", status: "graded", marks_obtained: Math.floor(Math.random() * 20) + 10, max_marks: 30, subject: dept }
-            ],
-            timeline: [
-              { title: "Submitted Assignment", description: "Completed DSA Lab 1 on time." },
-              { title: "Platform Joined", description: "Linked LeetCode account." }
-            ]
-          });
-          idCounter++;
-        }
-      });
-    });
-  });
-  return students;
-};
-
-const ALL_STUDENTS = generateMockStudents();
+const ALL_STUDENTS = getSharedMockStudents();
 
 export default function StudentsPage() {
   const [search, setSearch] = useState("");
@@ -94,9 +40,9 @@ export default function StudentsPage() {
     }, 600);
   };
 
-  // Filter students based on all filters
+  // Filter students based on all filters and sort descending by coding score
   const filteredStudents = useMemo(() => {
-    return ALL_STUDENTS.filter(s => {
+    const filtered = ALL_STUDENTS.filter(s => {
       const matchesSearch = s.name.toLowerCase().includes(search.toLowerCase()) || 
                             s.roll_number.toLowerCase().includes(search.toLowerCase());
       const matchesYear = yearFilter === "all" || s.year === yearFilter;
@@ -104,6 +50,9 @@ export default function StudentsPage() {
       const matchesSection = sectionFilter === "all" || s.section === sectionFilter;
       return matchesSearch && matchesYear && matchesDept && matchesSection;
     });
+    
+    // Sort descending by coding score
+    return filtered.sort((a, b) => b.coding_score - a.coding_score);
   }, [search, yearFilter, deptFilter, sectionFilter]);
 
   const detail = useMemo(() => ALL_STUDENTS.find(s => s.id === activeStudentId), [activeStudentId]);
@@ -178,67 +127,70 @@ export default function StudentsPage() {
         </div>
       </div>
 
-      {/* STUDENT CARDS GRID */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      {/* STUDENT LIST ROW LAYOUT */}
+      <div className="flex flex-col gap-3">
         {filteredStudents.length === 0 ? (
-           <div className="col-span-full py-20 text-center text-slate-500 text-sm font-medium">
+           <div className="py-20 text-center text-slate-500 text-sm font-medium">
              No students found matching your filters.
            </div>
         ) : (
-          filteredStudents.map((student: any) => {
+          filteredStudents.map((student: any, index: number) => {
             const isRisk = student.attendance_percentage < 75.0 || student.coding_score < 400;
             return (
               <motion.div
                 layoutId={`card-${student.id}`}
                 onClick={() => handleOpenStudent(student)}
-                whileHover={{ y: -4, borderColor: "rgba(139, 92, 246, 0.3)" }}
+                whileHover={{ x: 4, borderColor: "rgba(139, 92, 246, 0.3)" }}
                 key={student.id}
-                className="glass p-5 rounded-2xl border border-white/10 bg-gradient-to-br from-[#0c1223] to-[#070b14] shadow-md cursor-pointer select-none flex flex-col justify-between"
+                className="glass p-4 rounded-xl border border-white/10 bg-gradient-to-r from-[#0c1223] to-[#070b14] shadow-sm cursor-pointer select-none flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-white/[0.02] transition-colors"
               >
-                <div className="space-y-3">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h3 className="text-sm font-bold text-white tracking-tight truncate max-w-[140px]">{student.name}</h3>
-                      <p className="text-[10px] text-slate-500 mt-0.5 font-mono">
-                        {student.roll_number}
-                      </p>
-                      <div className="flex gap-1 mt-1">
-                        <span className="text-[9px] bg-white/5 border border-white/10 px-1.5 py-0.5 rounded text-slate-300">Y{student.year}</span>
-                        <span className="text-[9px] bg-white/5 border border-white/10 px-1.5 py-0.5 rounded text-slate-300">{student.department}</span>
-                        <span className="text-[9px] bg-white/5 border border-white/10 px-1.5 py-0.5 rounded text-slate-300">Sec {student.section}</span>
-                      </div>
-                    </div>
-                    {isRisk ? (
-                      <span className="flex items-center gap-1 text-[9px] font-black uppercase px-2 py-0.5 rounded bg-rose-500/10 text-rose-400 border border-rose-500/20">
-                        <AlertTriangle className="w-3 h-3" /> Risk
-                      </span>
-                    ) : (
-                      <span className="flex items-center gap-1 text-[9px] font-black uppercase px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                        <CheckCircle2 className="w-3 h-3" /> Safe
-                      </span>
-                    )}
+                {/* Left side: Info */}
+                <div className="flex flex-col md:flex-row md:items-center gap-4 flex-1">
+                  
+                  {/* Rank Badge */}
+                  <div className="hidden md:flex items-center justify-center w-8 h-8 rounded-full bg-white/5 border border-white/10 text-xs font-bold text-slate-400">
+                    #{index + 1}
                   </div>
 
-                  <div className="grid grid-cols-3 gap-2 pt-3 border-t border-white/5">
-                    <div className="text-center bg-white/[0.02] border border-white/5 rounded-xl p-2">
-                      <span className="text-[9px] font-extrabold text-slate-500 uppercase block mb-0.5">Attnd.</span>
-                      <span className={`text-xs font-black font-mono ${student.attendance_percentage < 75.0 ? "text-rose-400" : "text-white"}`}>
-                        {student.attendance_percentage}%
-                      </span>
+                  <div className="flex-1 min-w-[200px]">
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-[15px] font-bold text-white tracking-tight">{student.name}</h3>
+                      {isRisk ? (
+                        <span className="flex items-center gap-1 text-[9px] font-black uppercase px-2 py-0.5 rounded bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                          Risk
+                        </span>
+                      ) : (
+                        <span className="flex items-center gap-1 text-[9px] font-black uppercase px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                          Safe
+                        </span>
+                      )}
                     </div>
-                    <div className="text-center bg-white/[0.02] border border-white/5 rounded-xl p-2">
-                      <span className="text-[9px] font-extrabold text-slate-500 uppercase block mb-0.5">Code</span>
-                      <span className={`text-xs font-black font-mono ${student.coding_score < 400 ? "text-rose-400" : "text-white"}`}>
-                        {student.coding_score}
-                      </span>
-                    </div>
-                    <div className="text-center bg-white/[0.02] border border-white/5 rounded-xl p-2">
-                      <span className="text-[9px] font-extrabold text-slate-500 uppercase block mb-0.5">Prep</span>
-                      <span className="text-xs font-black font-mono text-cyan-400">
-                        {student.placement_readiness_score}%
-                      </span>
-                    </div>
+                    <p className="text-[11px] text-slate-500 mt-0.5 font-mono">{student.roll_number}</p>
                   </div>
+                  
+                  {/* Tags */}
+                  <div className="flex gap-2">
+                    <span className="text-[10px] bg-white/5 border border-white/10 px-2 py-1 rounded text-slate-300 font-semibold whitespace-nowrap">Year {student.year}</span>
+                    <span className="text-[10px] bg-white/5 border border-white/10 px-2 py-1 rounded text-slate-300 font-semibold whitespace-nowrap">{student.department}</span>
+                    <span className="text-[10px] bg-white/5 border border-white/10 px-2 py-1 rounded text-slate-300 font-semibold whitespace-nowrap">Sec {student.section}</span>
+                  </div>
+                </div>
+
+                {/* Right side: Stats */}
+                <div className="flex items-center justify-between md:justify-end gap-6 ml-0 md:ml-auto border-t md:border-t-0 md:border-l border-white/10 pt-3 md:pt-0 md:pl-6 w-full md:w-auto">
+                  <div className="text-center min-w-[60px]">
+                    <span className="text-[9px] font-extrabold text-slate-500 uppercase block mb-1">Attendance</span>
+                    <span className={`text-sm font-black font-mono ${student.attendance_percentage < 75.0 ? "text-rose-400" : "text-white"}`}>{student.attendance_percentage}%</span>
+                  </div>
+                  <div className="text-center min-w-[60px] bg-white/[0.02] border border-white/5 rounded-lg px-3 py-1.5">
+                    <span className="text-[9px] font-extrabold text-purple-400 uppercase block mb-0.5">Coding Score</span>
+                    <span className={`text-[15px] font-black font-mono ${student.coding_score < 400 ? "text-rose-400" : "text-white"}`}>{student.coding_score}</span>
+                  </div>
+                  <div className="text-center min-w-[60px]">
+                    <span className="text-[9px] font-extrabold text-slate-500 uppercase block mb-1">Readiness</span>
+                    <span className="text-sm font-black font-mono text-cyan-400">{student.placement_readiness_score}%</span>
+                  </div>
+                  <ChevronRight className="w-5 h-5 text-slate-600 hidden md:block ml-2" />
                 </div>
               </motion.div>
             );

@@ -1,52 +1,34 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { 
   MessagesSquare, Search, Send, User, Paperclip, 
   Smile, MoreVertical, Shield, CheckCheck, RefreshCw, AlertCircle
 } from "lucide-react";
 
-import { 
-  fetchFacultyStudents, 
-  fetchFacultyChatHistory, 
-  sendFacultyChatMessage 
-} from "@/lib/api";
+import { getSharedMockStudents } from "@/lib/mockData";
 
 export default function MessagesPage() {
-  const qc = useQueryClient();
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
   const [inputText, setInputText] = useState("");
   const [search, setSearch] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  
+  // Local state to hold chats since we're using mocked students
+  const [localChats, setLocalChats] = useState<Record<string, any[]>>({});
 
-  // Queries
-  const { data: students = [], isLoading: loadingStudents } = useQuery({
-    queryKey: ["faculty-students"],
-    queryFn: fetchFacultyStudents,
-    onSuccess: (data) => {
-      if (data && data.length > 0 && !selectedStudentId) {
-        setSelectedStudentId(data[0].id);
-      }
+  const students = getSharedMockStudents();
+  const loadingStudents = false;
+  
+  useEffect(() => {
+    if (students && students.length > 0 && !selectedStudentId) {
+      setSelectedStudentId(students[0].id);
     }
-  });
+  }, [students, selectedStudentId]);
 
-  const { data: chatHistory = [], isLoading: loadingChat } = useQuery({
-    queryKey: ["chat-history", selectedStudentId],
-    queryFn: () => fetchFacultyChatHistory(selectedStudentId!),
-    enabled: !!selectedStudentId,
-    refetchInterval: 4000 // Poll every 4s for simulated real-time messaging
-  });
-
-  // Send Mutation
-  const sendMutation = useMutation({
-    mutationFn: (payload: { receiver_id: string; content: string }) => sendFacultyChatMessage(payload),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["chat-history", selectedStudentId] });
-      setInputText("");
-    }
-  });
+  const chatHistory = selectedStudentId ? (localChats[selectedStudentId] || []) : [];
+  const loadingChat = false;
 
   // Auto scroll to bottom
   useEffect(() => {
@@ -58,10 +40,20 @@ export default function MessagesPage() {
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!inputText.trim() || !selectedStudentId) return;
-    await sendMutation.mutateAsync({
-      receiver_id: selectedStudentId,
-      content: inputText
-    });
+    
+    const newMessage = {
+      id: Date.now().toString(),
+      sender_id: "faculty_demo",
+      content: inputText.trim(),
+      created_at: new Date().toISOString()
+    };
+    
+    setLocalChats(prev => ({
+      ...prev,
+      [selectedStudentId]: [...(prev[selectedStudentId] || []), newMessage]
+    }));
+    
+    setInputText("");
   };
 
   const filteredStudents = students.filter((s: any) => 
