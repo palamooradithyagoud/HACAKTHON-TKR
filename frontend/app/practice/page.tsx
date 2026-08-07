@@ -506,12 +506,20 @@ export default function PracticePage() {
 
   // Filtered dropdown list of all 660+ companies
   const filteredCompaniesDropdown = useMemo(() => {
-    if (!companySearchInput) return companiesList;
+    let list = companiesList.length > 0 ? companiesList : TOP_COMPANIES;
+    if (selectedCompany && !list.includes(selectedCompany)) {
+      list = [selectedCompany, ...list];
+    }
+    if (!companySearchInput) return list;
     const term = companySearchInput.toLowerCase().trim();
-    return companiesList.filter(
+    const filtered = list.filter(
       (c) => c.toLowerCase().includes(term) || formatCompanyName(c).toLowerCase().includes(term)
     );
-  }, [companiesList, companySearchInput]);
+    if (selectedCompany && !filtered.includes(selectedCompany)) {
+      return [selectedCompany, ...filtered];
+    }
+    return filtered;
+  }, [companiesList, companySearchInput, selectedCompany]);
 
   // Calculate count of solved questions in loaded list
   const companySolvedCount = useMemo(() => {

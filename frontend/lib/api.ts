@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import { getFallbackQuestionsForCompany } from "@/data/fallbackCompanyQuestions";
 
 export const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -1935,7 +1936,7 @@ export async function fetchCompanyQuestions(
   search?: string,
   limit = 100,
   offset = 0,
-): Promise<CompanyQuestionsResult | null> {
+): Promise<CompanyQuestionsResult> {
   try {
     const params = new URLSearchParams({ period, limit: String(limit), offset: String(offset) });
     if (difficulty) params.set("difficulty", difficulty);
@@ -1947,10 +1948,14 @@ export async function fetchCompanyQuestions(
       { headers: { ...authHeaders }, cache: "no-store" },
     );
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return await res.json();
+    const data = await res.json();
+    if (data && Array.isArray(data.questions) && data.questions.length > 0) {
+      return data;
+    }
+    return getFallbackQuestionsForCompany(company, period, difficulty, search, limit, offset);
   } catch (e) {
-    console.warn(`Failed to fetch questions for '${company}':`, e);
-    return null;
+    console.warn(`Failed to fetch questions from backend for '${company}', using curated fallback:`, e);
+    return getFallbackQuestionsForCompany(company, period, difficulty, search, limit, offset);
   }
 }
 
