@@ -20,6 +20,8 @@ export default function StudentsPage() {
   const [deptFilter, setDeptFilter] = useState("all");
   const [sectionFilter, setSectionFilter] = useState("all");
   const [activeStudentId, setActiveStudentId] = useState<string | null>(null);
+  const [activeStudentDetail, setActiveStudentDetail] = useState<any>(null);
+  const [loadingDetail, setLoadingDetail] = useState<boolean>(false);
   
   // Faculty Remarks temporary state
   const [notesInput, setNotesInput] = useState("");
@@ -81,8 +83,41 @@ export default function StudentsPage() {
     loadStudents();
   }, []);
 
+  // Fetch full student detail when activeStudentId changes
+  useEffect(() => {
+    if (!activeStudentId) {
+      setActiveStudentDetail(null);
+      return;
+    }
+
+    let isMounted = true;
+    setLoadingDetail(true);
+
+    async function fetchDetail() {
+      try {
+        const res = await apiFetch(`/api/faculty/students/${activeStudentId}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (isMounted) {
+            setActiveStudentDetail(data);
+          }
+        }
+      } catch (e) {
+        console.warn("Failed to fetch student detail:", e);
+      } finally {
+        if (isMounted) setLoadingDetail(false);
+      }
+    }
+
+    fetchDetail();
+    return () => {
+      isMounted = false;
+    };
+  }, [activeStudentId]);
+
   const handleOpenStudent = (student: any) => {
     setActiveStudentId(student.id);
+    setActiveStudentDetail(student);
     setNotesInput(student.faculty_notes || "");
   };
 
@@ -113,7 +148,7 @@ export default function StudentsPage() {
     return filtered.sort((a, b) => (b.coding_score || 0) - (a.coding_score || 0));
   }, [studentsList, search, yearFilter, deptFilter, sectionFilter]);
 
-  const detail = useMemo(() => studentsList.find(s => s.id === activeStudentId), [studentsList, activeStudentId]);
+  const detail = useMemo(() => activeStudentDetail || studentsList.find(s => s.id === activeStudentId), [studentsList, activeStudentId, activeStudentDetail]);
 
   return (
     <div className="space-y-6 pb-16 relative mt-6 max-w-7xl mx-auto">

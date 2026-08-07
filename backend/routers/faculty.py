@@ -304,11 +304,16 @@ async def get_student_detail(student_id: str, current_user_id: str = Depends(get
                 coding_profiles["github_url"] = c_row.get("github_url") or coding_profiles["github_url"]
                 stats = c_row.get("stats_json") or {}
                 
+                import re
                 total_s = 0
                 platforms_list = []
                 for p_name, p_data in stats.items():
                     if isinstance(p_data, dict):
                         solved = p_data.get("total_solved") or p_data.get("solved") or 0
+                        if not solved and (p_data.get("badge") or p_data.get("summary")):
+                            m = re.search(r"(\d+)", str(p_data.get("badge") or p_data.get("summary")))
+                            if m:
+                                solved = int(m.group(1))
                         if isinstance(solved, (int, float)) and solved > 0:
                             total_s += int(solved)
                             platforms_list.append({"name": p_name.title(), "solved": int(solved)})
