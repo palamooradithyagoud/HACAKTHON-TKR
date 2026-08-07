@@ -235,7 +235,7 @@ def record_aptitude_attempt(
     Store user practice attempt with correctness (true/false) and time taken in seconds for both correct and wrong answers.
     Persists attempt into Supabase SQL database schema `aptitude_attempts`.
     """
-    attempt_dict = attempt.dict()
+    attempt_dict = attempt.model_dump() if hasattr(attempt, "model_dump") else attempt.dict()
     attempt_dict["user_id"] = current_user_id
 
     sb = get_supabase()
@@ -289,7 +289,7 @@ def save_user_practice_progress(
         raise HTTPException(status_code=503, detail="Supabase connection unavailable")
     try:
         if req.status == "solved":
-            res = sb.table("leetcode_progress").upsert({
+            row_data = {
                 "user_id": user_id,
                 "company_slug": req.company_slug,
                 "question_id": req.question_id,
@@ -298,8 +298,13 @@ def save_user_practice_progress(
                 "acceptance": req.acceptance or "",
                 "frequency": req.frequency or "",
                 "status": "solved",
-                "solved_at": "now()",
-            }, on_conflict="user_id,company_slug,question_id").execute()
+            }
+            try:
+                res = sb.table("leetcode_progress").upsert(row_data, on_conflict="user_id,company_slug,question_id").execute()
+            except Exception as upsert_err:
+                logger.warning(f"Upsert failed, falling back to delete+insert: {upsert_err}")
+                sb.table("leetcode_progress").delete().eq("user_id", user_id).eq("company_slug", req.company_slug).eq("question_id", req.question_id).execute()
+                res = sb.table("leetcode_progress").insert(row_data).execute()
         else:
             res = sb.table("leetcode_progress").delete().eq("user_id", user_id).eq("company_slug", req.company_slug).eq("question_id", req.question_id).execute()
         return {"success": True, "user_id": user_id, "data": res.data}

@@ -258,7 +258,27 @@ DO $$ BEGIN
     ALTER TABLE public.aptitude_attempts ALTER COLUMN user_id TYPE TEXT USING user_id::text;
 EXCEPTION WHEN OTHERS THEN NULL; END $$;
 
+DO $$ BEGIN
+    ALTER TABLE public.aptitude_attempts ADD CONSTRAINT aptitude_attempts_user_question_unique UNIQUE (user_id, question_id);
+EXCEPTION WHEN OTHERS THEN NULL; END $$;
+
 CREATE INDEX IF NOT EXISTS idx_aptitude_user ON public.aptitude_attempts(user_id);
+
+-- ── 8C. USER APTITUDE ATTEMPTS TABLE (ALIAS) ────────────────────────
+CREATE TABLE IF NOT EXISTS public.user_aptitude_attempts (
+    id                    BIGSERIAL PRIMARY KEY,
+    user_id               TEXT NOT NULL,
+    topic_id              INTEGER DEFAULT 0,
+    question_id           INTEGER DEFAULT 0,
+    selected_option_index INTEGER DEFAULT 0,
+    is_correct            BOOLEAN DEFAULT FALSE,
+    time_taken_seconds    INTEGER DEFAULT 0,
+    attempted_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+DO $$ BEGIN
+    ALTER TABLE public.user_aptitude_attempts ADD CONSTRAINT user_aptitude_attempts_user_question_unique UNIQUE (user_id, question_id);
+EXCEPTION WHEN OTHERS THEN NULL; END $$;
 
 -- ── 9. RESUME SCORES TABLE ─────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS public.resume_scores (
@@ -332,6 +352,10 @@ DO $$ BEGIN
     ALTER TABLE public.saved_playlists ALTER COLUMN user_id TYPE TEXT USING user_id::text;
 EXCEPTION WHEN OTHERS THEN NULL; END $$;
 
+DO $$ BEGIN
+    ALTER TABLE public.saved_playlists ADD CONSTRAINT saved_playlists_user_playlist_unique UNIQUE (user_id, playlist_id);
+EXCEPTION WHEN OTHERS THEN NULL; END $$;
+
 CREATE INDEX IF NOT EXISTS idx_saved_playlists_user ON public.saved_playlists(user_id);
 
 -- ── 11. VIDEO WATCH PROGRESS ───────────────────────────────────────
@@ -360,6 +384,10 @@ DO $$ BEGIN
     ALTER TABLE public.video_progress ALTER COLUMN user_id TYPE TEXT USING user_id::text;
 EXCEPTION WHEN OTHERS THEN NULL; END $$;
 
+DO $$ BEGIN
+    ALTER TABLE public.video_progress ADD CONSTRAINT video_progress_user_playlist_video_unique UNIQUE (user_id, playlist_id, video_id);
+EXCEPTION WHEN OTHERS THEN NULL; END $$;
+
 CREATE INDEX IF NOT EXISTS idx_video_progress_user ON public.video_progress(user_id);
 
 -- ── 12. LEARNING PROGRESS TABLE ────────────────────────────────────
@@ -383,6 +411,10 @@ ALTER TABLE public.learning_progress
 
 DO $$ BEGIN
     ALTER TABLE public.learning_progress ALTER COLUMN user_id TYPE TEXT USING user_id::text;
+EXCEPTION WHEN OTHERS THEN NULL; END $$;
+
+DO $$ BEGIN
+    ALTER TABLE public.learning_progress ADD CONSTRAINT learning_progress_session_skill_unique UNIQUE (session_id, skill_name);
 EXCEPTION WHEN OTHERS THEN NULL; END $$;
 
 CREATE INDEX IF NOT EXISTS idx_learning_progress_session ON public.learning_progress(session_id);
@@ -460,6 +492,7 @@ ALTER TABLE public.saved_playlists ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.video_progress ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.learning_progress ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.aptitude_attempts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.user_aptitude_attempts ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Full access on students" ON public.students;
 CREATE POLICY "Full access on students" ON public.students FOR ALL TO service_role, anon, authenticated USING (true) WITH CHECK (true);

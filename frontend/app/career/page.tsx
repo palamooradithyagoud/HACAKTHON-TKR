@@ -21,10 +21,12 @@ import {
   CloudUpload,
   FileBadge,
   Loader2,
+  Bot,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { reviewResume, getAuthHeaders, handleGuestTokenFromResponse } from "@/lib/api";
 import PlacementPrepModal from "@/components/PlacementPrepModal";
+import AIInterviewModal from "@/components/AIInterviewModal";
 import FloatingCTA from "@/components/mobile/FloatingCTA";
 
 // ---------------------------------------------------------------------------
@@ -170,6 +172,7 @@ export default function CareerPage() {
   // Modals
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isPlacementPrepOpen, setIsPlacementPrepOpen] = useState(false);
+  const [isAIInterviewOpen, setIsAIInterviewOpen] = useState(false);
 
   // Configuration (Step 1)
   const [targetRole, setTargetRole] = useState("Fullstack Software Engineer");
@@ -675,20 +678,20 @@ export default function CareerPage() {
           </button>
         </motion.div>
 
-        {/* Card 3: AI Interviews (Locked) */}
+        {/* Card 3: AI Interviews (Unlocked) */}
         <motion.div
           whileHover={{ y: -2 }}
           transition={{ duration: 0.2 }}
-          className="bg-[#0b1329]/50 border border-slate-800/80 rounded-2xl p-6 md:p-8 flex flex-col justify-between shadow-xl relative overflow-hidden"
+          className="bg-[#0b1329]/50 border border-slate-800/80 rounded-2xl p-6 md:p-8 flex flex-col justify-between shadow-xl relative overflow-hidden group hover:border-rose-500/30 transition-all"
         >
           <div>
             <div className="flex items-center justify-between mb-5">
-              <div className="w-12 h-12 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400">
-                <Lock className="w-6 h-6" />
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-rose-500/20 to-pink-600/20 border border-rose-500/30 flex items-center justify-center text-rose-400">
+                <Bot className="w-6 h-6" />
               </div>
-              <div className="px-3 py-1 rounded-full text-xs font-semibold bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center gap-1.5">
-                <Lock className="w-3 h-3" />
-                LOCKED
+              <div className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center gap-1.5 shadow-sm">
+                <Sparkles className="w-3 h-3" />
+                UNLOCKED
               </div>
             </div>
 
@@ -697,17 +700,17 @@ export default function CareerPage() {
             </h3>
             <p className="text-sm text-slate-400 leading-relaxed mb-6">
               Real-time AI voice & technical mock interview simulation suite.
-              Locked for platform updates. Complete 5 DSA practice problems to
-              unlock.
+              Practice technical DSA, system design & HR behavioral rounds with live AI scoring.
             </p>
           </div>
 
           <button
-            disabled
-            className="w-full bg-[#1b1524] border border-rose-500/20 text-rose-400/80 font-medium py-3 rounded-xl flex items-center justify-center gap-2 text-sm cursor-not-allowed opacity-90"
+            onClick={() => setIsAIInterviewOpen(true)}
+            className="w-full bg-gradient-to-r from-rose-600 via-purple-600 to-indigo-600 hover:from-rose-500 hover:to-indigo-500 text-white font-medium py-3 rounded-xl transition-all shadow-lg shadow-rose-500/20 flex items-center justify-center gap-2 text-sm group cursor-pointer"
           >
-            <Lock className="w-4 h-4 text-rose-400" />
-            <span>AI Interviews Locked</span>
+            <Sparkles className="w-4 h-4" />
+            <span>Start AI Mock Interview</span>
+            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
           </button>
         </motion.div>
       </div>
@@ -1204,6 +1207,12 @@ export default function CareerPage() {
       <PlacementPrepModal
         isOpen={isPlacementPrepOpen}
         onClose={() => setIsPlacementPrepOpen(false)}
+      />
+
+      {/* AI Mock Interview Modal */}
+      <AIInterviewModal
+        isOpen={isAIInterviewOpen}
+        onClose={() => setIsAIInterviewOpen(false)}
       />
 
       {/* Native Smartphone Floating CTA */}

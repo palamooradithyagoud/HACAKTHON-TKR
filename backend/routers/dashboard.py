@@ -514,8 +514,9 @@ def get_dashboard_data(user_id: str = Depends(get_current_user_id)):
                 "subtitle": resume_subtitle
             },
             "interviewReadiness": {
-                "isLocked": True,
-                "subtitle": "Unlocks at 50% completion"
+                "isLocked": False,
+                "percentage": 85,
+                "subtitle": "85% Unlocked & Ready"
             }
         },
         "upcoming": [

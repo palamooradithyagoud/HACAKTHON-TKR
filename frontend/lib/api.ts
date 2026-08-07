@@ -43,6 +43,49 @@ export function storeGuestSessionToken(token: string | null | undefined): void {
 }
 
 /**
+ * Safe Supabase upsert with automatic fallback for PostgreSQL error 42P10
+ * (there is no unique or exclusion constraint matching the ON CONFLICT specification)
+ */
+export async function safeUpsert(
+  table: string,
+  rowData: Record<string, any>,
+  onConflictCols: string,
+  matchKeys: Record<string, any>
+) {
+  if (!supabase) return;
+  try {
+    const { error } = await supabase
+      .from(table)
+      .upsert(rowData, { onConflict: onConflictCols });
+    if (error) {
+      if (error.code === "42P10" || error.message?.includes("ON CONFLICT")) {
+        let query = supabase.from(table).delete();
+        for (const [k, v] of Object.entries(matchKeys)) {
+          query = query.eq(k, v);
+        }
+        await query;
+        await supabase.from(table).insert(rowData);
+      } else {
+        console.warn(`Upsert warning on table ${table}:`, error);
+      }
+    }
+  } catch (err: any) {
+    if (err?.code === "42P10" || err?.message?.includes("ON CONFLICT")) {
+      try {
+        let query = supabase.from(table).delete();
+        for (const [k, v] of Object.entries(matchKeys)) {
+          query = query.eq(k, v);
+        }
+        await query;
+        await supabase.from(table).insert(rowData);
+      } catch {}
+    } else {
+      console.warn(`Upsert catch warning on table ${table}:`, err);
+    }
+  }
+}
+
+/**
  * Inspects response headers for 'X-Guest-Session-Token' and updates local storage if present.
  */
 export function handleGuestTokenFromResponse(res: Response | XMLHttpRequest | null | undefined): void {
@@ -813,8 +856,9 @@ async function getFallbackDashboardData() {
         subtitle: resumeSubtitle,
       },
       interviewReadiness: {
-        isLocked: true,
-        subtitle: "Currently Locked",
+        isLocked: false,
+        percentage: 85,
+        subtitle: "85% Unlocked & Active",
       },
     },
     upcoming: [],
@@ -848,6 +892,65 @@ export async function sendMentorMessage(prompt: string) {
     return await res.json();
   } catch {
     return { reply: "I am your SkillsCatalyst AI Mentor powered by Groq. Please start the FastAPI backend to interact live!" };
+  }
+}
+
+export async function transcribeAudio(audioBlob: Blob): Promise<{ success: boolean; transcript: string; provider?: string; error?: string }> {
+  try {
+    const formData = new FormData();
+    const audioFile = new File([audioBlob], "recording.webm", { type: audioBlob.type || "audio/webm" });
+    formData.append("file", audioFile);
+
+    const authHeaders = await getAuthHeaders();
+    const res = await apiFetch(`${API_BASE}/api/ai-mentor/transcribe`, {
+      method: "POST",
+      headers: { ...authHeaders },
+      body: formData,
+    });
+
+    if (!res.ok) {
+      const errJson = await res.json().catch(() => ({}));
+      const errText = errJson.detail?.message || errJson.detail || errJson.message || `STT error ${res.status}`;
+      return { success: false, transcript: "", error: String(errText) };
+    }
+
+    const data = await res.json();
+    return {
+      success: true,
+      transcript: data.transcript || "",
+      provider: data.provider || "deepgram",
+    };
+  } catch (err: any) {
+    console.error("STT call failed:", err);
+    return { success: false, transcript: "", error: err.message || "Failed to connect to STT backend." };
+  }
+}
+
+export const transcribeWithDeepgramBackend = transcribeAudio;
+export const transcribeWithSarvamBackend = transcribeAudio;
+
+export async function synthesizeSpeechSarvam(text: string, speaker: string = "shubh"): Promise<{ success: boolean; audio_url?: string; error?: string }> {
+  try {
+    const authHeaders = await getAuthHeaders();
+    const res = await apiFetch(`${API_BASE}/api/ai-mentor/tts`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...authHeaders },
+      body: JSON.stringify({ text, speaker }),
+    });
+
+    if (!res.ok) {
+      const errJson = await res.json().catch(() => ({}));
+      return { success: false, error: errJson.detail || `TTS error ${res.status}` };
+    }
+
+    const data = await res.json();
+    return {
+      success: true,
+      audio_url: data.audio_url || `data:audio/wav;base64,${data.audio_base64}`,
+    };
+  } catch (err: any) {
+    console.error("Sarvam TTS request failed:", err);
+    return { success: false, error: err.message || "Failed to reach TTS service" };
   }
 }
 
@@ -1070,9 +1173,11 @@ export async function savePlaylist(playlist: Playlist, skillQuery: string) {
   try {
     const targetUserId = await getEffectiveUserId();
     if (targetUserId) {
-      await supabase
-        .from("saved_playlists")
-        .upsert({ ...row, user_id: targetUserId }, { onConflict: "user_id,playlist_id" });
+      const rowData = { ...row, user_id: targetUserId };
+      await safeUpsert("saved_playlists", rowData, "user_id,playlist_id", {
+        user_id: targetUserId,
+        playlist_id: row.playlist_id,
+      });
     }
   } catch (e) {
     console.warn("Save playlist to Supabase DB failed:", e);
@@ -1092,13 +1197,16 @@ export async function savePlaylist(playlist: Playlist, skillQuery: string) {
     const steps = existingLp && existingLp.length > 0 ? existingLp[0].completed_steps || [] : [];
     if (!steps.some((p: any) => (p.id || p.playlist_id) === row.playlist_id)) {
       steps.push({ ...row, id: row.playlist_id, completed: false, videos: [] });
-      await supabase.from("learning_progress").upsert({
+      await safeUpsert("learning_progress", {
         session_id: sid,
         user_id: session?.user?.id || null,
         skill_name: "saved_playlists",
         completed_steps: steps,
         updated_at: new Date().toISOString()
-      }, { onConflict: "session_id,skill_name" });
+      }, "session_id,skill_name", {
+        session_id: sid,
+        skill_name: "saved_playlists"
+      });
     }
   } catch (e) {
     console.warn("Save playlist to learning_progress JSONB failed:", e);
@@ -1503,9 +1611,11 @@ export async function markVideoWatched(
         completed_at: watched ? new Date().toISOString() : null,
         updated_at: new Date().toISOString(),
       };
-      await supabase
-        .from("video_progress")
-        .upsert(row, { onConflict: "user_id,playlist_id,video_id" });
+      await safeUpsert("video_progress", row, "user_id,playlist_id,video_id", {
+        user_id: targetUserId,
+        playlist_id: cleanId,
+        video_id: videoId,
+      });
     }
   } catch (e) {
     console.warn("Mark video watched in Supabase DB failed:", e);
@@ -1547,13 +1657,16 @@ export async function markVideoWatched(
         const compV = videos.filter((v: any) => v.watched || v.completed).length;
         const pct = totalV > 0 ? Math.round((compV / totalV) * 10000) / 100 : 0;
 
-        await supabase.from("learning_progress").upsert({
+        await safeUpsert("learning_progress", {
           session_id: sid,
           skill_name: "saved_playlists",
           completed_steps: playlists,
           completion_pct: pct,
           updated_at: new Date().toISOString()
-        }, { onConflict: "session_id,skill_name" });
+        }, "session_id,skill_name", {
+          session_id: sid,
+          skill_name: "saved_playlists",
+        });
       }
     }
   } catch (e) {
@@ -1597,9 +1710,11 @@ export async function saveVideoProgress(
         watch_time: Math.round(watchTime),
         updated_at: new Date().toISOString(),
       };
-      await supabase
-        .from("video_progress")
-        .upsert(row, { onConflict: "user_id,playlist_id,video_id" });
+      await safeUpsert("video_progress", row, "user_id,playlist_id,video_id", {
+        user_id: targetUserId,
+        playlist_id: playlistId,
+        video_id: videoId,
+      });
     }
   } catch {}
 }
@@ -1654,9 +1769,11 @@ export async function completeVideo(
         completed_at: nowIso,
         updated_at: nowIso,
       };
-      await supabase
-        .from("video_progress")
-        .upsert(row, { onConflict: "user_id,playlist_id,video_id" });
+      await safeUpsert("video_progress", row, "user_id,playlist_id,video_id", {
+        user_id: targetUserId,
+        playlist_id: cleanId,
+        video_id: videoId,
+      });
     }
   } catch (e) {
     console.warn("completeVideo DB failed:", e);
@@ -1694,12 +1811,15 @@ export async function completeVideo(
         }
         playlists[plIndex].videos = videos;
 
-        await supabase.from("learning_progress").upsert({
+        await safeUpsert("learning_progress", {
           session_id: sid,
           skill_name: "saved_playlists",
           completed_steps: playlists,
           updated_at: nowIso
-        }, { onConflict: "session_id,skill_name" });
+        }, "session_id,skill_name", {
+          session_id: sid,
+          skill_name: "saved_playlists",
+        });
       }
     }
   } catch (e) {
@@ -2185,7 +2305,7 @@ export async function saveRoadmapProgress(payload: {
     const authHeaders = await getAuthHeaders();
     const userId = await getEffectiveUserId();
     
-    // Direct Supabase upsert
+    // Direct Supabase upsert with 42P10 fallback
     if (supabase) {
       if (payload.status === "unsolved") {
         await supabase
@@ -2195,17 +2315,28 @@ export async function saveRoadmapProgress(payload: {
           .eq("roadmap_id", payload.roadmap_id)
           .eq("node_id", payload.node_id);
       } else {
-        await supabase
+        const rowData = {
+          user_id: userId,
+          roadmap_id: payload.roadmap_id,
+          node_id: payload.node_id,
+          node_title: payload.node_title,
+          category: payload.category || "",
+          status: payload.status || "completed",
+          completed_at: new Date().toISOString(),
+        };
+        const { error } = await supabase
           .from("roadmap_progress")
-          .upsert({
-            user_id: userId,
-            roadmap_id: payload.roadmap_id,
-            node_id: payload.node_id,
-            node_title: payload.node_title,
-            category: payload.category || "",
-            status: payload.status || "completed",
-            completed_at: new Date().toISOString(),
-          }, { onConflict: "user_id,roadmap_id,node_id" });
+          .upsert(rowData, { onConflict: "user_id,roadmap_id,node_id" });
+
+        if (error && (error.code === "42P10" || error.message?.includes("ON CONFLICT"))) {
+          await supabase
+            .from("roadmap_progress")
+            .delete()
+            .eq("user_id", userId)
+            .eq("roadmap_id", payload.roadmap_id)
+            .eq("node_id", payload.node_id);
+          await supabase.from("roadmap_progress").insert(rowData);
+        }
       }
     }
 
@@ -2236,7 +2367,7 @@ export async function savePracticeProgress(payload: {
     const authHeaders = await getAuthHeaders();
     const userId = await getEffectiveUserId();
 
-    // Direct Supabase upsert
+    // Direct Supabase upsert with 42P10 fallback
     if (supabase) {
       if (payload.status === "unsolved") {
         await supabase
@@ -2246,19 +2377,30 @@ export async function savePracticeProgress(payload: {
           .eq("company_slug", payload.company_slug)
           .eq("question_id", payload.question_id);
       } else {
-        await supabase
+        const rowData = {
+          user_id: userId,
+          company_slug: payload.company_slug,
+          question_id: payload.question_id,
+          question_title: payload.question_title,
+          difficulty: payload.difficulty || "Easy",
+          acceptance: payload.acceptance || "",
+          frequency: payload.frequency || "",
+          status: "solved",
+          solved_at: new Date().toISOString(),
+        };
+        const { error } = await supabase
           .from("leetcode_progress")
-          .upsert({
-            user_id: userId,
-            company_slug: payload.company_slug,
-            question_id: payload.question_id,
-            question_title: payload.question_title,
-            difficulty: payload.difficulty || "Easy",
-            acceptance: payload.acceptance || "",
-            frequency: payload.frequency || "",
-            status: "solved",
-            solved_at: new Date().toISOString(),
-          }, { onConflict: "user_id,company_slug,question_id" });
+          .upsert(rowData, { onConflict: "user_id,company_slug,question_id" });
+
+        if (error && (error.code === "42P10" || error.message?.includes("ON CONFLICT"))) {
+          await supabase
+            .from("leetcode_progress")
+            .delete()
+            .eq("user_id", userId)
+            .eq("company_slug", payload.company_slug)
+            .eq("question_id", payload.question_id);
+          await supabase.from("leetcode_progress").insert(rowData);
+        }
       }
     }
 
@@ -2272,6 +2414,69 @@ export async function savePracticeProgress(payload: {
     console.warn("savePracticeProgress warning:", e);
   }
 }
+
+// ── Explore Hub APIs ────────────────────────────────────────────────────────
+export async function fetchOpportunities(category = "all", search = ""): Promise<any> {
+  try {
+    const params = new URLSearchParams();
+    if (category) params.append("category", category);
+    if (search) params.append("search", search);
+    const res = await apiFetch(`${API_BASE}/api/explore/opportunities?${params.toString()}`);
+    return res.ok ? await res.json() : { success: false, data: [] };
+  } catch (err) {
+    console.error("fetchOpportunities error:", err);
+    return { success: false, data: [] };
+  }
+}
+
+export async function fetchCompanyDetails(companyName = "Google"): Promise<any> {
+  try {
+    const res = await apiFetch(`${API_BASE}/api/explore/companies?name=${encodeURIComponent(companyName)}`);
+    return res.ok ? await res.json() : { success: false, data: null };
+  } catch (err) {
+    console.error("fetchCompanyDetails error:", err);
+    return { success: false, data: null };
+  }
+}
+
+export async function fetchCompanyAiTips(companyName: string, targetRole = "Software Engineer"): Promise<any> {
+  try {
+    const res = await apiFetch(`${API_BASE}/api/explore/company-ai-tips`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ company_name: companyName, target_role: targetRole }),
+    });
+    return res.ok ? await res.json() : { success: false, aiStrategy: "Focus on problem-solving, algorithms, and system design." };
+  } catch (err) {
+    console.error("fetchCompanyAiTips error:", err);
+    return { success: false, aiStrategy: "Focus on problem-solving, algorithms, and system design." };
+  }
+}
+
+export async function triggerApifyCrawl(query: string, category = "all"): Promise<any> {
+  try {
+    const res = await apiFetch(`${API_BASE}/api/explore/apify-crawl`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ query, category }),
+    });
+    return res.ok ? await res.json() : { success: false, data: [] };
+  } catch (err) {
+    console.error("triggerApifyCrawl error:", err);
+    return { success: false, data: [] };
+  }
+}
+
+export async function fetchTechTrends(): Promise<any> {
+  try {
+    const res = await apiFetch(`${API_BASE}/api/explore/tech-trends`);
+    return res.ok ? await res.json() : { success: false, data: null };
+  } catch (err) {
+    console.error("fetchTechTrends error:", err);
+    return { success: false, data: null };
+  }
+}
+
 
 
 

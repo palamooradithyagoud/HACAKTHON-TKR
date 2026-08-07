@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { BookOpen, Target, Map as MapIcon, Briefcase, CalendarCheck, Lock, ChevronLeft, ChevronRight, Trash2 } from "lucide-react";
+import { BookOpen, Target, Map as MapIcon, Briefcase, CalendarCheck, Lock, ChevronLeft, ChevronRight, Trash2, Flame, Sparkles } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -592,9 +592,93 @@ export interface MetricsData {
     subtitle: string;
   };
   interviewReadiness?: {
-    isLocked: boolean;
-    subtitle: string;
+    isLocked?: boolean;
+    percentage?: number;
+    subtitle?: string;
   };
+}
+
+function StreakMetricCard({ delay = 0.4 }: { delay?: number }) {
+  const [streakDays, setStreakDays] = useState(7);
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem("skillscatalyst_streak");
+      if (stored) {
+        setStreakDays(parseInt(stored, 10) || 7);
+      }
+    } catch {}
+  }, []);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, delay }}
+      className="relative p-5 rounded-2xl bg-gradient-to-br from-slate-900 via-slate-900/90 to-amber-950/40 border border-amber-500/30 shadow-xl overflow-hidden group hover:border-amber-500/60 transition-all cursor-pointer flex flex-col justify-between"
+    >
+      {/* Fiery background aura */}
+      <div className="absolute -top-10 -right-10 w-32 h-32 bg-orange-500/20 rounded-full blur-2xl group-hover:bg-orange-500/35 transition-all duration-700 animate-pulse pointer-events-none" />
+      <div className="absolute -bottom-8 -left-8 w-24 h-24 bg-amber-500/15 rounded-full blur-2xl pointer-events-none" />
+
+      {/* Header */}
+      <div className="flex items-center justify-between z-10">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-amber-500/20 via-orange-500/20 to-rose-500/20 border border-orange-500/30 flex items-center justify-center text-orange-400 shadow-md shadow-orange-500/20 group-hover:scale-110 transition-transform">
+            <Flame className="w-4 h-4 fill-orange-500 text-amber-300 animate-bounce" />
+          </div>
+          <span className="text-xs font-bold text-slate-200 tracking-wide">Daily Streak</span>
+        </div>
+        <span className="text-[10px] font-extrabold text-orange-400 bg-orange-500/10 border border-orange-500/25 px-2.5 py-0.5 rounded-full flex items-center gap-1.5 uppercase tracking-wider">
+          <span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-ping inline-block" />
+          On Fire 🔥
+        </span>
+      </div>
+
+      {/* Burning Flame Graphic & Counter */}
+      <div className="my-2 flex flex-col items-center justify-center relative z-10">
+        <div className="relative flex items-center justify-center my-1">
+          {/* Outer Rotating Dash Ring */}
+          <div className="w-20 h-20 rounded-full border-2 border-dashed border-amber-500/30 animate-[spin_12s_linear_infinite] absolute inset-0" />
+          
+          <div className="w-20 h-20 rounded-full bg-gradient-to-t from-orange-600/25 via-amber-500/15 to-transparent flex items-center justify-center shadow-[0_0_25px_rgba(245,158,11,0.35)]">
+            {/* Animated Flickering Flame */}
+            <motion.div
+              animate={{
+                scale: [1, 1.1, 0.95, 1.07, 1],
+                rotate: [0, -3, 3, -2, 0],
+                y: [0, -2, 1, -1, 0],
+              }}
+              transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
+              className="relative flex items-center justify-center"
+            >
+              {/* Glowing back flame */}
+              <Flame className="w-11 h-11 text-orange-500 fill-orange-500 blur-[2px] opacity-80 absolute" />
+              {/* Main burning flame */}
+              <Flame className="w-10 h-10 text-orange-400 fill-amber-400 drop-shadow-[0_0_15px_rgba(249,115,22,0.9)] relative" />
+              {/* Core white-hot spark */}
+              <Flame className="w-5 h-5 text-yellow-100 fill-white absolute bottom-1 blur-[0.4px]" />
+            </motion.div>
+          </div>
+        </div>
+
+        <div className="text-center mt-1">
+          <span className="text-2xl font-black text-white tracking-tight drop-shadow-md">
+            {streakDays} <span className="text-sm font-bold text-orange-400">Days</span>
+          </span>
+          <span className="text-[10px] text-slate-400 block font-medium">Active Learning Streak</span>
+        </div>
+      </div>
+
+      {/* Footer Subtitle */}
+      <div className="z-10 pt-2 border-t border-slate-800/80 flex items-center justify-between text-[10px]">
+        <span className="text-amber-400 font-bold flex items-center gap-1">
+          <Sparkles className="w-3.5 h-3.5 text-amber-300" /> Keep the fire burning!
+        </span>
+        <span className="text-slate-500 font-semibold">Daily Active</span>
+      </div>
+    </motion.div>
+  );
 }
 
 export default function MetricCards({ metrics }: { metrics?: MetricsData }) {
@@ -650,17 +734,7 @@ export default function MetricCards({ metrics }: { metrics?: MetricsData }) {
           </div>
 
           <div className="snap-start flex-shrink-0 w-[240px]">
-            <MetricCard
-              title="Interview Prep"
-              icon={<Briefcase className="w-4 h-4 text-rose-400" />}
-              iconBg="bg-rose-500/10 border border-rose-500/20"
-              percentage={ir?.isLocked ? 0 : 75}
-              ringColor="#f43f5e"
-              subtitle={ir?.subtitle ?? "Locked"}
-              subtitleColor="text-slate-500"
-              isLocked={ir?.isLocked ?? true}
-              delay={0.4}
-            />
+            <StreakMetricCard delay={0.4} />
           </div>
         </div>
       </div>
@@ -689,17 +763,7 @@ export default function MetricCards({ metrics }: { metrics?: MetricsData }) {
           delay={0.3}
           onClick={() => router.push("/attendance")}
         />
-        <MetricCard
-          title="Interview Readiness"
-          icon={<Briefcase className="w-4 h-4 text-rose-400" />}
-          iconBg="bg-rose-500/10 border border-rose-500/20"
-          percentage={ir?.isLocked ? 0 : 75}
-          ringColor="#f43f5e"
-          subtitle={ir?.subtitle ?? "Currently Locked"}
-          subtitleColor="text-slate-500"
-          isLocked={ir?.isLocked ?? true}
-          delay={0.4}
-        />
+        <StreakMetricCard delay={0.4} />
       </div>
     </div>
   );

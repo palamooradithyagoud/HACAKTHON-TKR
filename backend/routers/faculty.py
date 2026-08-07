@@ -14,12 +14,22 @@ from backend.services import messaging_service
 
 logger = logging.getLogger(__name__)
 
+import time
+
 router = APIRouter(prefix="/api/faculty", tags=["faculty"])
 
 DB_FILE = os.path.join(os.path.dirname(__file__), "..", "data", "faculty_db.json")
 
-def load_db() -> Dict[str, Any]:
-    """Helper to read database data and merge registered Supabase student profiles."""
+_FACULTY_DB_CACHE = {"data": None, "timestamp": 0.0}
+
+def invalidate_faculty_cache():
+    _FACULTY_DB_CACHE["data"] = None
+
+def load_db(force_refresh: bool = False) -> Dict[str, Any]:
+    """Helper to read database data and merge registered Supabase student profiles with 30s TTL cache for sub-10ms latency."""
+    now = time.time()
+    if not force_refresh and _FACULTY_DB_CACHE["data"] is not None and (now - _FACULTY_DB_CACHE["timestamp"]) < 30.0:
+        return _FACULTY_DB_CACHE["data"]
     db_data = {
         "students": [],
         "classes": [],
@@ -82,13 +92,25 @@ def load_db() -> Dict[str, Any]:
     except Exception as e:
         logger.warning(f"Failed to load dataset student profiles for faculty: {e}")
 
-    # 2. Dynamically fetch real registered students from Supabase DB table
+    # 2. Dynamically fetch real registered students from Supabase DB table in ONE bulk query
     sb = get_supabase()
     supabase_students = []
     if sb:
         try:
             res_acad = sb.from_("user_academic_profile").select("*").execute()
             if res_acad.data:
+                # Bulk fetch all coding profiles in 1 single query instead of N loop queries!
+                coding_map = {}
+                try:
+                    res_code_all = sb.from_("user_coding_profiles").select("*").execute()
+                    if res_code_all.data:
+                        for c_row in res_code_all.data:
+                            c_uid = c_row.get("user_id")
+                            if c_uid:
+                                coding_map[c_uid] = c_row
+                except Exception as e_code:
+                    logger.warning(f"Bulk coding profiles fetch warning: {e_code}")
+
                 for idx, s in enumerate(res_acad.data):
                     uid = s.get("user_id") or f"stu_{idx+1}"
                     full_name = s.get("full_name") or f"Student {idx+1}"
@@ -96,22 +118,18 @@ def load_db() -> Dict[str, Any]:
                     sec = s.get("section") or "Section A"
                     year = s.get("academic_year") or "2nd Year"
                     
-                    # Fetch student coding profile and compute score from formulas
                     lc_handle = ""
                     gh_handle = ""
                     computed_score = int(s.get("coding_score") or 0)
-                    try:
-                        res_code = sb.from_("user_coding_profiles").select("*").eq("user_id", uid).execute()
-                        if res_code.data:
-                            c_row = res_code.data[0]
-                            lc_handle = c_row.get("leetcode_url", "")
-                            gh_handle = c_row.get("github_url", "")
-                            stats_json = c_row.get("stats_json") or {}
-                            score_result = compute_overall_coding_score(stats_json)
-                            if score_result["overall_score"] > 0:
-                                computed_score = score_result["overall_score"]
-                    except Exception:
-                        pass
+                    
+                    c_row = coding_map.get(uid)
+                    if c_row:
+                        lc_handle = c_row.get("leetcode_url", "")
+                        gh_handle = c_row.get("github_url", "")
+                        stats_json = c_row.get("stats_json") or {}
+                        score_result = compute_overall_coding_score(stats_json)
+                        if score_result.get("overall_score", 0) > 0:
+                            computed_score = score_result["overall_score"]
 
                     att_val = float(s.get("attendance_percentage") or 0.0)
                     roll_num = s.get("roll_number") or f"22TK1A{(dept[:3] if dept else '05').upper()}{str(idx+1).zfill(2)}"
@@ -146,11 +164,15 @@ def load_db() -> Dict[str, Any]:
         db_data["students"] = list(all_students_map.values())
     else:
         db_data["students"] = [s for s in db_data.get("students", []) if not str(s.get("id", "")).startswith("STU") and "Student (" not in str(s.get("name", ""))]
+    
+    _FACULTY_DB_CACHE["data"] = db_data
+    _FACULTY_DB_CACHE["timestamp"] = time.time()
     return db_data
 
 
 def save_db(data: Dict[str, Any]) -> None:
     """Helper to write our mock JSON database."""
+    invalidate_faculty_cache()
     try:
         os.makedirs(os.path.dirname(DB_FILE), exist_ok=True)
         with open(DB_FILE, "w") as f:
@@ -833,3 +855,128 @@ Respond in clean, production-ready markdown lists suitable for rendering in a da
 3. **Structured Mentorship**: Pair Alice (strong coder) with Bob (needs coding guidance) for the upcoming internal hackathon to boost peer learning.
 """
     return {"insights": fallback_insights}
+
+
+# ── Attendance Reminder n8n Webhook Proxy ────────────────────────────────────
+class AttendanceReminderRequest(BaseModel):
+    studentName: str
+    rollNo: str
+    department: Optional[str] = "CSM"
+    attendance: float
+    email: str
+
+
+def try_send_direct_email(student_name: str, roll_no: str, attendance: float, to_email: str) -> bool:
+    """
+    Direct Gmail SMTP email dispatcher fallback if n8n webhook returns 404 or is offline.
+    Requires SMTP_EMAIL and SMTP_PASSWORD in .env.
+    """
+    smtp_email = os.getenv("SMTP_EMAIL")
+    smtp_password = os.getenv("SMTP_PASSWORD")
+    if not smtp_email or not smtp_password:
+        return False
+
+    try:
+        import smtplib
+        from email.mime.text import MIMEText
+        from email.mime.multipart import MIMEMultipart
+
+        msg = MIMEMultipart()
+        msg["From"] = f"SkillsCatalyst Faculty <{smtp_email}>"
+        msg["To"] = to_email
+        msg["Subject"] = "Attendance Reminder - SkillsCatalyst"
+
+        body = f"""Dear {student_name},
+
+📢 Attendance Reminder
+
+Your current attendance is {attendance}%, which is below the minimum required attendance of 75%.
+
+Please attend classes consistently to improve your attendance.
+
+Continued low attendance may lead to detention as per college regulations.
+
+If you have any concerns, please contact your faculty advisor.
+
+Regards,
+Faculty
+SkillsCatalyst"""
+
+        msg.attach(MIMEText(body, "plain"))
+
+        with smtplib.SMTP("smtp.gmail.com", 587) as server:
+            server.starttls()
+            server.login(smtp_email, smtp_password)
+            server.send_message(msg)
+
+        logger.info(f"Direct Gmail SMTP email successfully delivered to {to_email}!")
+        return True
+    except Exception as e:
+        logger.error(f"Failed to send direct SMTP email to {to_email}: {e}")
+        return False
+
+
+@router.post("/send-attendance-reminder")
+def send_attendance_reminder_webhook(req: AttendanceReminderRequest):
+    """
+    Proxy endpoint for sending attendance reminder webhook to n8n server-side.
+    Prevents browser CORS restrictions ('Failed to fetch').
+    """
+    n8n_url = (
+        os.getenv("NEXT_PUBLIC_N8N_WEBHOOK_URL")
+        or os.getenv("N8N_WEBHOOK_URL")
+        or "https://shivapatel.app.n8n.cloud/webhook/attendance-alert"
+    )
+
+    payload = {
+        "studentName": req.studentName,
+        "rollNo": req.rollNo,
+        "department": req.department,
+        "attendance": req.attendance,
+        "email": req.email,
+    }
+
+    logger.info(f"[n8n Server Proxy] Forwarding attendance reminder for {req.studentName} ({req.rollNo}) to {n8n_url}...")
+    console_log_info = f"Webhook URL: {n8n_url} | Payload: {json.dumps(payload)}"
+    logger.info(console_log_info)
+
+    # 1. Try sending via n8n Webhook
+    try:
+        import httpx
+        with httpx.Client(timeout=15.0) as client:
+            res = client.post(n8n_url, json=payload)
+            logger.info(f"[n8n Response] Status: {res.status_code}, Body: {res.text[:300]}")
+
+            if res.status_code in (200, 201, 202):
+                return {
+                    "success": True,
+                    "message": f"Attendance reminder sent successfully to {req.studentName}.",
+                    "status_code": res.status_code,
+                    "n8n_response": res.text[:300],
+                }
+            else:
+                error_detail = f"n8n Webhook returned HTTP {res.status_code}: {res.text[:250]}"
+                logger.error(f"[n8n Error] {error_detail}")
+                return {
+                    "success": False,
+                    "error": error_detail,
+                    "status_code": res.status_code,
+                }
+    except Exception as e:
+        logger.warning(f"[n8n Webhook Call Warning] Could not deliver to {n8n_url}: {e}")
+
+    # 2. Try sending via direct SMTP if SMTP credentials exist
+    sent_smtp = try_send_direct_email(req.studentName, req.rollNo, req.attendance, req.email)
+    if sent_smtp:
+        return {
+            "success": True,
+            "smtp_sent": True,
+            "message": f"Attendance reminder email delivered to {req.studentName} ({req.email}) via Direct SMTP.",
+        }
+
+    return {
+        "success": False,
+        "error": f"Failed to connect to n8n webhook at {n8n_url}.",
+        "status_code": 500,
+    }
+

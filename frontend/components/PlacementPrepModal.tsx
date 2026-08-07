@@ -294,18 +294,23 @@ export default function PlacementPrepModal({ isOpen, onClose }: PlacementPrepMod
       });
 
       if (authData.user?.id) {
-        await supabase.from("user_aptitude_attempts").upsert(
-          {
-            user_id: authData.user.id,
-            topic_id: topicId,
-            question_id: questionId,
-            selected_option_index: optionIdx,
-            is_correct: isCorrect,
-            time_taken_seconds: timeSpentSec,
-            attempted_at: new Date().toISOString(),
-          },
+        const rowData = {
+          user_id: authData.user.id,
+          topic_id: topicId,
+          question_id: questionId,
+          selected_option_index: optionIdx,
+          is_correct: isCorrect,
+          time_taken_seconds: timeSpentSec,
+          attempted_at: new Date().toISOString(),
+        };
+        const { error } = await supabase.from("user_aptitude_attempts").upsert(
+          rowData,
           { onConflict: "user_id,question_id" }
         );
+        if (error && (error.code === "42P10" || error.message?.includes("ON CONFLICT"))) {
+          await supabase.from("user_aptitude_attempts").delete().eq("user_id", authData.user.id).eq("question_id", questionId);
+          await supabase.from("user_aptitude_attempts").insert(rowData);
+        }
       }
     } catch (err) {
       console.warn("Database persist warning:", err);

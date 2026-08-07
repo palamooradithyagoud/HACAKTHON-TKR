@@ -16,12 +16,12 @@ logger = logging.getLogger("skillscatalyst.student_auth_router")
 router = APIRouter(prefix="/api/auth", tags=["Student Authentication"])
 
 class StudentLoginRequest(BaseModel):
-    roll_number: str = Field(..., example="CSM1A001")
-    password: str = Field(..., example="Skill@1000")
+    roll_number: str = Field(..., json_schema_extra={"example": "CSM1A001"})
+    password: str = Field(..., json_schema_extra={"example": "Skill@1000"})
 
 class FacultyLoginRequest(BaseModel):
-    email: str = Field(..., example="faculty@tkrec.ac.in")
-    password: str = Field(..., example="faculty123")
+    email: str = Field(..., json_schema_extra={"example": "faculty@tkrec.ac.in"})
+    password: str = Field(..., json_schema_extra={"example": "faculty123"})
 
 class AuthResponse(BaseModel):
     success: bool

@@ -1,7 +1,7 @@
 import logging
 import re
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
 from pydantic import BaseModel, field_validator
 from backend.services.auth_service import get_current_user_id, get_session_or_user_id
 from backend.services.groq_service import chat_with_groq
@@ -356,3 +356,243 @@ STRICT RULES:
 
     logger.info(f"Resume review completed ({len(review_text)} chars returned).")
     return {"review": review_text}
+
+
+@router.post("/transcribe", dependencies=[Depends(enforce_rate_limit(max_requests=RATE_LIMIT_AI_RPM))])
+async def transcribe_audio(
+    file: UploadFile = File(...),
+    current_user_id: str = Depends(get_session_or_user_id)
+):
+    """
+    Proxies audio transcription to Deepgram STT (nova-2) with fallback to Sarvam AI.
+    Prevents browser CORS errors and protects API keys securely on the backend server.
+    """
+    from backend.config import DEEPGRAM_API_KEY, SARVAM_API_KEY
+    import httpx
+
+    if not DEEPGRAM_API_KEY and not SARVAM_API_KEY:
+        logger.error("Neither DEEPGRAM_API_KEY nor SARVAM_API_KEY is configured on backend.")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Speech-to-Text API key is not configured on the server."
+        )
+
+    try:
+        audio_bytes = await file.read()
+        if not audio_bytes:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Empty audio payload received."
+            )
+
+        filename = file.filename or "recording.webm"
+        content_type = file.content_type or "audio/webm"
+
+        # ── 1. Try Deepgram STT (Nova-2) ──────────────────────────────────────
+        if DEEPGRAM_API_KEY:
+            try:
+                logger.info(f"Attempting STT transcription via Deepgram Nova-2 (bytes={len(audio_bytes)}).")
+                # Normalize Content-Type header for Deepgram (strip parameters like ;codecs=opus)
+                dg_content_type = content_type.split(";")[0].strip() if content_type else "audio/webm"
+                if dg_content_type in ("application/octet-stream", "multipart/form-data") or not dg_content_type:
+                    dg_content_type = "audio/webm"
+
+                async with httpx.AsyncClient(timeout=30.0) as client:
+                    headers = {
+                        "Authorization": f"Token {DEEPGRAM_API_KEY}",
+                        "Content-Type": dg_content_type,
+                    }
+                    params = {
+                        "model": "nova-2",
+                        "smart_format": "true",
+                        "punctuate": "true",
+                    }
+                    response = await client.post(
+                        "https://api.deepgram.com/v1/listen",
+                        content=audio_bytes,
+                        headers=headers,
+                        params=params
+                    )
+
+                    if response.status_code == 200:
+                        res_json = response.json()
+                        channels = res_json.get("results", {}).get("channels", [])
+                        if channels and len(channels) > 0:
+                            alts = channels[0].get("alternatives", [])
+                            if alts and len(alts) > 0:
+                                transcript = alts[0].get("transcript", "").strip()
+                                logger.info(f"Deepgram STT success (transcript length={len(transcript)}).")
+                                return {"success": True, "transcript": transcript, "provider": "deepgram"}
+                    else:
+                        logger.warning(f"Deepgram STT returned HTTP {response.status_code}: {response.text}")
+            except Exception as dg_err:
+                logger.warning(f"Deepgram STT call failed, attempting fallback to Sarvam: {dg_err}")
+
+        # ── 2. Fallback to Sarvam AI STT ───────────────────────────────────────
+        if SARVAM_API_KEY:
+            logger.info("Attempting STT transcription via Sarvam AI (saaras:v3).")
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                files = {
+                    "file": (filename, audio_bytes, content_type)
+                }
+                data = {
+                    "model": "saaras:v3",
+                    "language_code": "en-IN"
+                }
+                headers = {
+                    "api-subscription-key": SARVAM_API_KEY
+                }
+                response = await client.post(
+                    "https://api.sarvam.ai/speech-to-text",
+                    files=files,
+                    data=data,
+                    headers=headers
+                )
+
+                if response.status_code == 200:
+                    res_json = response.json()
+                    transcript = (
+                        res_json.get("transcript") or
+                        (res_json.get("results", [{}])[0].get("transcript") if isinstance(res_json.get("results"), list) else "") or
+                        res_json.get("text") or
+                        ""
+                    ).strip()
+                    logger.info(f"Sarvam STT success (transcript length={len(transcript)}).")
+                    return {"success": True, "transcript": transcript, "provider": "sarvam"}
+                else:
+                    logger.error(f"Sarvam API returned HTTP {response.status_code}: {response.text}")
+                    raise HTTPException(
+                        status_code=response.status_code,
+                        detail=f"Sarvam STT error ({response.status_code}): {response.text}"
+                    )
+
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Speech recognition service is currently unavailable."
+        )
+    except HTTPException:
+        raise
+    except Exception as err:
+        logger.error(f"Transcription failed: {err}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Transcription failed: {str(err)}"
+        )
+
+
+# ---------------------------------------------------------------------------
+# Text-to-Speech (TTS) via Sarvam AI (Shubh Voice for Behavioral Round)
+# ---------------------------------------------------------------------------
+
+class TTSRequest(BaseModel):
+    text: str
+    speaker: Optional[str] = "shubh"
+    target_language_code: Optional[str] = "en-IN"
+    model: Optional[str] = "bulbul:v1"
+
+@router.post("/tts", dependencies=[Depends(enforce_rate_limit(max_requests=RATE_LIMIT_AI_RPM))])
+async def generate_speech(
+    payload: TTSRequest,
+    current_user_id: str = Depends(get_session_or_user_id)
+):
+    """
+    Generates text-to-speech audio using Sarvam AI TTS (default speaker: 'shubh' for behavioral round).
+    Returns base64 audio data URI string ready for browser HTML5 audio playback.
+    """
+    from backend.config import SARVAM_API_KEY
+    import httpx
+
+    if not SARVAM_API_KEY:
+        logger.error("SARVAM_API_KEY is not configured on backend.")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Sarvam AI API key is not configured on the server."
+        )
+
+    clean_text = payload.text.strip()
+    if not clean_text:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Text payload cannot be empty."
+        )
+
+    # Sanitize markdown symbols from text before sending to TTS engine
+    clean_text = re.sub(r"[*_#`~]", "", clean_text)
+    clean_text = re.sub(r"\[(.*?)\]\(.*?\)", r"\1", clean_text).strip()
+    
+    # Truncate text to 150 chars max for ultra-fast & low-latency Sarvam AI TTS synthesis
+    if len(clean_text) > 150:
+        # Prioritize matching "Question X: ..." if present
+        q_match = re.search(r"(Question\s*\d+:?.*?)(?=[.!?]|$)", clean_text, re.IGNORECASE)
+        if q_match:
+            clean_text = q_match.group(1).strip()
+        
+        if len(clean_text) > 150:
+            sentences = re.split(r"(?<=[.!?])\s+", clean_text)
+            shortened = ""
+            for s in sentences:
+                if len(shortened) + len(s) <= 150:
+                    shortened += (" " if shortened else "") + s
+                else:
+                    break
+            clean_text = shortened or clean_text[:150]
+
+    speaker = payload.speaker or "shubh"
+
+    try:
+        logger.info(f"Requesting ultra-fast Sarvam TTS audio for speaker '{speaker}' (text_length={len(clean_text)}).")
+        async with httpx.AsyncClient(timeout=3.0, verify=False) as client:
+            headers = {
+                "api-subscription-key": SARVAM_API_KEY,
+                "Content-Type": "application/json"
+            }
+            body = {
+                "inputs": [clean_text],
+                "target_language_code": payload.target_language_code or "en-IN",
+                "speaker": speaker,
+                "model": payload.model or "bulbul:v1",
+                "pitch": 0,
+                "pace": 1.05,
+                "loudness": 1.5,
+                "speech_sample_rate": 8000,
+                "enable_preprocessing": False
+            }
+
+            response = await client.post(
+                "https://api.sarvam.ai/text-to-speech",
+                headers=headers,
+                json=body
+            )
+
+            if response.status_code == 200:
+                res_json = response.json()
+                audios = res_json.get("audios", [])
+                if audios and len(audios) > 0:
+                    audio_b64 = audios[0]
+                    logger.info(f"Sarvam TTS generated successfully for '{speaker}' (b64_len={len(audio_b64)}).")
+                    return {
+                        "success": True,
+                        "audio_base64": audio_b64,
+                        "audio_url": f"data:audio/wav;base64,{audio_b64}",
+                        "speaker": speaker,
+                        "provider": "sarvam"
+                    }
+                else:
+                    logger.warning("Sarvam TTS returned HTTP 200 but empty audios list.")
+                    raise HTTPException(status_code=500, detail="Sarvam TTS returned empty audio payload.")
+            else:
+                logger.error(f"Sarvam TTS error {response.status_code}: {response.text}")
+                raise HTTPException(
+                    status_code=response.status_code,
+                    detail=f"Sarvam TTS error ({response.status_code}): {response.text}"
+                )
+    except HTTPException:
+        raise
+    except Exception as err:
+        logger.error(f"Failed to generate TTS via Sarvam AI: {err}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"TTS synthesis failed: {str(err)}"
+        )
+
+
