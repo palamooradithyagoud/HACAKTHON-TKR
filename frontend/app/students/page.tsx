@@ -275,125 +275,259 @@ export default function StudentsPage() {
               animate={{ x: 0 }}
               exit={{ x: "100%" }}
               transition={{ type: "spring", stiffness: 350, damping: 32 }}
-              className="fixed top-0 right-0 bottom-0 w-full max-w-md md:max-w-xl bg-[#070c18] border-l border-white/10 z-50 p-6 overflow-y-auto flex flex-col"
+              className="fixed top-0 right-0 bottom-0 w-full max-w-md md:max-w-xl bg-[#070c18] border-l border-white/10 z-50 p-6 overflow-y-auto flex flex-col space-y-6"
             >
-              <div className="space-y-6">
-                {/* Header */}
-                <div className="flex items-start justify-between pb-4 border-b border-white/10">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h2 className="text-xl font-black text-white tracking-tight">{detail.name}</h2>
-                      {detail.ai_insights?.risk_level === "high" && (
-                        <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded bg-rose-500/10 text-rose-400 border border-rose-500/20">
-                          Critical Alert
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-xs text-slate-400 font-medium mt-1">
-                      Roll: {detail.roll_number} • {detail.department} • Section {detail.section} • Year {detail.year}
-                    </p>
+              {/* Header */}
+              <div className="flex items-start justify-between pb-4 border-b border-white/10">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-xl font-black text-white tracking-tight">{detail.name}</h2>
+                    {detail.ai_insights?.risk_level === "high" && (
+                      <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                        Critical Alert
+                      </span>
+                    )}
                   </div>
-                  <button
-                    onClick={() => setActiveStudentId(null)}
-                    className="p-2 rounded-xl glass hover:bg-white/10 text-slate-400 hover:text-white"
-                  >
-                    <X className="w-5 h-5" />
-                  </button>
+                  <p className="text-xs text-slate-400 font-medium mt-1">
+                    Roll: {detail.roll_number} • {detail.department} • Section {detail.section} • Year {detail.year}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setActiveStudentId(null)}
+                  className="p-2 rounded-xl glass hover:bg-white/10 text-slate-400 hover:text-white"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* 1. ATTENDANCE & CODING OVERVIEW CARD */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="bg-emerald-500/[0.04] border border-emerald-500/20 rounded-2xl p-3.5 text-center flex flex-col justify-between">
+                  <div className="flex items-center justify-between text-emerald-400 mb-1">
+                    <Calendar className="w-4 h-4" />
+                    <span className="text-[10px] font-bold uppercase tracking-wider">Attendance</span>
+                  </div>
+                  <span className="text-2xl font-black text-white font-mono my-1">
+                    {detail.attendance_info?.percentage ?? detail.attendance_percentage ?? 0}%
+                  </span>
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                    (detail.attendance_percentage || 0) >= 75
+                      ? "bg-emerald-500/15 text-emerald-300 border border-emerald-500/30"
+                      : "bg-rose-500/15 text-rose-300 border border-rose-500/30"
+                  }`}>
+                    {(detail.attendance_percentage || 0) >= 75 ? "Safe (≥75%)" : "Attention Required (<75%)"}
+                  </span>
                 </div>
 
-                {/* AI INSIGHTS CARD */}
-                <div className="p-4 rounded-2xl border border-purple-500/20 bg-gradient-to-r from-purple-950/20 to-indigo-950/10">
-                  <h4 className="text-xs font-bold text-purple-300 flex items-center gap-1.5 mb-2">
-                    <Sparkles className="w-4 h-4 text-purple-400" />
-                    <span>AI Student Academic Diagnosis</span>
-                  </h4>
-                  {detail.ai_insights?.risk_reasons?.length > 0 ? (
-                    <ul className="space-y-1.5">
-                      {detail.ai_insights.risk_reasons.map((r: string, idx: number) => (
-                        <li key={idx} className="text-xs text-slate-300 flex gap-2 font-medium">
-                          <span className="text-rose-400 font-bold">•</span>
-                          <span>{r}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <p className="text-xs text-slate-400 font-medium">
-                      Student is meeting all minimum performance criteria and guidelines. Keep up the encouragement.
-                    </p>
+                <div className="bg-purple-500/[0.04] border border-purple-500/20 rounded-2xl p-3.5 text-center flex flex-col justify-between">
+                  <div className="flex items-center justify-between text-purple-400 mb-1">
+                    <Code className="w-4 h-4" />
+                    <span className="text-[10px] font-bold uppercase tracking-wider">Questions Solved</span>
+                  </div>
+                  <span className="text-2xl font-black text-white font-mono my-1">
+                    {detail.coding_profiles?.total_solved || (detail.coding_score ? Math.round(detail.coding_score / 10) : 0)}
+                  </span>
+                  <span className="text-[10px] font-semibold text-purple-300 bg-purple-500/15 border border-purple-500/30 px-2 py-0.5 rounded-full">
+                    Across Connected Platforms
+                  </span>
+                </div>
+              </div>
+
+              {/* 2. CODING PROFILES & PLATFORMS */}
+              <div className="p-4 rounded-2xl border border-white/10 bg-white/[0.02] space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                    <Code className="w-4 h-4 text-indigo-400" />
+                    <span>Coding Profiles & Platform Stats</span>
+                  </h3>
+                  <span className="text-[10px] text-indigo-300 font-mono font-semibold">
+                    {detail.coding_profiles?.total_solved || 0} Total Solved
+                  </span>
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  {detail.leetcode_handle || detail.coding_profiles?.leetcode_url ? (
+                    <a
+                      href={detail.coding_profiles?.leetcode_url || `https://leetcode.com/u/${detail.leetcode_handle}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/25 text-amber-300 text-xs font-bold hover:bg-amber-500/20 transition-colors"
+                    >
+                      <Code className="w-3.5 h-3.5" />
+                      <span>LeetCode</span>
+                      <strong className="font-mono text-white">@{detail.leetcode_handle || "connected"}</strong>
+                    </a>
+                  ) : null}
+
+                  {detail.github_handle || detail.coding_profiles?.github_url ? (
+                    <a
+                      href={detail.coding_profiles?.github_url || `https://github.com/${detail.github_handle}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-500/10 border border-slate-500/25 text-slate-300 text-xs font-bold hover:bg-slate-500/20 transition-colors"
+                    >
+                      <Globe className="w-3.5 h-3.5" />
+                      <span>GitHub</span>
+                      <strong className="font-mono text-white">@{detail.github_handle || "connected"}</strong>
+                    </a>
+                  ) : null}
+
+                  {(!detail.leetcode_handle && !detail.github_handle && (!detail.coding_profiles?.platforms || detail.coding_profiles.platforms.length === 0)) && (
+                    <p className="text-xs text-slate-500 font-medium">No external coding profiles connected yet.</p>
                   )}
                 </div>
 
-                {/* STATS STRIPE */}
-                <div className="grid grid-cols-3 gap-3">
-                  <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-3 text-center">
-                    <Calendar className="w-4 h-4 text-purple-400 mx-auto mb-1.5" />
-                    <span className="text-[10px] text-slate-500 font-bold uppercase block">Attendance</span>
-                    <span className="text-sm font-black text-white font-mono">{detail.attendance_percentage}%</span>
+                {detail.coding_profiles?.platforms && detail.coding_profiles.platforms.length > 0 && (
+                  <div className="grid grid-cols-2 gap-2 pt-2 border-t border-white/5">
+                    {detail.coding_profiles.platforms.map((p: any, idx: number) => (
+                      <div key={idx} className="flex items-center justify-between p-2 rounded-xl bg-white/[0.02] border border-white/5 text-xs">
+                        <span className="text-slate-400 font-medium">{p.name}</span>
+                        <span className="font-bold font-mono text-white">{p.solved} solved</span>
+                      </div>
+                    ))}
                   </div>
-                  <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-3 text-center">
-                    <Code className="w-4 h-4 text-indigo-400 mx-auto mb-1.5" />
-                    <span className="text-[10px] text-slate-500 font-bold uppercase block">Coding Score</span>
-                    <span className="text-sm font-black text-white font-mono">{detail.coding_score} pts</span>
-                  </div>
-                  <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-3 text-center">
-                    <Award className="w-4 h-4 text-cyan-400 mx-auto mb-1.5" />
-                    <span className="text-[10px] text-slate-500 font-bold uppercase block">Recruitment index</span>
-                    <span className="text-sm font-black text-cyan-400 font-mono">{detail.placement_readiness_score}%</span>
-                  </div>
-                </div>
-
-                {/* CODING PLATS */}
-                <div className="space-y-2">
-                  <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Connected Coding Profiles</h3>
-                  <div className="flex gap-2">
-                    {detail.leetcode_handle && (
-                      <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/[0.03] border border-white/10 text-xs font-semibold text-slate-200">
-                        <Code className="w-3.5 h-3.5 text-amber-500" />
-                        LeetCode: <strong className="font-mono">@{detail.leetcode_handle}</strong>
-                      </span>
-                    )}
-                    {detail.github_handle && (
-                      <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/[0.03] border border-white/10 text-xs font-semibold text-slate-200">
-                        <Globe className="w-3.5 h-3.5 text-slate-400" />
-                        GitHub: <strong className="font-mono">@{detail.github_handle}</strong>
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                {/* REMARKS PANEL */}
-                <form onSubmit={handleSaveNotes} className="space-y-3 p-4 rounded-2xl border border-white/5 bg-white/[0.01]">
-                  <div className="flex items-center justify-between">
-                    <h4 className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
-                      <Edit3 className="w-4 h-4 text-indigo-400" />
-                      <span>Private Faculty Notes & Remarks</span>
-                    </h4>
-                    {saveSuccess && (
-                      <span className="text-[10px] text-emerald-400 font-bold flex items-center gap-1 animate-pulse">
-                        <CheckCircle2 className="w-3 h-3" /> Saved Successfully!
-                      </span>
-                    )}
-                  </div>
-                  <textarea
-                    value={notesInput}
-                    onChange={(e) => setNotesInput(e.target.value)}
-                    placeholder="Add private evaluation notes or study recovery plan actions..."
-                    rows={3}
-                    className="w-full p-3 rounded-xl bg-[#090e1a] border border-white/10 text-slate-200 text-xs font-medium placeholder-slate-600 focus:outline-none focus:border-purple-500/50 transition-all resize-none"
-                  />
-                  <div className="flex justify-end">
-                    <button
-                      type="submit"
-                      disabled={savingNotes || !notesInput.trim()}
-                      className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-xs font-bold text-white flex items-center gap-1.5 disabled:opacity-50 transition-all"
-                    >
-                      <Save className="w-3.5 h-3.5" />
-                      {savingNotes ? "Saving Notes..." : "Save Note"}
-                    </button>
-                  </div>
-                </form>
-
+                )}
               </div>
+
+              {/* 3. COURSE PLAYLISTS (FOLLOWING VS COMPLETED) */}
+              <div className="p-4 rounded-2xl border border-white/10 bg-white/[0.02] space-y-3">
+                <h3 className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                  <Award className="w-4 h-4 text-cyan-400" />
+                  <span>Course Playlists</span>
+                </h3>
+
+                {/* Following Playlists */}
+                <div>
+                  <span className="text-[11px] font-bold text-cyan-300 block mb-1.5">
+                    Currently Following ({detail.playlists_info?.following?.length || 0})
+                  </span>
+                  {detail.playlists_info?.following && detail.playlists_info.following.length > 0 ? (
+                    <div className="space-y-2">
+                      {detail.playlists_info.following.map((pl: any, idx: number) => (
+                        <div key={idx} className="p-2.5 rounded-xl bg-cyan-500/[0.04] border border-cyan-500/20 flex items-center justify-between text-xs">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse shrink-0" />
+                            <span className="font-bold text-white truncate">{pl.title}</span>
+                          </div>
+                          <span className="text-[10px] font-mono text-cyan-300 font-semibold shrink-0 ml-2">
+                            {pl.video_count} videos
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-slate-500">No active playlists currently following.</p>
+                  )}
+                </div>
+
+                {/* Completed Playlists */}
+                {detail.playlists_info?.completed && detail.playlists_info.completed.length > 0 && (
+                  <div className="pt-2 border-t border-white/5">
+                    <span className="text-[11px] font-bold text-emerald-400 block mb-1.5">
+                      Completed Playlists ({detail.playlists_info.completed.length})
+                    </span>
+                    <div className="space-y-2">
+                      {detail.playlists_info.completed.map((pl: any, idx: number) => (
+                        <div key={idx} className="p-2.5 rounded-xl bg-emerald-500/[0.04] border border-emerald-500/20 flex items-center justify-between text-xs">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                            <span className="font-bold text-white truncate">{pl.title}</span>
+                          </div>
+                          <span className="text-[10px] font-mono text-emerald-300 font-bold shrink-0 ml-2">
+                            Completed ✓
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* 4. CAREER ROADMAPS (FOLLOWING VS COMPLETED) */}
+              <div className="p-4 rounded-2xl border border-white/10 bg-white/[0.02] space-y-3">
+                <h3 className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                  <Sparkles className="w-4 h-4 text-purple-400" />
+                  <span>Career Roadmaps</span>
+                </h3>
+
+                {/* Following Roadmaps */}
+                <div>
+                  <span className="text-[11px] font-bold text-purple-300 block mb-1.5">
+                    Currently Following ({detail.roadmaps_info?.following?.length || 0})
+                  </span>
+                  {detail.roadmaps_info?.following && detail.roadmaps_info.following.length > 0 ? (
+                    <div className="space-y-2">
+                      {detail.roadmaps_info.following.map((rm: any, idx: number) => (
+                        <div key={idx} className="p-3 rounded-xl bg-purple-500/[0.04] border border-purple-500/20 space-y-1.5 text-xs">
+                          <div className="flex items-center justify-between font-bold">
+                            <span className="text-white truncate">{rm.title}</span>
+                            <span className="text-purple-300 font-mono text-[11px]">{rm.progress_percent}%</span>
+                          </div>
+                          <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
+                            <div className="h-full bg-purple-400 rounded-full transition-all" style={{ width: `${rm.progress_percent}%` }} />
+                          </div>
+                          <span className="text-[10px] text-slate-400 block font-medium">
+                            {rm.completed_milestones} / {rm.total_milestones} milestones completed
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-slate-500">No active roadmaps currently following.</p>
+                  )}
+                </div>
+
+                {/* Completed Roadmaps */}
+                {detail.roadmaps_info?.completed && detail.roadmaps_info.completed.length > 0 && (
+                  <div className="pt-2 border-t border-white/5">
+                    <span className="text-[11px] font-bold text-emerald-400 block mb-1.5">
+                      Completed Roadmaps ({detail.roadmaps_info.completed.length})
+                    </span>
+                    <div className="space-y-2">
+                      {detail.roadmaps_info.completed.map((rm: any, idx: number) => (
+                        <div key={idx} className="p-2.5 rounded-xl bg-emerald-500/[0.04] border border-emerald-500/20 flex items-center justify-between text-xs font-bold">
+                          <span className="text-white">{rm.title}</span>
+                          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300">
+                            🎉 100% Completed
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* 5. PRIVATE FACULTY NOTES */}
+              <form onSubmit={handleSaveNotes} className="space-y-3 p-4 rounded-2xl border border-white/5 bg-white/[0.01]">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+                    <Edit3 className="w-4 h-4 text-indigo-400" />
+                    <span>Private Faculty Notes & Remarks</span>
+                  </h4>
+                  {saveSuccess && (
+                    <span className="text-[10px] text-emerald-400 font-bold flex items-center gap-1 animate-pulse">
+                      <CheckCircle2 className="w-3 h-3" /> Saved Successfully!
+                    </span>
+                  )}
+                </div>
+                <textarea
+                  value={notesInput}
+                  onChange={(e) => setNotesInput(e.target.value)}
+                  placeholder="Add private evaluation notes or study recovery plan actions..."
+                  rows={3}
+                  className="w-full p-3 rounded-xl bg-[#090e1a] border border-white/10 text-slate-200 text-xs font-medium placeholder-slate-600 focus:outline-none focus:border-purple-500/50 transition-all resize-none"
+                />
+                <div className="flex justify-end">
+                  <button
+                    type="submit"
+                    disabled={savingNotes || !notesInput.trim()}
+                    className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-xs font-bold text-white flex items-center gap-1.5 disabled:opacity-50 transition-all"
+                  >
+                    <Save className="w-3.5 h-3.5" />
+                    {savingNotes ? "Saving Notes..." : "Save Note"}
+                  </button>
+                </div>
+              </form>
             </motion.div>
           </>
         )}

@@ -225,11 +225,34 @@ async def get_students(current_user_id: str = Depends(get_session_or_user_id)):
 
 @router.get("/students/{student_id}")
 async def get_student_detail(student_id: str, current_user_id: str = Depends(get_session_or_user_id)):
-    """Get the full student details, academic metrics, timelines, and remarks."""
+    """Get full student details including coding profiles, questions solved, playlists, roadmaps, and attendance."""
     db = load_db()
     students = db.get("students", [])
     student = next((s for s in students if s["id"] == student_id), None)
     
+    sb = get_supabase()
+    if not student and sb:
+        try:
+            res_s = sb.table("user_academic_profile").select("*").eq("user_id", student_id).execute()
+            if res_s.data and len(res_s.data) > 0:
+                s = res_s.data[0]
+                student = {
+                    "id": student_id,
+                    "name": s.get("full_name", "Student"),
+                    "roll_number": s.get("roll_number", "22TK1A0501"),
+                    "section": s.get("section", "A"),
+                    "department": s.get("department", "CSE"),
+                    "year": s.get("academic_year", "2nd Year"),
+                    "academic_year": s.get("academic_year", "Year 2"),
+                    "college": s.get("college", "TKR College of Engineering & Technology"),
+                    "attendance_percentage": float(s.get("attendance_percentage") or 0.0),
+                    "coding_score": int(s.get("coding_score") or 0),
+                    "placement_readiness_score": 0.0,
+                    "faculty_notes": "",
+                }
+        except Exception:
+            pass
+
     if not student:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -264,16 +287,127 @@ async def get_student_detail(student_id: str, current_user_id: str = Depends(get
                 "feedback": sub.get("feedback", "")
             })
     student["assignment_history"] = student_assignments
+
+    # 1. Fetch Coding Profiles & Questions Solved
+    coding_profiles = {
+        "leetcode_url": student.get("leetcode_handle", ""),
+        "github_url": student.get("github_handle", ""),
+        "total_solved": 0,
+        "platforms": []
+    }
+    if sb:
+        try:
+            res_code = sb.table("user_coding_profiles").select("*").eq("user_id", student_id).execute()
+            if res_code.data and res_code.data[0]:
+                c_row = res_code.data[0]
+                coding_profiles["leetcode_url"] = c_row.get("leetcode_url") or coding_profiles["leetcode_url"]
+                coding_profiles["github_url"] = c_row.get("github_url") or coding_profiles["github_url"]
+                stats = c_row.get("stats_json") or {}
+                
+                total_s = 0
+                platforms_list = []
+                for p_name, p_data in stats.items():
+                    if isinstance(p_data, dict):
+                        solved = p_data.get("total_solved") or p_data.get("solved") or 0
+                        if isinstance(solved, (int, float)) and solved > 0:
+                            total_s += int(solved)
+                            platforms_list.append({"name": p_name.title(), "solved": int(solved)})
+                coding_profiles["total_solved"] = total_s
+                coding_profiles["platforms"] = platforms_list
+        except Exception as e:
+            logger.warning(f"Error fetching coding profiles for {student_id}: {e}")
+
+    # 2. Fetch Playlists (Following vs Completed)
+    following_playlists = []
+    completed_playlists = []
+    if sb:
+        try:
+            res_pl = sb.table("saved_playlists").select("*").eq("user_id", student_id).execute()
+            if res_pl.data:
+                for pl in res_pl.data:
+                    p_info = {
+                        "id": pl.get("playlist_id"),
+                        "title": pl.get("title", "Untitled Playlist"),
+                        "channel": pl.get("channel", ""),
+                        "video_count": pl.get("video_count", "?"),
+                        "thumbnail": pl.get("thumbnail", "")
+                    }
+                    following_playlists.append(p_info)
+                    
+            res_lp = sb.table("learning_progress").select("completed_steps").eq("session_id", student_id).eq("skill_name", "saved_playlists").limit(1).execute()
+            if res_lp.data and len(res_lp.data) > 0:
+                steps = res_lp.data[0].get("completed_steps", [])
+                for step in steps:
+                    st_id = step.get("id") or step.get("playlist_id")
+                    st_title = step.get("title", "Saved Playlist")
+                    v_list = step.get("videos", [])
+                    comp_v = [v for v in v_list if v.get("completed") or v.get("watched")]
+                    if len(v_list) > 0 and len(comp_v) >= len(v_list):
+                        completed_playlists.append({
+                            "id": st_id,
+                            "title": st_title,
+                            "video_count": f"{len(comp_v)}/{len(v_list)}"
+                        })
+        except Exception as e:
+            logger.warning(f"Error fetching playlists info for {student_id}: {e}")
+
+    # 3. Fetch Roadmaps (Following vs Completed)
+    following_roadmaps = []
+    completed_roadmaps = []
+    if sb:
+        try:
+            from backend.routers.dashboard import ROADMAP_SPECS
+            res_rm = sb.table("roadmap_progress").select("roadmap_id, node_id, status").eq("user_id", student_id).execute()
+            if res_rm.data:
+                groups = {}
+                for r in res_rm.data:
+                    raw_rid = r.get("roadmap_id")
+                    if not raw_rid:
+                        continue
+                    if raw_rid not in groups:
+                        groups[raw_rid] = {"done": 0, "status": r.get("status")}
+                    if r.get("status") == "completed" and r.get("node_id") != "_roadmap_started":
+                        groups[raw_rid]["done"] += 1
+
+                for rid, ginfo in groups.items():
+                    spec = ROADMAP_SPECS.get(rid, {})
+                    rm_title = spec.get("name", rid.replace("-", " ").title())
+                    total_m = len(spec.get("nodes", [])) or 20
+                    pct = min(100, round((ginfo["done"] / total_m) * 100))
+                    item = {
+                        "roadmap_id": rid,
+                        "title": rm_title,
+                        "progress_percent": pct,
+                        "completed_milestones": ginfo["done"],
+                        "total_milestones": total_m
+                    }
+                    if pct >= 100 or ginfo["status"] == "completed":
+                        completed_roadmaps.append(item)
+                    else:
+                        following_roadmaps.append(item)
+        except Exception as e:
+            logger.warning(f"Error fetching roadmaps info for {student_id}: {e}")
+
+    student["coding_profiles"] = coding_profiles
+    student["playlists_info"] = {
+        "following": following_playlists,
+        "completed": completed_playlists
+    }
+    student["roadmaps_info"] = {
+        "following": following_roadmaps,
+        "completed": completed_roadmaps
+    }
+    student["attendance_info"] = {
+        "percentage": float(student.get("attendance_percentage") or 0.0),
+        "status": "Safe (≥75%)" if float(student.get("attendance_percentage") or 0.0) >= 75.0 else "Attention Required (<75%)"
+    }
     
     # AI Risk computation
     risk_level = "low"
     risk_reasons = []
-    if student.get("attendance_percentage", 100) < 75.0:
+    if float(student.get("attendance_percentage") or 0.0) < 75.0:
         risk_level = "high"
         risk_reasons.append("Attendance is below minimum threshold of 75%")
-    elif student.get("attendance_percentage", 100) < 80.0:
-        risk_level = "medium"
-        risk_reasons.append("Attendance is border-line (75%-80%)")
         
     if student.get("coding_score", 0) < 400:
         risk_level = "high" if risk_level == "medium" else "medium"
