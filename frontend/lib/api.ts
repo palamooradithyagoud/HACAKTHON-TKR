@@ -1914,18 +1914,29 @@ export type QuestionPeriod =
   | "thirty-days"
   | "more-than-six-months";
 
-/** Fetches the sorted list of all 663 company slugs. */
+/** Fetches the sorted list of all 662 company slugs. */
 export async function fetchPracticeCompanies(): Promise<string[]> {
+  try {
+    const res = await fetch("/api/practice/companies", { cache: "no-store" });
+    if (res.ok) {
+      const data = await res.json();
+      if (data && Array.isArray(data.companies) && data.companies.length > 0) {
+        return data.companies;
+      }
+    }
+  } catch (e) {}
+
   try {
     const authHeaders = await getAuthHeaders();
     const res = await apiFetch(`${API_BASE}/api/practice/companies`, { headers: { ...authHeaders }, cache: "no-store" });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
-    return data.companies ?? [];
+    if (res.ok) {
+      const data = await res.json();
+      return data.companies ?? [];
+    }
   } catch (e) {
     console.warn("Failed to fetch practice companies:", e);
-    return [];
   }
+  return [];
 }
 
 /** Fetches questions for a specific company with optional filters. */
@@ -1939,7 +1950,25 @@ export async function fetchCompanyQuestions(
 ): Promise<CompanyQuestionsResult> {
   const companySlug = company.toLowerCase().trim();
 
-  // Tier 1: Try fetching directly from Supabase DB `company_questions` table (works instantly on Vercel production)
+  // Tier 1: Try Next.js internal API Route / JSON dataset (works 100% on Vercel production with all 662 companies & CSV questions)
+  try {
+    const params = new URLSearchParams({ period, limit: String(limit), offset: String(offset) });
+    if (difficulty) params.set("difficulty", difficulty);
+    if (search) params.set("search", search);
+
+    const relativeUrl = `/api/practice/questions/${encodeURIComponent(companySlug)}?${params}`;
+    const res = await fetch(relativeUrl, { cache: "no-store" });
+    if (res.ok) {
+      const data = await res.json();
+      if (data && Array.isArray(data.questions) && data.questions.length > 0) {
+        return data;
+      }
+    }
+  } catch (err) {
+    console.warn("Next.js internal practice questions API notice:", err);
+  }
+
+  // Tier 2: Try fetching directly from Supabase DB `company_questions` table
   if (supabase) {
     try {
       let query = supabase
@@ -1982,7 +2011,7 @@ export async function fetchCompanyQuestions(
     }
   }
 
-  // Tier 2: Try fetching from FastAPI backend API (only when on localhost or when remote API_BASE is configured)
+  // Tier 3: Try fetching from FastAPI backend API (when backend server is active)
   const isBrowserOnVercel = typeof window !== "undefined" && window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1";
   const isLocalApiBase = API_BASE.startsWith("http://localhost") || API_BASE.startsWith("http://127.0.0.1");
 
@@ -2008,7 +2037,7 @@ export async function fetchCompanyQuestions(
     }
   }
 
-  // Tier 3: Curated Fallback Question Dataset (guarantees questions always show on Vercel deployment)
+  // Tier 4: Curated Fallback Question Dataset
   return getFallbackQuestionsForCompany(companySlug, period, difficulty, search, limit, offset);
 }
 
