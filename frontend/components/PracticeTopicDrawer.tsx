@@ -203,10 +203,21 @@ const TOPIC_DATASET: Record<string, PracticeTopicData> = {
   },
 };
 
-// Helper to construct exact YouTube Solution video search URL for any problem
-function getYoutubeSolutionUrl(p: LeetCodeProblem): string {
-  const query = `LeetCode ${p.number} ${p.title} NeetCode solution`;
-  return `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
+// Helper to construct YouTube Embed URL for playing in-app without leaving SkillsCatalyst
+function getYoutubeEmbedUrl(rawUrl: string, fallbackTitle?: string): string {
+  if (!rawUrl) return "";
+  if (rawUrl.includes("embed/")) return rawUrl;
+  let videoId = "";
+  if (rawUrl.includes("watch?v=")) {
+    videoId = rawUrl.split("watch?v=")[1]?.split("&")[0] || "";
+  } else if (rawUrl.includes("youtu.be/")) {
+    videoId = rawUrl.split("youtu.be/")[1]?.split("?")[0] || "";
+  }
+  if (videoId) {
+    return `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1`;
+  }
+  const query = fallbackTitle ? `LeetCode ${fallbackTitle} solution NeetCode` : "DSA tutorial NeetCode";
+  return `https://www.youtube.com/embed?listType=search&list=${encodeURIComponent(query)}`;
 }
 
 interface PracticeTopicDrawerProps {
@@ -224,6 +235,8 @@ export default function PracticeTopicDrawer({
   solvedSet,
   onToggleSolved,
 }: PracticeTopicDrawerProps) {
+  const [activeVideo, setActiveVideo] = React.useState<{ title: string; url: string } | null>(null);
+
   if (!isOpen) return null;
 
   const keyLower = topicName.toLowerCase();
@@ -308,15 +321,18 @@ export default function PracticeTopicDrawer({
                 </div>
 
                 {/* Topic Masterclass YouTube Video Button */}
-                <a
-                  href={data.masterclassVideoUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white font-extrabold text-xs shadow-lg shadow-red-600/30 border border-red-400/40 transition-all self-start sm:self-auto shrink-0 group"
+                <button
+                  onClick={() =>
+                    setActiveVideo({
+                      title: `${topicName} Masterclass`,
+                      url: data.masterclassVideoUrl,
+                    })
+                  }
+                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white font-extrabold text-xs shadow-lg shadow-red-600/30 border border-red-400/40 transition-all self-start sm:self-auto shrink-0 group cursor-pointer"
                 >
                   <Video className="w-4 h-4 text-white group-hover:scale-110 transition-transform" />
                   <span>Watch Pattern Masterclass 📺</span>
-                </a>
+                </button>
               </div>
 
               {/* Concept Definition Box */}
@@ -371,7 +387,9 @@ export default function PracticeTopicDrawer({
                   <tbody className="divide-y divide-white/[0.05]">
                     {data.problems.map((p, idx) => {
                       const isSolved = !!solvedSet[p.id];
-                      const videoUrl = p.solutionVideoUrl || getYoutubeSolutionUrl(p);
+                      const rawVideoUrl =
+                        p.solutionVideoUrl ||
+                        `https://www.youtube.com/watch?v=On03HWe2tZM`;
 
                       return (
                         <tr
@@ -422,19 +440,22 @@ export default function PracticeTopicDrawer({
                             </span>
                           </td>
 
-                          {/* Video Solution YouTube Link */}
+                          {/* In-App Video Solution Button */}
                           <td className="py-3.5 px-4 whitespace-nowrap">
-                            <a
-                              href={videoUrl}
-                              target="_blank"
-                              rel="noreferrer"
-                              onClick={(e) => e.stopPropagation()}
-                              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-red-500/15 hover:bg-red-500/30 text-red-300 border border-red-500/30 text-xs font-extrabold transition-all group/vid"
-                              title={`Watch accurate video solution for ${p.title}`}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setActiveVideo({
+                                  title: `LeetCode #${p.number} - ${p.title}`,
+                                  url: rawVideoUrl,
+                                });
+                              }}
+                              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-red-500/15 hover:bg-red-500/30 text-red-300 border border-red-500/30 text-xs font-extrabold transition-all group/vid cursor-pointer"
+                              title={`Watch in-app video solution for ${p.title}`}
                             >
                               <PlayCircle className="w-3.5 h-3.5 text-red-400 group-hover/vid:scale-110 transition-transform" />
                               <span>Solution 📺</span>
-                            </a>
+                            </button>
                           </td>
 
                           {/* Checkbox Status */}
@@ -463,6 +484,54 @@ export default function PracticeTopicDrawer({
           </div>
         </motion.div>
       </div>
+
+      {/* ── In-App Embedded Video Player Overlay Modal ── */}
+      <AnimatePresence>
+        {activeVideo && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 bg-black/90 backdrop-blur-2xl">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 12 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 12 }}
+              transition={{ duration: 0.2 }}
+              className="relative w-full max-w-4xl bg-[#0a1122] border border-red-500/30 rounded-3xl overflow-hidden shadow-2xl shadow-red-500/20 flex flex-col"
+            >
+              {/* Modal Header */}
+              <div className="px-6 py-4 bg-[#080d1a] border-b border-white/10 flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-red-500/20 border border-red-500/30 flex items-center justify-center text-red-400">
+                    <Video className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-white line-clamp-1">{activeVideo.title}</h3>
+                    <span className="text-[10px] font-black text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full inline-block mt-0.5 tracking-wider uppercase">
+                      📺 SkillsCatalyst In-App Player
+                    </span>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => setActiveVideo(null)}
+                  className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Responsive 16:9 Embedded Video Container */}
+              <div className="relative w-full aspect-video bg-black">
+                <iframe
+                  src={getYoutubeEmbedUrl(activeVideo.url, activeVideo.title)}
+                  title={activeVideo.title}
+                  className="w-full h-full border-0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowFullScreen
+                />
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </AnimatePresence>
   );
 }
