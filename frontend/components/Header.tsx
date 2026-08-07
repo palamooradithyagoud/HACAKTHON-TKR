@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
-import { Bell, ChevronDown, Search } from "lucide-react";
+import Link from "next/link";
+import { Bell, ChevronDown, Search, MessagesSquare } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface HeaderProps {
@@ -108,6 +109,16 @@ export default function Header({ userName = "Palamoor" }: HeaderProps) {
             )}
           </AnimatePresence>
         </div>
+
+        {/* Contact Faculty Messenger Box Link */}
+        <Link
+          href="/messages"
+          className="relative px-3.5 py-2.5 glass rounded-xl text-slate-300 hover:text-white transition-colors flex items-center gap-2 border border-indigo-500/30 bg-indigo-500/10 hover:bg-indigo-500/20 text-xs font-bold"
+        >
+          <MessagesSquare className="w-4 h-4 text-indigo-400" />
+          <span className="hidden sm:inline text-indigo-200">Contact Faculty</span>
+          <span className="w-2 h-2 rounded-full bg-indigo-400 animate-pulse" />
+        </Link>
 
         {/* Notification bell */}
         <motion.button

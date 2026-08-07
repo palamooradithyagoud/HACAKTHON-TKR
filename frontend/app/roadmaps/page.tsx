@@ -3780,10 +3780,67 @@ function RoadmapDetailView({
 
   const isCareerRoadmap = selectedRoadmap.category === "career";
 
-  const toggleSubtopic = (subtopicId: string, nodeName: string) => {
+  React.useEffect(() => {
+    if (!userId) return;
+    async function loadSubtopics() {
+      try {
+        const { data } = await supabase
+          .from("roadmap_progress")
+          .select("node_id, status")
+          .eq("user_id", userId)
+          .eq("roadmap_id", selectedRoadmap.id)
+          .eq("category", "subtopic");
+
+        if (data) {
+          const map: Record<string, boolean> = {};
+          data.forEach((row) => {
+            map[row.node_id] = row.status === "completed";
+          });
+          setCompletedSubtopics((prev) => ({ ...prev, ...map }));
+        }
+      } catch (err) {}
+    }
+    loadSubtopics();
+  }, [userId, selectedRoadmap.id]);
+
+  const toggleSubtopic = async (subtopicId: string, nodeName: string) => {
     const isCurrentlyDone = !!completedSubtopics[subtopicId];
-    const updatedSubtopics = { ...completedSubtopics, [subtopicId]: !isCurrentlyDone };
+    const newDoneState = !isCurrentlyDone;
+    const updatedSubtopics = { ...completedSubtopics, [subtopicId]: newDoneState };
     setCompletedSubtopics(updatedSubtopics);
+
+    if (userId) {
+      try {
+        if (newDoneState) {
+          const rowData = {
+            user_id: userId,
+            roadmap_id: selectedRoadmap.id,
+            node_id: subtopicId,
+            node_title: subtopicId,
+            category: "subtopic",
+            status: "completed",
+            completed_at: new Date().toISOString(),
+          };
+          const { error } = await supabase.from("roadmap_progress").upsert(
+            rowData,
+            { onConflict: "user_id,roadmap_id,node_id" }
+          );
+          if (error && (error.code === "42P10" || error.message?.includes("ON CONFLICT"))) {
+            await supabase.from("roadmap_progress").delete().eq("user_id", userId).eq("roadmap_id", selectedRoadmap.id).eq("node_id", subtopicId);
+            await supabase.from("roadmap_progress").insert(rowData);
+          }
+        } else {
+          await supabase
+            .from("roadmap_progress")
+            .delete()
+            .eq("user_id", userId)
+            .eq("roadmap_id", selectedRoadmap.id)
+            .eq("node_id", subtopicId);
+        }
+      } catch (err) {
+        console.warn("Failed to sync subtopic completion to Supabase:", err);
+      }
+    }
 
     const branchData = getRightBranchesForNode(nodeName, selectedRoadmap.id);
     const allTopics = branchData.groups.flatMap((g) => g.topics);
@@ -3855,17 +3912,22 @@ function RoadmapDetailView({
 
     if (userId) {
       try {
-        await supabase.from("roadmap_progress").upsert(
-          {
-            user_id: userId,
-            roadmap_id: selectedRoadmap.id,
-            node_id: "_roadmap_started",
-            node_title: selectedRoadmap.displayTitle || selectedRoadmap.title,
-            status: "started",
-            completed_at: new Date().toISOString(),
-          },
+        const rowData = {
+          user_id: userId,
+          roadmap_id: selectedRoadmap.id,
+          node_id: "_roadmap_started",
+          node_title: selectedRoadmap.displayTitle || selectedRoadmap.title,
+          status: "started",
+          completed_at: new Date().toISOString(),
+        };
+        const { error } = await supabase.from("roadmap_progress").upsert(
+          rowData,
           { onConflict: "user_id,roadmap_id,node_id" }
         );
+        if (error && (error.code === "42P10" || error.message?.includes("ON CONFLICT"))) {
+          await supabase.from("roadmap_progress").delete().eq("user_id", userId).eq("roadmap_id", selectedRoadmap.id).eq("node_id", "_roadmap_started");
+          await supabase.from("roadmap_progress").insert(rowData);
+        }
       } catch (e) {
         console.warn("Failed to mark roadmap started in Supabase:", e);
       }
@@ -4451,17 +4513,22 @@ export default function RoadmapsPage() {
     if (userId) {
       try {
         if (newDoneState) {
-          await supabase.from("roadmap_progress").upsert(
-            {
-              user_id: userId,
-              roadmap_id: roadmapKey,
-              node_id: nodeName,
-              node_title: nodeName,
-              status: "completed",
-              completed_at: new Date().toISOString(),
-            },
+          const rowData = {
+            user_id: userId,
+            roadmap_id: roadmapKey,
+            node_id: nodeName,
+            node_title: nodeName,
+            status: "completed",
+            completed_at: new Date().toISOString(),
+          };
+          const { error } = await supabase.from("roadmap_progress").upsert(
+            rowData,
             { onConflict: "user_id,roadmap_id,node_id" }
           );
+          if (error && (error.code === "42P10" || error.message?.includes("ON CONFLICT"))) {
+            await supabase.from("roadmap_progress").delete().eq("user_id", userId).eq("roadmap_id", roadmapKey).eq("node_id", nodeName);
+            await supabase.from("roadmap_progress").insert(rowData);
+          }
         } else {
           await supabase
             .from("roadmap_progress")
@@ -4522,17 +4589,22 @@ export default function RoadmapsPage() {
 
     if (userId) {
       try {
-        await supabase.from("roadmap_progress").upsert(
-          {
-            user_id: userId,
-            roadmap_id: roadmap.id,
-            node_id: "_roadmap_started",
-            node_title: roadmap.displayTitle || roadmap.title,
-            status: "started",
-            completed_at: new Date().toISOString(),
-          },
+        const rowData = {
+          user_id: userId,
+          roadmap_id: roadmap.id,
+          node_id: "_roadmap_started",
+          node_title: roadmap.displayTitle || roadmap.title,
+          status: "started",
+          completed_at: new Date().toISOString(),
+        };
+        const { error } = await supabase.from("roadmap_progress").upsert(
+          rowData,
           { onConflict: "user_id,roadmap_id,node_id" }
         );
+        if (error && (error.code === "42P10" || error.message?.includes("ON CONFLICT"))) {
+          await supabase.from("roadmap_progress").delete().eq("user_id", userId).eq("roadmap_id", roadmap.id).eq("node_id", "_roadmap_started");
+          await supabase.from("roadmap_progress").insert(rowData);
+        }
       } catch (err) {
         console.warn("Failed to mark roadmap started in Supabase:", err);
       }

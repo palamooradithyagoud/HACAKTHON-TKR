@@ -14,13 +14,27 @@ export interface UserSession {
   name?: string;
   role: UserRole;
   loggedInAt: string;
+  roll_number?: string;
+  department?: string;
+  college?: string;
+  attendance?: number;
+  leetcode_solved?: number;
+  gfg_solved?: number;
+  codechef_solved?: number;
+  hackerrank_score?: number;
+  codeforces_solved?: number;
+  github_repos?: number;
+  github_commits?: number;
+  coding_score?: number;
+  target_role?: string;
+  user_data?: Record<string, any>;
 }
 
 interface AuthContextValue {
   session: UserSession | null;
   isLoading: boolean;
   unverifiedEmail: string | null;
-  login: (email: string, userId: string, name?: string, role?: UserRole) => void;
+  login: (email: string, userId: string, name?: string, role?: UserRole, extraData?: Record<string, any>) => void;
   logout: () => void;
   clearUnverifiedEmail: () => void;
   setUnverifiedEmail: (email: string | null) => void;
@@ -71,13 +85,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [session, isLoading, pathname, router]);
 
   const login = useCallback(
-    (email: string, userId: string, name?: string, role: UserRole = "student") => {
+    (email: string, userId: string, name?: string, role: UserRole = "student", extraData?: Record<string, any>) => {
       const newSession: UserSession = {
         email,
         user_id: userId,
         name: name || email.split("@")[0],
         role,
         loggedInAt: new Date().toISOString(),
+        roll_number: extraData?.roll_number || userId,
+        department: extraData?.department,
+        college: extraData?.college || "TKR College of Engineering & Technology",
+        attendance: extraData?.attendance,
+        leetcode_solved: extraData?.leetcode_solved,
+        gfg_solved: extraData?.gfg_solved,
+        codechef_solved: extraData?.codechef_solved,
+        hackerrank_score: extraData?.hackerrank_score,
+        codeforces_solved: extraData?.codeforces_solved,
+        github_repos: extraData?.github_repos,
+        github_commits: extraData?.github_commits,
+        coding_score: extraData?.coding_score,
+        target_role: extraData?.target_role || "Software Engineer",
+        user_data: extraData
       };
       try {
         localStorage.setItem(SESSION_KEY, JSON.stringify(newSession));

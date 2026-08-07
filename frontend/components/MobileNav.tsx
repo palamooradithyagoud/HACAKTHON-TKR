@@ -27,6 +27,7 @@ import {
   Settings,
   AlertTriangle,
   LogOut,
+  Trophy,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -42,13 +43,14 @@ const studentNavItems = [
   { name: "Practice", href: "/practice", icon: Target, desc: "Aptitude & company questions" },
   { name: "Career", href: "/career", icon: Briefcase, desc: "AI resume analysis" },
   { name: "Explore", href: "/explore", icon: ExploreIcon, desc: "Trending skills & tools" },
+  { name: "Messages", href: "/messages", icon: MessagesSquare, desc: "Contact faculty & mentors" },
   { name: "Analytics", href: "/analytics", icon: BarChart3, desc: "Detailed performance" },
   { name: "Profile", href: "/settings", icon: UserIcon, desc: "Account & settings" },
 ];
 
 const facultyNavItems = [
   { name: "Home", href: "/dashboard", icon: LayoutGrid, desc: "SaaS home & tasks" },
-  { name: "Students", href: "/students", icon: Users, desc: "Student list & details" },
+  { name: "Leaderboard", href: "/students", icon: Trophy, desc: "Student coding leaderboard & details" },
   { name: "Analytics", href: "/analytics", icon: BarChart3, desc: "Aggregated performance" },
   { name: "Warnings", href: "/warnings", icon: AlertTriangle, desc: "Academic warnings" },
 ];
@@ -63,7 +65,7 @@ const studentBottomBarItems = [
 
 const facultyBottomBarItems = [
   { name: "Home", href: "/dashboard", icon: LayoutGrid },
-  { name: "Students", href: "/students", icon: Users },
+  { name: "Leaderboard", href: "/students", icon: Trophy },
   { name: "Analytics", href: "/analytics", icon: BarChart3 },
   { name: "Warnings", href: "/warnings", icon: AlertTriangle },
 ];

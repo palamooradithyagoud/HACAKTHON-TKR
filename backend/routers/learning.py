@@ -563,7 +563,7 @@ async def save_playlist(
             "user_id":      user_id,
         }
         try:
-            result = sb.table("saved_playlists").upsert(data, on_conflict="playlist_id,user_id").execute()
+            result = sb.table("saved_playlists").upsert(data, on_conflict="user_id,playlist_id").execute()
             res_data = result.data
         except Exception as upsert_err:
             logger.warning(f"Upsert failed, falling back to manual select/insert: {upsert_err}")
@@ -604,7 +604,14 @@ async def save_playlist(
                     "skill_name": "saved_playlists",
                     "completed_steps": existing_lp,
                 }
-                sb.table("learning_progress").upsert(lp_row, on_conflict="session_id, skill_name").execute()
+                try:
+                    sb.table("learning_progress").upsert(lp_row, on_conflict="session_id,skill_name").execute()
+                except Exception as lp_err:
+                    existing_check = sb.table("learning_progress").select("id").eq("session_id", user_id).eq("skill_name", "saved_playlists").execute()
+                    if existing_check.data:
+                        sb.table("learning_progress").update(lp_row).eq("session_id", user_id).eq("skill_name", "saved_playlists").execute()
+                    else:
+                        sb.table("learning_progress").insert(lp_row).execute()
         except Exception as jsonb_sync_err:
             logger.warning(f"Error syncing saved playlist to learning_progress: {jsonb_sync_err}")
 
@@ -764,7 +771,14 @@ async def sync_saved_playlists(
             }
             if _is_uuid(current_user_id):
                 lp_row["user_id"] = current_user_id
-            sb.table("learning_progress").upsert(lp_row, on_conflict="session_id, skill_name").execute()
+            try:
+                sb.table("learning_progress").upsert(lp_row, on_conflict="session_id,skill_name").execute()
+            except Exception:
+                existing_check = sb.table("learning_progress").select("id").eq("session_id", current_user_id).eq("skill_name", "saved_playlists").execute()
+                if existing_check.data:
+                    sb.table("learning_progress").update(lp_row).eq("session_id", current_user_id).eq("skill_name", "saved_playlists").execute()
+                else:
+                    sb.table("learning_progress").insert(lp_row).execute()
 
             # Record event in user_feedback analytics table
             try:
@@ -1136,7 +1150,10 @@ async def complete_video(
                     }
                     if _is_uuid(user_id):
                         lp_upd["user_id"] = user_id
-                    sb.table("learning_progress").upsert(lp_upd, on_conflict="session_id, skill_name").execute()
+                    try:
+                        sb.table("learning_progress").upsert(lp_upd, on_conflict="session_id,skill_name").execute()
+                    except Exception:
+                        sb.table("learning_progress").update(lp_upd).eq("session_id", user_id).eq("skill_name", "saved_playlists").execute()
         except Exception as jsonb_err:
             logger.warning(f"Error updating learning_progress JSONB: {jsonb_err}")
 
@@ -1303,3 +1320,63 @@ Respond ONLY with valid JSON in this exact structure:
                 ]
             }
         }
+
+
+# ── Roadmap Progress Sync Endpoints ───────────────────────────────────────────
+
+class RoadmapProgressRequest(BaseModel):
+    user_id: Optional[str] = None
+    roadmap_id: str
+    node_id: str
+    node_title: str
+    category: Optional[str] = ""
+    status: Optional[str] = "completed"
+
+
+@router.get("/roadmap-progress/{user_id}")
+def get_user_roadmap_progress(user_id: str):
+    """Fetch all roadmap progress entries for a given user from Supabase."""
+    sb = get_supabase()
+    if not sb:
+        return {"success": False, "progress": []}
+    try:
+        res = sb.table("roadmap_progress").select("*").eq("user_id", user_id).execute()
+        return {"success": True, "user_id": user_id, "progress": res.data or []}
+    except Exception as e:
+        logger.error(f"Error fetching roadmap progress for {user_id}: {e}")
+        return {"success": False, "error": str(e), "progress": []}
+
+
+@router.post("/roadmap-progress")
+def save_user_roadmap_progress(
+    req: RoadmapProgressRequest,
+    current_user_id: str = Depends(get_session_or_user_id)
+):
+    """Save or delete a roadmap progress node/subtopic entry in Supabase."""
+    user_id = req.user_id or current_user_id
+    sb = get_supabase()
+    if not sb:
+        raise HTTPException(status_code=503, detail="Supabase connection unavailable")
+    try:
+        if req.status in ["completed", "started"]:
+            row_data = {
+                "user_id": user_id,
+                "roadmap_id": req.roadmap_id,
+                "node_id": req.node_id,
+                "node_title": req.node_title,
+                "category": req.category or "",
+                "status": req.status,
+            }
+            try:
+                res = sb.table("roadmap_progress").upsert(row_data, on_conflict="user_id,roadmap_id,node_id").execute()
+            except Exception as upsert_err:
+                logger.warning(f"Upsert failed, falling back to delete+insert: {upsert_err}")
+                sb.table("roadmap_progress").delete().eq("user_id", user_id).eq("roadmap_id", req.roadmap_id).eq("node_id", req.node_id).execute()
+                res = sb.table("roadmap_progress").insert(row_data).execute()
+        else:
+            res = sb.table("roadmap_progress").delete().eq("user_id", user_id).eq("roadmap_id", req.roadmap_id).eq("node_id", req.node_id).execute()
+        return {"success": True, "user_id": user_id, "data": res.data}
+    except Exception as e:
+        logger.error(f"Error saving roadmap progress: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+

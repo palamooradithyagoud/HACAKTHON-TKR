@@ -13,7 +13,10 @@ import {
   BarChart2,
   ClipboardCheck,
   Mail,
-  AlertTriangle
+  AlertTriangle,
+  Trophy,
+  ChevronRight,
+  Code
 } from "lucide-react";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -35,9 +38,11 @@ export default function FacultyDashboard() {
   const { session } = useAuth();
   
   const students = getSharedMockStudents();
-  const attendanceWarnings = students.filter(s => s.attendance_percentage < 65).slice(0, 3);
+  const topCoders = [...students].sort((a, b) => (b.coding_score || 0) - (a.coding_score || 0)).slice(0, 4);
+
+  const attendanceWarnings = students.filter(s => (s.attendance_percentage ?? (s as any).attendance ?? 100) < 75).slice(0, 3);
   const assignmentWarnings = students.filter(s => s.unsubmitted_assignments && s.unsubmitted_assignments.length > 0).slice(0, 3);
-  const totalAttendanceWarnings = students.filter(s => s.attendance_percentage < 65).length;
+  const totalAttendanceWarnings = students.filter(s => (s.attendance_percentage ?? (s as any).attendance ?? 100) < 75).length;
   const totalAssignmentWarnings = students.filter(s => s.unsubmitted_assignments && s.unsubmitted_assignments.length > 0).length;
 
   // Live counts from backend
@@ -158,6 +163,49 @@ export default function FacultyDashboard() {
             </div>
           </Link>
 
+        </div>
+      </motion.div>
+
+      {/* 4. FACULTY SECTION COHORT CODING LEADERBOARD */}
+      <motion.div variants={itemVariants} className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-[15px] font-bold text-amber-400 flex items-center gap-2">
+            <Trophy className="w-4 h-4 text-amber-400" /> Student Coding Leaderboard (Cohort Top Coders)
+          </h3>
+          <Link href="/students" className="text-xs text-indigo-400 hover:text-indigo-300 font-bold flex items-center gap-1 transition-colors">
+            <span>View Full Leaderboard</span>
+            <ChevronRight className="w-4 h-4" />
+          </Link>
+        </div>
+
+        <div className="bg-[#1a1f2d] border border-white/10 rounded-2xl p-4 space-y-3">
+          {topCoders.map((s, idx) => (
+            <Link key={s.id || idx} href="/students" className="flex items-center justify-between bg-white/[0.02] hover:bg-white/[0.04] p-3 rounded-xl border border-white/5 transition-colors">
+              <div className="flex items-center gap-3">
+                <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-black font-mono ${
+                  idx === 0 ? "bg-amber-500/20 text-amber-300 border border-amber-500/40" :
+                  idx === 1 ? "bg-slate-400/20 text-slate-200 border border-slate-400/40" :
+                  idx === 2 ? "bg-amber-700/20 text-amber-400 border border-amber-700/40" :
+                  "bg-white/5 text-slate-400 border border-white/10"
+                }`}>
+                  #{idx + 1}
+                </div>
+                <div>
+                  <div className="text-xs font-bold text-white flex items-center gap-2">
+                    <span>{s.name}</span>
+                    <span className="text-[10px] font-mono font-normal text-slate-400">{s.roll_number}</span>
+                  </div>
+                  <div className="text-[10px] text-slate-400 mt-0.5">{s.department} • Year {s.year}</div>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="text-xs font-mono font-black text-amber-400 bg-amber-500/10 px-2.5 py-1 rounded-lg border border-amber-500/20">
+                  {s.coding_score} pts
+                </span>
+                <ChevronRight className="w-4 h-4 text-slate-600" />
+              </div>
+            </Link>
+          ))}
         </div>
       </motion.div>
 

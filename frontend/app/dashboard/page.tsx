@@ -1,21 +1,23 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import Header from "@/components/Header";
 import MetricCards from "@/components/MetricCards";
 import UpcomingList from "@/components/UpcomingList";
 import PracticeOverview from "@/components/PracticeOverview";
 import FacultyDashboard from "@/components/FacultyDashboard";
+import AIInterviewModal from "@/components/AIInterviewModal";
 import { useQuery } from "@tanstack/react-query";
 import { fetchDashboardData } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { motion } from "framer-motion";
-import { Target, FileText, Map, Sparkles } from "lucide-react";
+import { Target, FileText, Map, Sparkles, Bot } from "lucide-react";
 
 export default function DashboardPage() {
   const { session } = useAuth();
   const userId = session?.user_id;
+  const [isAIInterviewOpen, setIsAIInterviewOpen] = useState(false);
 
   const { data } = useQuery({
     queryKey: ["dashboard", userId],
@@ -55,6 +57,18 @@ export default function DashboardPage() {
           <span className="text-[10px] text-slate-500 font-medium">Shortcuts</span>
         </div>
         <div className="grid grid-cols-4 gap-3 bg-white/[0.02] border border-white/10 rounded-2xl p-3.5 backdrop-blur-xl">
+          <button
+            onClick={() => setIsAIInterviewOpen(true)}
+            className="flex flex-col items-center justify-center gap-1.5 group select-none text-left"
+          >
+            <div className="w-13 h-13 rounded-full bg-gradient-to-br from-rose-500/25 to-pink-600/20 border border-rose-400/30 flex items-center justify-center text-rose-400 shadow-md shadow-rose-500/10 group-active:scale-90 transition-transform">
+              <Bot className="w-5 h-5" />
+            </div>
+            <span className="text-[11px] font-semibold text-slate-300 group-hover:text-white text-center tracking-tight">
+              AI Interview
+            </span>
+          </button>
+
           <Link
             href="/practice"
             className="flex flex-col items-center justify-center gap-1.5 group select-none"
@@ -90,18 +104,6 @@ export default function DashboardPage() {
               Roadmaps
             </span>
           </Link>
-
-          <Link
-            href="/ai-mentor"
-            className="flex flex-col items-center justify-center gap-1.5 group select-none"
-          >
-            <div className="w-13 h-13 rounded-full bg-gradient-to-br from-cyan-500/25 to-blue-600/20 border border-cyan-400/30 flex items-center justify-center text-cyan-400 shadow-md shadow-cyan-500/10 group-active:scale-90 transition-transform">
-              <Sparkles className="w-5 h-5" />
-            </div>
-            <span className="text-[11px] font-semibold text-slate-300 group-hover:text-white text-center tracking-tight">
-              AI Mentor
-            </span>
-          </Link>
         </div>
       </div>
 
@@ -119,6 +121,12 @@ export default function DashboardPage() {
           />
         </div>
       </div>
+
+      <AIInterviewModal
+        isOpen={isAIInterviewOpen}
+        onClose={() => setIsAIInterviewOpen(false)}
+      />
     </motion.div>
   );
 }
+

@@ -34,6 +34,7 @@ import {
 import { motion } from "framer-motion";
 import PracticeTopicDrawer from "@/components/PracticeTopicDrawer";
 import FloatingCTA from "@/components/mobile/FloatingCTA";
+import AIInterviewModal from "@/components/AIInterviewModal";
 import {
   fetchPracticeCompanies,
   fetchCompanyQuestions,
@@ -219,6 +220,7 @@ export default function PracticePage() {
   const [selectedStatus, setSelectedStatus] = useState<"All" | "Unsolved" | "Completed">("All");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [activePracticeTopic, setActivePracticeTopic] = useState<string | null>(null);
+  const [isAIInterviewOpen, setIsAIInterviewOpen] = useState<boolean>(false);
 
   const [questions, setQuestions] = useState<PracticeQuestion[]>([]);
   const [totalCount, setTotalCount] = useState<number>(0);
@@ -266,18 +268,23 @@ export default function PracticePage() {
     // 2. Supabase DB Persistence
     try {
       if (newDoneState) {
-        await supabase.from("leetcode_progress").upsert(
-          {
-            user_id: userId,
-            company_slug: "foundation",
-            question_id: problemId,
-            question_title: details?.title || `Problem ${problemId}`,
-            difficulty: details?.difficulty || "Easy",
-            status: "solved",
-            solved_at: new Date().toISOString(),
-          },
+        const rowData = {
+          user_id: userId,
+          company_slug: "foundation",
+          question_id: problemId,
+          question_title: details?.title || `Problem ${problemId}`,
+          difficulty: details?.difficulty || "Easy",
+          status: "solved",
+          solved_at: new Date().toISOString(),
+        };
+        const { error } = await supabase.from("leetcode_progress").upsert(
+          rowData,
           { onConflict: "user_id,company_slug,question_id" }
         );
+        if (error && (error.code === "42P10" || error.message?.includes("ON CONFLICT"))) {
+          await supabase.from("leetcode_progress").delete().eq("user_id", userId).eq("company_slug", "foundation").eq("question_id", problemId);
+          await supabase.from("leetcode_progress").insert(rowData);
+        }
       } else {
         await supabase
           .from("leetcode_progress")
@@ -386,20 +393,25 @@ export default function PracticePage() {
     try {
       if (qDetails) {
         if (newDoneState) {
-          await supabase.from("leetcode_progress").upsert(
-            {
-              user_id: userId,
-              company_slug: qDetails.company,
-              question_id: qDetails.id,
-              question_title: qDetails.title,
-              difficulty: qDetails.difficulty,
-              acceptance: qDetails.acceptance || "",
-              frequency: qDetails.frequency || "",
-              status: "solved",
-              solved_at: new Date().toISOString(),
-            },
+          const rowData = {
+            user_id: userId,
+            company_slug: qDetails.company,
+            question_id: qDetails.id,
+            question_title: qDetails.title,
+            difficulty: qDetails.difficulty,
+            acceptance: qDetails.acceptance || "",
+            frequency: qDetails.frequency || "",
+            status: "solved",
+            solved_at: new Date().toISOString(),
+          };
+          const { error } = await supabase.from("leetcode_progress").upsert(
+            rowData,
             { onConflict: "user_id,company_slug,question_id" }
           );
+          if (error && (error.code === "42P10" || error.message?.includes("ON CONFLICT"))) {
+            await supabase.from("leetcode_progress").delete().eq("user_id", userId).eq("company_slug", qDetails.company).eq("question_id", qDetails.id);
+            await supabase.from("leetcode_progress").insert(rowData);
+          }
         } else {
           await supabase
             .from("leetcode_progress")
@@ -410,17 +422,22 @@ export default function PracticePage() {
         }
       } else {
         if (newDoneState) {
-          await supabase.from("roadmap_progress").upsert(
-            {
-              user_id: userId,
-              roadmap_id: "dsa-beginner",
-              node_id: key,
-              node_title: key,
-              status: "completed",
-              completed_at: new Date().toISOString(),
-            },
+          const rowData = {
+            user_id: userId,
+            roadmap_id: "dsa-beginner",
+            node_id: key,
+            node_title: key,
+            status: "completed",
+            completed_at: new Date().toISOString(),
+          };
+          const { error } = await supabase.from("roadmap_progress").upsert(
+            rowData,
             { onConflict: "user_id,roadmap_id,node_id" }
           );
+          if (error && (error.code === "42P10" || error.message?.includes("ON CONFLICT"))) {
+            await supabase.from("roadmap_progress").delete().eq("user_id", userId).eq("roadmap_id", "dsa-beginner").eq("node_id", key);
+            await supabase.from("roadmap_progress").insert(rowData);
+          }
         } else {
           await supabase
             .from("roadmap_progress")
@@ -594,14 +611,14 @@ export default function PracticePage() {
 
       {/* ── MODE SELECTION: INDEX PAGE CARDS */}
       {selectedMode === "index" && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
           {/* Card 1: Beginner Level */}
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4 }}
             onClick={() => setSelectedMode("beginner")}
-            className="relative rounded-2xl p-6 md:p-8 bg-[#131b2e] border border-white/[0.08] hover:border-indigo-500/40 hover:bg-[#18233c] hover:shadow-2xl hover:shadow-indigo-500/10 hover:-translate-y-1 transition-all duration-300 cursor-pointer flex flex-col justify-between group"
+            className="relative rounded-2xl p-6 bg-[#131b2e] border border-white/[0.08] hover:border-indigo-500/40 hover:bg-[#18233c] hover:shadow-2xl hover:shadow-indigo-500/10 hover:-translate-y-1 transition-all duration-300 cursor-pointer flex flex-col justify-between group"
           >
             <div className="space-y-5">
               <div className="flex items-center justify-between">
@@ -614,10 +631,10 @@ export default function PracticePage() {
               </div>
 
               <div>
-                <h3 className="text-xl md:text-2xl font-bold text-white mb-2 group-hover:text-indigo-300 transition-colors">
+                <h3 className="text-lg md:text-xl font-bold text-white mb-2 group-hover:text-indigo-300 transition-colors">
                   1. Beginner Level
                 </h3>
-                <p className="text-sm text-slate-400 font-normal leading-relaxed">
+                <p className="text-xs text-slate-400 font-normal leading-relaxed">
                   Master foundational data structures & algorithms concepts, core patterns, and time complexities.
                 </p>
               </div>
@@ -629,13 +646,13 @@ export default function PracticePage() {
                   e.stopPropagation();
                   setSelectedMode("beginner");
                 }}
-                className="px-4 py-2 rounded-xl bg-indigo-950/80 hover:bg-indigo-900/90 text-indigo-300 border border-indigo-700/50 text-xs font-bold transition-all"
+                className="px-3 py-1.5 rounded-xl bg-indigo-950/80 hover:bg-indigo-900/90 text-indigo-300 border border-indigo-700/50 text-xs font-bold transition-all"
               >
                 Core Concept Modules
               </button>
 
               <div className="flex items-center gap-1.5 text-xs font-bold text-cyan-400 group-hover:text-cyan-300 transition-colors">
-                <span>View Concepts</span>
+                <span>View</span>
                 <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
               </div>
             </div>
@@ -647,7 +664,7 @@ export default function PracticePage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1, duration: 0.4 }}
             onClick={() => setSelectedMode("company")}
-            className="relative rounded-2xl p-6 md:p-8 bg-[#131b2e] border border-white/[0.08] hover:border-indigo-500/40 hover:bg-[#18233c] hover:shadow-2xl hover:shadow-indigo-500/10 hover:-translate-y-1 transition-all duration-300 cursor-pointer flex flex-col justify-between group"
+            className="relative rounded-2xl p-6 bg-[#131b2e] border border-white/[0.08] hover:border-indigo-500/40 hover:bg-[#18233c] hover:shadow-2xl hover:shadow-indigo-500/10 hover:-translate-y-1 transition-all duration-300 cursor-pointer flex flex-col justify-between group"
           >
             <div className="space-y-5">
               <div className="flex items-center justify-between">
@@ -660,10 +677,10 @@ export default function PracticePage() {
               </div>
 
               <div>
-                <h3 className="text-xl md:text-2xl font-bold text-white mb-2 group-hover:text-indigo-300 transition-colors">
+                <h3 className="text-lg md:text-xl font-bold text-white mb-2 group-hover:text-indigo-300 transition-colors">
                   2. Company Wise Questions
                 </h3>
-                <p className="text-sm text-slate-400 font-normal leading-relaxed">
+                <p className="text-xs text-slate-400 font-normal leading-relaxed">
                   Explore real LeetCode questions asked by {companiesList.length || "660+"} top tech companies loaded directly from CSV datasets.
                 </p>
               </div>
@@ -675,13 +692,59 @@ export default function PracticePage() {
                   e.stopPropagation();
                   setSelectedMode("company");
                 }}
-                className="px-4 py-2 rounded-xl bg-indigo-950/80 hover:bg-indigo-900/90 text-indigo-300 border border-indigo-700/50 text-xs font-bold transition-all"
+                className="px-3 py-1.5 rounded-xl bg-indigo-950/80 hover:bg-indigo-900/90 text-indigo-300 border border-indigo-700/50 text-xs font-bold transition-all"
               >
-                LeetCode Question Bank
+                LeetCode Bank
               </button>
 
               <div className="flex items-center gap-1.5 text-xs font-bold text-cyan-400 group-hover:text-cyan-300 transition-colors">
-                <span>Explore Questions</span>
+                <span>Explore</span>
+                <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Card 3: AI Mock Interview (100% UNLOCKED) */}
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2, duration: 0.4 }}
+            onClick={() => setIsAIInterviewOpen(true)}
+            className="relative rounded-2xl p-6 bg-gradient-to-br from-[#131b2e] via-[#161c36] to-[#251435] border border-rose-500/30 hover:border-rose-500/60 hover:shadow-2xl hover:shadow-rose-500/10 hover:-translate-y-1 transition-all duration-300 cursor-pointer flex flex-col justify-between group"
+          >
+            <div className="space-y-5">
+              <div className="flex items-center justify-between">
+                <div className="w-12 h-12 rounded-2xl bg-rose-500/15 border border-rose-500/30 text-rose-400 flex items-center justify-center group-hover:scale-105 transition-transform">
+                  <Sparkles className="w-6 h-6" />
+                </div>
+                <span className="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[10px] font-black tracking-widest uppercase flex items-center gap-1">
+                  <Sparkles className="w-3 h-3" /> UNLOCKED
+                </span>
+              </div>
+
+              <div>
+                <h3 className="text-lg md:text-xl font-bold text-white mb-2 group-hover:text-rose-300 transition-colors flex items-center gap-2">
+                  <span>3. AI Mock Interviews</span>
+                </h3>
+                <p className="text-xs text-slate-400 font-normal leading-relaxed">
+                  Real-time AI voice readout & speech-to-text technical mock interviews with live Groq LLM scoring and transcript exports.
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-8 pt-5 border-t border-white/[0.06] flex items-center justify-between gap-4">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsAIInterviewOpen(true);
+                }}
+                className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-rose-600 to-purple-600 hover:from-rose-500 hover:to-purple-500 text-white text-xs font-bold transition-all shadow-md"
+              >
+                Start AI Interview
+              </button>
+
+              <div className="flex items-center gap-1.5 text-xs font-bold text-rose-400 group-hover:text-rose-300 transition-colors">
+                <span>Practice Now</span>
                 <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
               </div>
             </div>
@@ -1258,6 +1321,12 @@ export default function PracticePage() {
           label="Practice Modes"
         />
       )}
+
+      {/* AI Mock Interview Modal */}
+      <AIInterviewModal
+        isOpen={isAIInterviewOpen}
+        onClose={() => setIsAIInterviewOpen(false)}
+      />
     </motion.div>
   );
 }

@@ -9,15 +9,27 @@ from pydantic import BaseModel, Field
 from backend.services.supabase_service import get_supabase
 from backend.services.auth_service import get_current_user_id, get_session_or_user_id
 from backend.services.groq_service import chat_with_groq
+from backend.services.score_calculator import compute_overall_coding_score
+from backend.services import messaging_service
 
 logger = logging.getLogger(__name__)
+
+import time
 
 router = APIRouter(prefix="/api/faculty", tags=["faculty"])
 
 DB_FILE = os.path.join(os.path.dirname(__file__), "..", "data", "faculty_db.json")
 
-def load_db() -> Dict[str, Any]:
-    """Helper to read database data and merge registered Supabase student profiles."""
+_FACULTY_DB_CACHE = {"data": None, "timestamp": 0.0}
+
+def invalidate_faculty_cache():
+    _FACULTY_DB_CACHE["data"] = None
+
+def load_db(force_refresh: bool = False) -> Dict[str, Any]:
+    """Helper to read database data and merge registered Supabase student profiles with 30s TTL cache for sub-10ms latency."""
+    now = time.time()
+    if not force_refresh and _FACULTY_DB_CACHE["data"] is not None and (now - _FACULTY_DB_CACHE["timestamp"]) < 30.0:
+        return _FACULTY_DB_CACHE["data"]
     db_data = {
         "students": [],
         "classes": [],
@@ -36,13 +48,69 @@ def load_db() -> Dict[str, Any]:
     except Exception as e:
         logger.error(f"Error loading faculty DB: {e}")
 
-    # Dynamically fetch real registered students from Supabase DB table
+    # 1. Load dataset students from list_all_students() if available
+    dataset_students_map = {}
+    try:
+        from backend.services.student_auth import list_all_students
+        dataset_students = list_all_students()
+        if dataset_students:
+            for s in dataset_students:
+                roll = s.get("roll_number", "")
+                name = s.get("full_name", roll)
+                dept = s.get("department", "CSE")
+                att = float(s.get("attendance", 0))
+                coding_score = int(s.get("coding_score", 0))
+                
+                dataset_students_map[roll] = {
+                    "id": roll,
+                    "roll_number": roll,
+                    "name": name,
+                    "department": dept,
+                    "section": s.get("section", "Section A"),
+                    "year": str(s.get("year", "4")),
+                    "academic_year": str(s.get("academic_year", "4th Year")),
+                    "college": s.get("college", "TKR College of Engineering & Technology"),
+                    "email": s.get("email", ""),
+                    "target_role": s.get("target_role", "Software Engineer"),
+                    "leetcode_handle": f"{roll.lower()}_lc",
+                    "github_handle": f"{roll.lower()}_gh",
+                    "attendance_percentage": att,
+                    "coding_score": coding_score,
+                    "leetcode_solved": s.get("leetcode_solved", 0),
+                    "gfg_solved": s.get("gfg_solved", 0),
+                    "codechef_solved": s.get("codechef_solved", 0),
+                    "hackerrank_score": s.get("hackerrank_score", 0),
+                    "codeforces_solved": s.get("codeforces_solved", 0),
+                    "github_repos": s.get("github_repos", 0),
+                    "github_commits": s.get("github_commits", 0),
+                    "placement_readiness_score": min(100.0, round((coding_score / 100.0), 1)),
+                    "faculty_notes": "",
+                    "timeline": [
+                        {"date": datetime.now().strftime("%Y-%m-%d"), "title": "Account Active", "description": "Enrolled in SkillsCatalyst platform."}
+                    ]
+                }
+    except Exception as e:
+        logger.warning(f"Failed to load dataset student profiles for faculty: {e}")
+
+    # 2. Dynamically fetch real registered students from Supabase DB table in ONE bulk query
     sb = get_supabase()
+    supabase_students = []
     if sb:
         try:
             res_acad = sb.from_("user_academic_profile").select("*").execute()
             if res_acad.data:
-                supabase_students = []
+                # Bulk fetch all coding profiles in 1 single query instead of N loop queries!
+                coding_map = {}
+                try:
+                    res_code_all = sb.from_("user_coding_profiles").select("*").execute()
+                    if res_code_all.data:
+                        for c_row in res_code_all.data:
+                            c_uid = c_row.get("user_id")
+                            if c_uid:
+                                coding_map[c_uid] = c_row
+                except Exception as e_code:
+                    logger.warning(f"Bulk coding profiles fetch warning: {e_code}")
+
                 for idx, s in enumerate(res_acad.data):
                     uid = s.get("user_id") or f"stu_{idx+1}"
                     full_name = s.get("full_name") or f"Student {idx+1}"
@@ -50,30 +118,33 @@ def load_db() -> Dict[str, Any]:
                     sec = s.get("section") or "Section A"
                     year = s.get("academic_year") or "2nd Year"
                     
-                    # Fetch student coding profile
                     lc_handle = ""
                     gh_handle = ""
-                    try:
-                        res_code = sb.from_("user_coding_profiles").select("*").eq("user_id", uid).execute()
-                        if res_code.data:
-                            lc_handle = res_code.data[0].get("leetcode_url", "")
-                            gh_handle = res_code.data[0].get("github_url", "")
-                    except Exception:
-                        pass
+                    computed_score = int(s.get("coding_score") or 0)
+                    
+                    c_row = coding_map.get(uid)
+                    if c_row:
+                        lc_handle = c_row.get("leetcode_url", "")
+                        gh_handle = c_row.get("github_url", "")
+                        stats_json = c_row.get("stats_json") or {}
+                        score_result = compute_overall_coding_score(stats_json)
+                        if score_result.get("overall_score", 0) > 0:
+                            computed_score = score_result["overall_score"]
 
                     att_val = float(s.get("attendance_percentage") or 0.0)
+                    roll_num = s.get("roll_number") or f"22TK1A{(dept[:3] if dept else '05').upper()}{str(idx+1).zfill(2)}"
                     supabase_students.append({
                         "id": uid,
                         "name": full_name,
-                        "roll_number": s.get("roll_number") or f"22TK1A{(dept[:3] if dept else '05').upper()}{str(idx+1).zfill(2)}",
+                        "roll_number": roll_num,
                         "section": sec,
                         "department": dept,
                         "year": year,
                         "academic_year": f"Year {year}",
                         "college": s.get("college") or "TKR College of Engineering & Technology",
                         "attendance_percentage": att_val,
-                        "coding_score": int(s.get("coding_score") or 0),
-                        "placement_readiness_score": 0.0,
+                        "coding_score": computed_score,
+                        "placement_readiness_score": min(100.0, round((computed_score / 100.0), 1)),
                         "faculty_notes": "",
                         "leetcode_handle": lc_handle,
                         "github_handle": gh_handle,
@@ -81,21 +152,27 @@ def load_db() -> Dict[str, Any]:
                             {"date": datetime.now().strftime("%Y-%m-%d"), "title": "Account Registered", "description": "Student joined SkillsCatalyst platform."}
                         ]
                     })
-                if supabase_students:
-                    existing_ids = {s["id"] for s in supabase_students}
-                    rest = [s for s in db_data["students"] if s["id"] not in existing_ids and not str(s.get("id", "")).startswith("STU") and "Student (" not in str(s.get("name", ""))]
-                    db_data["students"] = supabase_students + rest
-                else:
-                    db_data["students"] = [s for s in db_data["students"] if not str(s.get("id", "")).startswith("STU") and "Student (" not in str(s.get("name", ""))]
         except Exception as e:
             logger.warning(f"Failed to load Supabase student profiles: {e}")
 
-    # Remove any mock STU students from db_data
-    db_data["students"] = [s for s in db_data.get("students", []) if not str(s.get("id", "")).startswith("STU") and "Student (" not in str(s.get("name", ""))]
+    # Combine all student profiles
+    all_students_map = {**dataset_students_map}
+    for stu in supabase_students:
+        all_students_map[stu["id"]] = stu
+
+    if all_students_map:
+        db_data["students"] = list(all_students_map.values())
+    else:
+        db_data["students"] = [s for s in db_data.get("students", []) if not str(s.get("id", "")).startswith("STU") and "Student (" not in str(s.get("name", ""))]
+    
+    _FACULTY_DB_CACHE["data"] = db_data
+    _FACULTY_DB_CACHE["timestamp"] = time.time()
     return db_data
+
 
 def save_db(data: Dict[str, Any]) -> None:
     """Helper to write our mock JSON database."""
+    invalidate_faculty_cache()
     try:
         os.makedirs(os.path.dirname(DB_FILE), exist_ok=True)
         with open(DB_FILE, "w") as f:
@@ -155,6 +232,8 @@ class LearningMaterialCreate(BaseModel):
 class MessageSend(BaseModel):
     receiver_id: str
     content: str = Field(..., min_length=1)
+    sender_id: Optional[str] = None
+    sender_type: str = Field(default="faculty", description="'student' or 'faculty'")
 
 class AnnouncementCreate(BaseModel):
     title: str = Field(..., min_length=3)
@@ -225,11 +304,34 @@ async def get_students(current_user_id: str = Depends(get_session_or_user_id)):
 
 @router.get("/students/{student_id}")
 async def get_student_detail(student_id: str, current_user_id: str = Depends(get_session_or_user_id)):
-    """Get the full student details, academic metrics, timelines, and remarks."""
+    """Get full student details including coding profiles, questions solved, playlists, roadmaps, and attendance."""
     db = load_db()
     students = db.get("students", [])
     student = next((s for s in students if s["id"] == student_id), None)
     
+    sb = get_supabase()
+    if not student and sb:
+        try:
+            res_s = sb.table("user_academic_profile").select("*").eq("user_id", student_id).execute()
+            if res_s.data and len(res_s.data) > 0:
+                s = res_s.data[0]
+                student = {
+                    "id": student_id,
+                    "name": s.get("full_name", "Student"),
+                    "roll_number": s.get("roll_number", "22TK1A0501"),
+                    "section": s.get("section", "A"),
+                    "department": s.get("department", "CSE"),
+                    "year": s.get("academic_year", "2nd Year"),
+                    "academic_year": s.get("academic_year", "Year 2"),
+                    "college": s.get("college", "TKR College of Engineering & Technology"),
+                    "attendance_percentage": float(s.get("attendance_percentage") or 0.0),
+                    "coding_score": int(s.get("coding_score") or 0),
+                    "placement_readiness_score": 0.0,
+                    "faculty_notes": "",
+                }
+        except Exception:
+            pass
+
     if not student:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -264,16 +366,127 @@ async def get_student_detail(student_id: str, current_user_id: str = Depends(get
                 "feedback": sub.get("feedback", "")
             })
     student["assignment_history"] = student_assignments
+
+    # 1. Fetch Coding Profiles & Questions Solved — with formula-based score breakdown
+    coding_profiles = {
+        "leetcode_url": student.get("leetcode_handle", ""),
+        "github_url": student.get("github_handle", ""),
+        "total_solved": 0,
+        "overall_score": 0,
+        "platforms": []
+    }
+    if sb:
+        try:
+            import re
+            res_code = sb.table("user_coding_profiles").select("*").eq("user_id", student_id).execute()
+            if res_code.data and res_code.data[0]:
+                c_row = res_code.data[0]
+                coding_profiles["leetcode_url"] = c_row.get("leetcode_url") or coding_profiles["leetcode_url"]
+                coding_profiles["github_url"] = c_row.get("github_url") or coding_profiles["github_url"]
+                stats = c_row.get("stats_json") or {}
+
+                # Compute official score from formulas
+                score_result = compute_overall_coding_score(stats)
+                coding_profiles["overall_score"] = score_result["overall_score"]
+                coding_profiles["total_solved"] = score_result["total_solved"]
+                coding_profiles["platforms"] = score_result["platforms"]
+
+                # Update the student object with computed score
+                student["coding_score"] = score_result["overall_score"]
+        except Exception as e:
+            logger.warning(f"Error fetching coding profiles for {student_id}: {e}")
+
+    # 2. Fetch Playlists (Following vs Completed)
+    following_playlists = []
+    completed_playlists = []
+    if sb:
+        try:
+            res_pl = sb.table("saved_playlists").select("*").eq("user_id", student_id).execute()
+            if res_pl.data:
+                for pl in res_pl.data:
+                    p_info = {
+                        "id": pl.get("playlist_id"),
+                        "title": pl.get("title", "Untitled Playlist"),
+                        "channel": pl.get("channel", ""),
+                        "video_count": pl.get("video_count", "?"),
+                        "thumbnail": pl.get("thumbnail", "")
+                    }
+                    following_playlists.append(p_info)
+                    
+            res_lp = sb.table("learning_progress").select("completed_steps").eq("session_id", student_id).eq("skill_name", "saved_playlists").limit(1).execute()
+            if res_lp.data and len(res_lp.data) > 0:
+                steps = res_lp.data[0].get("completed_steps", [])
+                for step in steps:
+                    st_id = step.get("id") or step.get("playlist_id")
+                    st_title = step.get("title", "Saved Playlist")
+                    v_list = step.get("videos", [])
+                    comp_v = [v for v in v_list if v.get("completed") or v.get("watched")]
+                    if len(v_list) > 0 and len(comp_v) >= len(v_list):
+                        completed_playlists.append({
+                            "id": st_id,
+                            "title": st_title,
+                            "video_count": f"{len(comp_v)}/{len(v_list)}"
+                        })
+        except Exception as e:
+            logger.warning(f"Error fetching playlists info for {student_id}: {e}")
+
+    # 3. Fetch Roadmaps (Following vs Completed)
+    following_roadmaps = []
+    completed_roadmaps = []
+    if sb:
+        try:
+            from backend.routers.dashboard import ROADMAP_SPECS
+            res_rm = sb.table("roadmap_progress").select("roadmap_id, node_id, status").eq("user_id", student_id).execute()
+            if res_rm.data:
+                groups = {}
+                for r in res_rm.data:
+                    raw_rid = r.get("roadmap_id")
+                    if not raw_rid:
+                        continue
+                    if raw_rid not in groups:
+                        groups[raw_rid] = {"done": 0, "status": r.get("status")}
+                    if r.get("status") == "completed" and r.get("node_id") != "_roadmap_started":
+                        groups[raw_rid]["done"] += 1
+
+                for rid, ginfo in groups.items():
+                    spec = ROADMAP_SPECS.get(rid, {})
+                    rm_title = spec.get("name", rid.replace("-", " ").title())
+                    total_m = len(spec.get("nodes", [])) or 20
+                    pct = min(100, round((ginfo["done"] / total_m) * 100))
+                    item = {
+                        "roadmap_id": rid,
+                        "title": rm_title,
+                        "progress_percent": pct,
+                        "completed_milestones": ginfo["done"],
+                        "total_milestones": total_m
+                    }
+                    if pct >= 100 or ginfo["status"] == "completed":
+                        completed_roadmaps.append(item)
+                    else:
+                        following_roadmaps.append(item)
+        except Exception as e:
+            logger.warning(f"Error fetching roadmaps info for {student_id}: {e}")
+
+    student["coding_profiles"] = coding_profiles
+    student["playlists_info"] = {
+        "following": following_playlists,
+        "completed": completed_playlists
+    }
+    student["roadmaps_info"] = {
+        "following": following_roadmaps,
+        "completed": completed_roadmaps
+    }
+    student["attendance_info"] = {
+        "percentage": float(student.get("attendance_percentage") or 0.0),
+        "status": "Safe (≥75%)" if float(student.get("attendance_percentage") or 0.0) >= 75.0 else "Attention Required (<75%)"
+    }
     
     # AI Risk computation
     risk_level = "low"
     risk_reasons = []
-    if student.get("attendance_percentage", 100) < 75.0:
+    if float(student.get("attendance_percentage") or 0.0) < 75.0:
         risk_level = "high"
         risk_reasons.append("Attendance is below minimum threshold of 75%")
-    elif student.get("attendance_percentage", 100) < 80.0:
-        risk_level = "medium"
-        risk_reasons.append("Attendance is border-line (75%-80%)")
         
     if student.get("coding_score", 0) < 400:
         risk_level = "high" if risk_level == "medium" else "medium"
@@ -516,44 +729,52 @@ async def get_learning_materials(current_user_id: str = Depends(get_session_or_u
 
 @router.get("/messages/{student_id}")
 async def get_chat_history(student_id: str, current_user_id: str = Depends(get_session_or_user_id)):
-    """Retrieve chat history thread between the faculty and a target student."""
-    db = load_db()
-    messages = db.get("messages", [])
-    
-    # Filter messages sent between faculty_demo and the student
-    chat = [
-        m for m in messages 
-        if (m["sender_id"] == "faculty_demo" and m["receiver_id"] == student_id) or
-           (m["sender_id"] == student_id and m["receiver_id"] == "faculty_demo")
-    ]
-    
-    # Mark messages as read if sent by student
-    for m in chat:
-        if m["sender_id"] == student_id:
-            m["is_read"] = True
-            
-    save_db(db)
-    return chat
+    """Retrieve chat history thread between faculty and a target student from Supabase PostgreSQL."""
+    faculty_id = current_user_id or "faculty_demo"
+    try:
+        messages = messaging_service.get_messages(
+            student_id=student_id,
+            faculty_id=faculty_id,
+        )
+        return messages
+    except Exception as e:
+        logger.error(f"Failed to fetch messages from Supabase: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Could not retrieve messages. Please check Supabase configuration."
+        )
 
 
 @router.post("/messages")
 async def send_chat_message(req: MessageSend, current_user_id: str = Depends(get_session_or_user_id)):
-    """Send a new direct private message to an assigned student."""
-    db = load_db()
-    messages = db.get("messages", [])
-    
-    next_id = max((m["id"] for m in messages), default=0) + 1
-    new_msg = {
-        "id": next_id,
-        "sender_id": "faculty_demo",  # Represent faculty session
-        "receiver_id": req.receiver_id,
-        "content": req.content,
-        "created_at": datetime.now(timezone.utc).isoformat(),
-        "is_read": False
-    }
-    messages.append(new_msg)
-    save_db(db)
-    return new_msg
+    """Send a new direct private message to an assigned student or faculty, persisted in Supabase PostgreSQL."""
+    sender_id = req.sender_id if (req.sender_id and req.sender_id.strip()) else (current_user_id or "faculty_demo")
+    sender_type = req.sender_type if req.sender_type in ("student", "faculty") else "faculty"
+
+    # Determine student_id and faculty_id from sender/receiver context
+    if sender_type == "faculty":
+        student_id = req.receiver_id
+        faculty_id = sender_id
+    else:
+        student_id = sender_id
+        faculty_id = req.receiver_id
+
+    try:
+        new_msg = messaging_service.send_message(
+            student_id=student_id,
+            faculty_id=faculty_id,
+            sender_id=sender_id,
+            sender_type=sender_type,
+            receiver_id=req.receiver_id,
+            content=req.content,
+        )
+        return new_msg
+    except Exception as e:
+        logger.error(f"Failed to send message via Supabase: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Could not send message. Please check Supabase configuration."
+        )
 
 
 @router.post("/announcements")
@@ -634,3 +855,128 @@ Respond in clean, production-ready markdown lists suitable for rendering in a da
 3. **Structured Mentorship**: Pair Alice (strong coder) with Bob (needs coding guidance) for the upcoming internal hackathon to boost peer learning.
 """
     return {"insights": fallback_insights}
+
+
+# ── Attendance Reminder n8n Webhook Proxy ────────────────────────────────────
+class AttendanceReminderRequest(BaseModel):
+    studentName: str
+    rollNo: str
+    department: Optional[str] = "CSM"
+    attendance: float
+    email: str
+
+
+def try_send_direct_email(student_name: str, roll_no: str, attendance: float, to_email: str) -> bool:
+    """
+    Direct Gmail SMTP email dispatcher fallback if n8n webhook returns 404 or is offline.
+    Requires SMTP_EMAIL and SMTP_PASSWORD in .env.
+    """
+    smtp_email = os.getenv("SMTP_EMAIL")
+    smtp_password = os.getenv("SMTP_PASSWORD")
+    if not smtp_email or not smtp_password:
+        return False
+
+    try:
+        import smtplib
+        from email.mime.text import MIMEText
+        from email.mime.multipart import MIMEMultipart
+
+        msg = MIMEMultipart()
+        msg["From"] = f"SkillsCatalyst Faculty <{smtp_email}>"
+        msg["To"] = to_email
+        msg["Subject"] = "Attendance Reminder - SkillsCatalyst"
+
+        body = f"""Dear {student_name},
+
+📢 Attendance Reminder
+
+Your current attendance is {attendance}%, which is below the minimum required attendance of 75%.
+
+Please attend classes consistently to improve your attendance.
+
+Continued low attendance may lead to detention as per college regulations.
+
+If you have any concerns, please contact your faculty advisor.
+
+Regards,
+Faculty
+SkillsCatalyst"""
+
+        msg.attach(MIMEText(body, "plain"))
+
+        with smtplib.SMTP("smtp.gmail.com", 587) as server:
+            server.starttls()
+            server.login(smtp_email, smtp_password)
+            server.send_message(msg)
+
+        logger.info(f"Direct Gmail SMTP email successfully delivered to {to_email}!")
+        return True
+    except Exception as e:
+        logger.error(f"Failed to send direct SMTP email to {to_email}: {e}")
+        return False
+
+
+@router.post("/send-attendance-reminder")
+def send_attendance_reminder_webhook(req: AttendanceReminderRequest):
+    """
+    Proxy endpoint for sending attendance reminder webhook to n8n server-side.
+    Prevents browser CORS restrictions ('Failed to fetch').
+    """
+    n8n_url = (
+        os.getenv("NEXT_PUBLIC_N8N_WEBHOOK_URL")
+        or os.getenv("N8N_WEBHOOK_URL")
+        or "https://shivapatel.app.n8n.cloud/webhook/attendance-alert"
+    )
+
+    payload = {
+        "studentName": req.studentName,
+        "rollNo": req.rollNo,
+        "department": req.department,
+        "attendance": req.attendance,
+        "email": req.email,
+    }
+
+    logger.info(f"[n8n Server Proxy] Forwarding attendance reminder for {req.studentName} ({req.rollNo}) to {n8n_url}...")
+    console_log_info = f"Webhook URL: {n8n_url} | Payload: {json.dumps(payload)}"
+    logger.info(console_log_info)
+
+    # 1. Try sending via n8n Webhook
+    try:
+        import httpx
+        with httpx.Client(timeout=15.0) as client:
+            res = client.post(n8n_url, json=payload)
+            logger.info(f"[n8n Response] Status: {res.status_code}, Body: {res.text[:300]}")
+
+            if res.status_code in (200, 201, 202):
+                return {
+                    "success": True,
+                    "message": f"Attendance reminder sent successfully to {req.studentName}.",
+                    "status_code": res.status_code,
+                    "n8n_response": res.text[:300],
+                }
+            else:
+                error_detail = f"n8n Webhook returned HTTP {res.status_code}: {res.text[:250]}"
+                logger.error(f"[n8n Error] {error_detail}")
+                return {
+                    "success": False,
+                    "error": error_detail,
+                    "status_code": res.status_code,
+                }
+    except Exception as e:
+        logger.warning(f"[n8n Webhook Call Warning] Could not deliver to {n8n_url}: {e}")
+
+    # 2. Try sending via direct SMTP if SMTP credentials exist
+    sent_smtp = try_send_direct_email(req.studentName, req.rollNo, req.attendance, req.email)
+    if sent_smtp:
+        return {
+            "success": True,
+            "smtp_sent": True,
+            "message": f"Attendance reminder email delivered to {req.studentName} ({req.email}) via Direct SMTP.",
+        }
+
+    return {
+        "success": False,
+        "error": f"Failed to connect to n8n webhook at {n8n_url}.",
+        "status_code": 500,
+    }
+

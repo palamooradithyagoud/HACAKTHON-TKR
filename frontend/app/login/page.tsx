@@ -3,306 +3,221 @@
 import React, { useState } from "react";
 import {
   Code2,
-  Mail,
   Lock,
   ArrowRight,
   ShieldCheck,
   AlertCircle,
   Sparkles,
   Zap,
-  BarChart3,
   Target,
   Eye,
   EyeOff,
   GraduationCap,
-  BookOpen,
   Users,
-  User,
-  Building2,
   CheckCircle2,
-  UserPlus,
   LogIn,
+  KeyRound,
+  IdCard,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth, UserRole } from "@/lib/auth";
-import { saveAcademicProfile } from "@/lib/api";
-import { supabase } from "@/lib/supabase";
+import { API_BASE } from "@/lib/api";
 
 type AuthTab = "student" | "faculty";
 
+const SAMPLE_STUDENTS = [
+  { roll: "CSM1A001", pass: "Skill@1000", name: "Aarav Reddy", dept: "CSE (AI & ML)" },
+  { roll: "CSM1A002", pass: "Skill@1001", name: "Vivaan Sharma", dept: "CSE (AI & ML)" },
+  { roll: "ECE2A001", pass: "Skill@1050", name: "Ananya Patel", dept: "ECE" },
+  { roll: "EEE4B006", pass: "Skill@1199", name: "Sowmya Das", dept: "EEE" },
+];
+
 export default function LoginPage() {
   const { login } = useAuth();
-
-  const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [tab, setTab] = useState<AuthTab>("student");
 
-  // Sign in / Sign up form fields
-  const [fullName, setFullName] = useState("");
+  // Form fields
+  const [rollNumber, setRollNumber] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [department, setDepartment] = useState("");
-  const [section, setSection] = useState("");
-  const [academicYear, setAcademicYear] = useState("");
-  
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
-  const [successMessage, setSuccessMessage] = useState("");
 
-  const switchTab = (t: AuthTab) => {
-    setTab(t);
+  const handleSelectSample = (sample: typeof SAMPLE_STUDENTS[0]) => {
+    setTab("student");
+    setRollNumber(sample.roll);
+    setPassword(sample.pass);
     setErrorMessage("");
-    setSuccessMessage("");
-  };
-
-  const switchMode = (m: "signin" | "signup") => {
-    setMode(m);
-    setErrorMessage("");
-    setSuccessMessage("");
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage("");
-    setSuccessMessage("");
-
-    if (!email || !password) {
-      setErrorMessage("Please enter email and password.");
-      return;
-    }
-
-    if (mode === "signup" && (!fullName || !department)) {
-      setErrorMessage("Please fill out your full name and department.");
-      return;
-    }
-
     setLoading(true);
 
     try {
-      const cleanEmail = email.trim().toLowerCase();
-      const sanitizedId = `${tab}_${cleanEmail.replace(/[^a-z0-9]/gi, "_")}`;
-
-      if (mode === "signup") {
-        // Try registering in Supabase Auth first
-        try {
-          if (supabase) {
-            await supabase.auth.signUp({
-              email: cleanEmail,
-              password: password,
-              options: {
-                data: {
-                  full_name: fullName,
-                  role: tab,
-                  department: department,
-                  section: section,
-                },
-              },
-            });
-          }
-        } catch (sbErr) {
-          console.warn("Supabase auth signup warning:", sbErr);
+      if (tab === "student") {
+        if (!rollNumber.trim() || !password.trim()) {
+          setErrorMessage("Please enter your Student Roll Number and Password.");
+          setLoading(false);
+          return;
         }
 
-        // Save student / faculty academic record to DB & localStorage
-        const academicPayload = {
-          user_id: sanitizedId,
-          full_name: fullName,
-          college: "TKR College of Engineering & Technology",
-          department: department || "CSM",
-          section: section || (tab === "student" ? "Section A" : ""),
-          academic_year: academicYear || "2nd Year",
-          target_role: tab === "student" ? "Software Engineer" : "Faculty",
-        };
+        const res = await fetch(`${API_BASE}/api/auth/student-login`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            roll_number: rollNumber.trim().toUpperCase(),
+            password: password.trim(),
+          }),
+        });
 
-        try {
-          localStorage.setItem(`sc_academic_profile_${sanitizedId}`, JSON.stringify(academicPayload));
-          await saveAcademicProfile(academicPayload).catch(() => {});
-        } catch {}
+        const data = await res.json();
 
-        setSuccessMessage("Account created successfully! Logging you in...");
-        await new Promise((r) => setTimeout(r, 600));
+        if (!res.ok || !data.success) {
+          throw new Error(data.detail || data.message || "Invalid Roll Number or Password");
+        }
 
-        login(cleanEmail, sanitizedId, fullName, tab as UserRole);
+        // Store JWT token
+        if (data.token) {
+          localStorage.setItem("skillscatalyst_student_token", data.token);
+        }
+
+        const u = data.user || {};
+        login(u.email || `${u.roll_number}@tkrec.ac.in`, u.roll_number, u.full_name || u.roll_number, "student", u);
       } else {
-        // Sign In Flow
-        try {
-          if (supabase) {
-            await supabase.auth.signInWithPassword({
-              email: cleanEmail,
-              password: password,
-            });
-          }
-        } catch (sbErr) {
-          console.warn("Supabase auth signin warning:", sbErr);
+        if (!email.trim() || !password.trim()) {
+          setErrorMessage("Please enter your Faculty Email and Password.");
+          setLoading(false);
+          return;
         }
 
-        await new Promise((r) => setTimeout(r, 500));
-        const derivedName = fullName || cleanEmail.split("@")[0].replace(/[._]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-        login(cleanEmail, sanitizedId, derivedName, tab as UserRole);
+        const res = await fetch(`${API_BASE}/api/auth/faculty-login`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: email.trim().toLowerCase(),
+            password: password.trim(),
+          }),
+        });
+
+        const data = await res.json();
+
+        if (!res.ok || !data.success) {
+          throw new Error(data.detail || data.message || "Invalid Faculty credentials");
+        }
+
+        if (data.token) {
+          localStorage.setItem("skillscatalyst_student_token", data.token);
+        }
+
+        const u = data.user || {};
+        login(u.email, u.roll_number || u.email, u.full_name || "Faculty", "faculty");
       }
     } catch (err: any) {
-      setErrorMessage(err?.message || "Authentication failed. Please check your credentials.");
+      setErrorMessage(err.message || "Authentication failed. Please check credentials.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen w-full bg-[#060a15] text-white flex flex-col lg:flex-row -m-6 md:-m-8 lg:-m-10 select-none overflow-x-hidden relative">
-      {/* Background Ambient Glow & Grid */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
-        <div className="absolute top-[-10%] left-[-10%] w-[600px] h-[600px] bg-blue-600/15 blur-[140px] rounded-full" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[600px] h-[600px] bg-indigo-600/15 blur-[140px] rounded-full" />
-        <div className="absolute top-[50%] left-[30%] w-[400px] h-[400px] bg-cyan-600/8 blur-[120px] rounded-full" />
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff05_1px,transparent_1px),linear-gradient(to_bottom,#ffffff05_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_50%,#000_70%,transparent_100%)]" />
-      </div>
+    <div className="min-h-screen bg-[#060a15] text-white flex flex-col justify-between selection:bg-indigo-500 selection:text-white relative overflow-hidden font-sans">
+      {/* Background Decorative Ambient Glows */}
+      <div className="absolute -top-40 -left-40 w-96 h-96 bg-indigo-600/20 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute top-1/2 -right-40 w-96 h-96 bg-cyan-600/15 rounded-full blur-[120px] pointer-events-none" />
 
-      {/* LEFT COLUMN: Branding & Features */}
-      <div className="w-full lg:w-[52%] p-8 sm:p-12 lg:p-16 flex flex-col justify-between relative z-10 space-y-8">
-        <div>
-          {/* Logo */}
-          <div className="flex items-center gap-3 mb-8">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-cyan-400 flex items-center justify-center text-white shadow-lg shadow-blue-500/30">
-              <Code2 className="w-6 h-6 stroke-[2.5]" />
+      {/* Header Bar */}
+      <header className="w-full max-w-7xl mx-auto px-6 py-6 flex items-center justify-between z-10">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-cyan-400 p-0.5 shadow-lg shadow-indigo-500/20">
+            <div className="w-full h-full bg-[#090d1a] rounded-[10px] flex items-center justify-center">
+              <Code2 className="w-5 h-5 text-indigo-400" />
             </div>
-            <span className="text-2xl font-extrabold tracking-tight text-white">SkillsCatalyst</span>
           </div>
-
-          {/* Badge */}
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/30 text-indigo-400 text-[11px] font-extrabold uppercase tracking-wider mb-6">
-            <Sparkles className="w-3 h-3" />
-            TKR COLLEGE ACADEMIC & PLACEMENT PORTAL
-          </div>
-
-          {/* Headline */}
-          <h1 className="text-4xl sm:text-5xl lg:text-[50px] font-black tracking-tight leading-[1.1] text-white mb-4">
-            Accelerate Skills.<br />
-            <span className="bg-gradient-to-r from-blue-400 via-indigo-400 to-cyan-400 bg-clip-text text-transparent">
-              Empower Placement Success.
+          <div>
+            <span className="text-lg font-black tracking-wider bg-gradient-to-r from-white via-slate-200 to-indigo-300 bg-clip-text text-transparent">
+              SKILLSCATALYST
             </span>
-          </h1>
-
-          <p className="text-slate-400 text-sm sm:text-base max-w-xl leading-relaxed mb-8 font-medium">
-            The unified platform connecting students and faculty. Track DSA practice across LeetCode & GitHub, complete career roadmaps, and monitor student academic performance.
-          </p>
-
-          {/* Stats */}
-          <div className="grid grid-cols-3 gap-3 sm:gap-4 mb-8">
-            {[
-              { val: "TKR", label: "COLLEGE OF ENGG & TECH" },
-              { val: "660+", label: "COMPANY DSAS" },
-              { val: "100%", label: "SUPABASE SYNCED" },
-            ].map((s) => (
-              <div key={s.label} className="bg-[#0b1222]/80 border border-white/[0.08] rounded-2xl p-4 text-center backdrop-blur-md">
-                <div className="text-xl sm:text-2xl font-black text-white">{s.val}</div>
-                <div className="text-[10px] sm:text-[11px] font-extrabold text-slate-400 uppercase tracking-wider mt-0.5">{s.label}</div>
-              </div>
-            ))}
-          </div>
-
-          {/* Feature cards */}
-          <div className="space-y-3.5">
-            {[
-              { icon: Zap, color: "indigo", title: "Student Career Roadmaps", desc: "Interactive timeline trees for Full Stack, Data Science, AI/ML & DevOps with resources." },
-              { icon: BarChart3, color: "blue", title: "Live Platform Statistics", desc: "Automatic tracking across LeetCode, GitHub, CodeChef, GeeksforGeeks & Codeforces." },
-              { icon: Target, color: "cyan", title: "Faculty Analytics & Scoreboard", desc: "Real-time class attendance, assignment tracking & student readiness monitoring." },
-            ].map(({ icon: Icon, color, title, desc }) => (
-              <div key={title} className={`bg-[#0b1222]/60 hover:bg-[#0b1222] border border-white/[0.08] hover:border-${color}-500/30 rounded-2xl p-4 flex items-start gap-4 transition-all duration-200 group`}>
-                <div className={`w-10 h-10 rounded-xl bg-${color}-500/10 border border-${color}-500/20 flex items-center justify-center text-${color}-400 shrink-0 group-hover:scale-105 transition-transform`}>
-                  <Icon className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-bold text-white mb-0.5">{title}</h3>
-                  <p className="text-xs text-slate-400 leading-snug">{desc}</p>
-                </div>
-              </div>
-            ))}
+            <span className="text-[10px] text-slate-500 block font-mono">TKRET STUDENT & FACULTY PORTAL</span>
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="pt-6 text-xs text-slate-500 flex items-center gap-2">
+        <div className="flex items-center gap-2 text-xs text-slate-400 bg-slate-900/60 border border-slate-800 px-3 py-1.5 rounded-full">
           <ShieldCheck className="w-4 h-4 text-emerald-400" />
-          <span>Database Authenticated — TKR College Student & Faculty Portals</span>
+          <span>Role-Based Auth Enabled</span>
         </div>
-      </div>
+      </header>
 
-      {/* RIGHT COLUMN: Auth Card */}
-      <div className="w-full lg:w-[48%] p-6 sm:p-10 lg:p-12 flex items-center justify-center relative z-10">
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, ease: "easeOut" }}
-          className="w-full max-w-[480px] bg-[#090e1a]/95 border border-white/[0.1] rounded-3xl p-7 sm:p-9 shadow-2xl backdrop-blur-xl space-y-6 relative overflow-hidden"
-        >
-          {/* Ambient top glow */}
-          <div className="absolute -top-20 left-1/2 -translate-x-1/2 w-64 h-32 bg-blue-600/20 blur-3xl rounded-full pointer-events-none" />
-
-          {/* Mode Switcher Tabs (Sign In vs Sign Up) */}
-          <div className="flex items-center justify-between border-b border-white/10 pb-4 relative z-10">
-            <div>
-              <h2 className="text-2xl font-black text-white tracking-tight">
-                {mode === "signin" ? "Welcome Back" : "Create Account"}
-              </h2>
-              <p className="text-xs text-slate-400 font-medium">
-                {mode === "signin" ? "Sign in to access your portal" : "Register your student/faculty account"}
-              </p>
-            </div>
-
-            <div className="flex bg-[#0b1222] p-1 rounded-xl border border-white/10">
-              <button
-                type="button"
-                onClick={() => switchMode("signin")}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                  mode === "signin"
-                    ? "bg-indigo-600 text-white shadow-md"
-                    : "text-slate-400 hover:text-white"
-                }`}
-              >
-                Sign In
-              </button>
-              <button
-                type="button"
-                onClick={() => switchMode("signup")}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                  mode === "signup"
-                    ? "bg-indigo-600 text-white shadow-md"
-                    : "text-slate-400 hover:text-white"
-                }`}
-              >
-                Sign Up
-              </button>
-            </div>
+      {/* Main Form Container */}
+      <main className="w-full max-w-md mx-auto px-4 my-auto py-8 z-10">
+        <div className="bg-[#0b1021]/90 border border-slate-800/80 rounded-3xl p-6 sm:p-8 shadow-2xl backdrop-blur-xl relative">
+          <div className="text-center mb-6">
+            <h1 className="text-2xl font-black text-white tracking-tight mb-1">
+              Welcome Back
+            </h1>
+            <p className="text-xs text-slate-400">
+              Sign in to access your SkillsCatalyst dashboard
+            </p>
           </div>
 
-          {/* Role Tab Switcher (Student vs Faculty) */}
-          <div className="grid grid-cols-2 gap-2 relative z-10">
-            {[
-              { id: "student" as AuthTab, label: "Student", icon: GraduationCap, gradient: "from-blue-600 via-indigo-600 to-blue-500", shadow: "shadow-indigo-600/30" },
-              { id: "faculty" as AuthTab, label: "Faculty", icon: BookOpen, gradient: "from-purple-600 via-violet-600 to-purple-500", shadow: "shadow-purple-600/30" },
-            ].map(({ id, label, icon: Icon, gradient, shadow }) => (
-              <button
-                key={id}
-                type="button"
-                onClick={() => switchTab(id)}
-                className={`relative py-3 rounded-2xl border transition-all duration-300 flex flex-col items-center gap-1 cursor-pointer overflow-hidden ${
-                  tab === id
-                    ? `bg-gradient-to-r ${gradient} border-transparent text-white shadow-lg ${shadow}`
-                    : "bg-[#0d1326] border-white/[0.08] text-slate-400 hover:text-slate-200 hover:border-white/[0.15]"
-                }`}
-              >
-                {tab === id && (
-                  <motion.div
-                    layoutId="activePortalPill"
-                    className={`absolute inset-0 bg-gradient-to-r ${gradient} -z-10`}
-                    transition={{ type: "spring", stiffness: 500, damping: 35 }}
-                  />
-                )}
-                <Icon className="w-4 h-4" />
-                <span className="text-[11px] font-extrabold tracking-wide uppercase">{label} Portal</span>
-              </button>
-            ))}
+          {/* Role Tab Selector */}
+          <div className="flex bg-slate-950 p-1 rounded-2xl border border-slate-800 mb-6">
+            <button
+              type="button"
+              onClick={() => { setTab("student"); setErrorMessage(""); }}
+              className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${
+                tab === "student"
+                  ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/30"
+                  : "text-slate-400 hover:text-slate-200 hover:bg-slate-900/50"
+              }`}
+            >
+              <GraduationCap className="w-4 h-4" />
+              <span>Student Login</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => { setTab("faculty"); setErrorMessage(""); }}
+              className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${
+                tab === "faculty"
+                  ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/30"
+                  : "text-slate-400 hover:text-slate-200 hover:bg-slate-900/50"
+              }`}
+            >
+              <Users className="w-4 h-4" />
+              <span>Faculty Login</span>
+            </button>
           </div>
+
+          {/* Quick Demo Credentials Bar */}
+          {tab === "student" && (
+            <div className="mb-6 p-4 rounded-2xl bg-indigo-950/30 border border-indigo-800/40">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-semibold text-indigo-300 flex items-center gap-1.5">
+                  <Zap className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
+                  Quick Test Credentials (Click to Auto-fill):
+                </span>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                {SAMPLE_STUDENTS.map((s) => (
+                  <button
+                    key={s.roll}
+                    type="button"
+                    onClick={() => handleSelectSample(s)}
+                    className={`text-left p-2.5 rounded-xl border text-xs transition-all ${
+                      rollNumber === s.roll
+                        ? "bg-indigo-600/30 border-indigo-400 text-white font-medium shadow-sm"
+                        : "bg-slate-900/70 border-slate-800 text-slate-300 hover:border-slate-700 hover:bg-slate-800/60"
+                    }`}
+                  >
+                    <div className="font-mono text-indigo-300 font-bold">{s.roll}</div>
+                    <div className="text-[11px] text-slate-400 truncate">{s.name}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Error Banner */}
           <AnimatePresence>
@@ -311,208 +226,108 @@ export default function LoginPage() {
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: "auto" }}
                 exit={{ opacity: 0, height: 0 }}
-                className="relative z-10 p-3 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-300 text-xs font-semibold flex items-center gap-2"
+                className="mb-6 p-4 rounded-2xl bg-rose-500/10 border border-rose-500/30 flex items-start gap-3 text-rose-300 text-sm"
               >
-                <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
-                <span>{errorMessage}</span>
-              </motion.div>
-            )}
-            {successMessage && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                exit={{ opacity: 0, height: 0 }}
-                className="relative z-10 p-3 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs font-semibold flex items-center gap-2"
-              >
-                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                <span>{successMessage}</span>
+                <AlertCircle className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
+                <div>{errorMessage}</div>
               </motion.div>
             )}
           </AnimatePresence>
 
-          {/* Form Container */}
-          <div className="relative z-10">
-            <form onSubmit={handleSubmit} className="space-y-3.5">
-              {/* Full Name for Sign Up */}
-              {mode === "signup" && (
-                <div>
-                  <label className="text-[10px] font-bold text-slate-400 tracking-wider uppercase block mb-1">
-                    Full Name
-                  </label>
-                  <div className="relative">
-                    <User className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                    <input
-                      type="text"
-                      required
-                      value={fullName}
-                      onChange={(e) => setFullName(e.target.value)}
-                      placeholder="e.g. Adithya Goud"
-                      className="bg-slate-900/60 border border-white/10 rounded-xl py-2.5 pl-10 pr-4 text-xs font-semibold text-white focus:border-indigo-500 outline-none w-full transition-all placeholder-slate-500"
-                    />
-                  </div>
-                </div>
-              )}
-
-              {/* Email Field */}
+          {/* Login Form */}
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {tab === "student" ? (
               <div>
-                <label className="text-[10px] font-bold text-slate-400 tracking-wider uppercase block mb-1">
-                  {tab === "student" ? "Student" : "Faculty"} Email
+                <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
+                  Student Roll Number
                 </label>
                 <div className="relative">
-                  <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
+                    <IdCard className="w-5 h-5" />
+                  </div>
+                  <input
+                    type="text"
+                    value={rollNumber}
+                    onChange={(e) => setRollNumber(e.target.value.toUpperCase())}
+                    placeholder="e.g. CSM1A001"
+                    className="w-full bg-slate-950/80 border border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-xl pl-11 pr-4 py-3.5 text-sm font-mono text-white placeholder-slate-600 transition-all uppercase tracking-wider"
+                    required
+                  />
+                </div>
+              </div>
+            ) : (
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
+                  Faculty Email
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
+                    <Users className="w-5 h-5" />
+                  </div>
                   <input
                     type="email"
-                    required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder={tab === "student" ? "student@tkr.ac.in" : "faculty@tkr.ac.in"}
-                    className="bg-slate-900/60 border border-white/10 rounded-xl py-2.5 pl-10 pr-4 text-xs font-semibold text-white focus:border-indigo-500 outline-none w-full transition-all placeholder-slate-500"
-                  />
-                </div>
-              </div>
-
-              {/* Password Field */}
-              <div>
-                <label className="text-[10px] font-bold text-slate-400 tracking-wider uppercase block mb-1">
-                  Password
-                </label>
-                <div className="relative">
-                  <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                  <input
-                    type={showPassword ? "text" : "password"}
+                    placeholder="faculty@tkrec.ac.in"
+                    className="w-full bg-slate-950/80 border border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-xl pl-11 pr-4 py-3.5 text-sm text-white placeholder-slate-600 transition-all"
                     required
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="bg-slate-900/60 border border-white/10 rounded-xl py-2.5 pl-10 pr-10 text-xs font-semibold text-white focus:border-indigo-500 outline-none w-full transition-all placeholder-slate-500"
                   />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 transition-colors cursor-pointer"
-                  >
-                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
                 </div>
               </div>
+            )}
 
-              {/* Additional Sign Up Details */}
-              {mode === "signup" && (
+            <div>
+              <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
+                Password
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
+                  <KeyRound className="w-5 h-5" />
+                </div>
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder={tab === "student" ? "e.g. Skill@1000" : "Enter faculty password"}
+                  className="w-full bg-slate-950/80 border border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-xl pl-11 pr-11 py-3.5 text-sm text-white placeholder-slate-600 transition-all"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-500 hover:text-slate-300"
+                >
+                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full mt-4 py-4 rounded-xl bg-gradient-to-r from-indigo-600 via-indigo-500 to-cyan-500 hover:from-indigo-500 hover:to-cyan-400 text-white font-bold text-sm shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+            >
+              {loading ? (
                 <>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="text-[10px] font-bold text-slate-400 tracking-wider uppercase block mb-1">
-                        Department
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={department}
-                        onChange={(e) => setDepartment(e.target.value)}
-                        placeholder="e.g. CSM / CSE"
-                        className="bg-slate-900/60 border border-white/10 rounded-xl py-2.5 px-3 text-xs font-semibold text-white focus:border-indigo-500 outline-none w-full transition-all placeholder-slate-500"
-                      />
-                    </div>
-
-                    {tab === "student" ? (
-                      <div>
-                        <label className="text-[10px] font-bold text-slate-400 tracking-wider uppercase block mb-1">
-                          Section / Batch
-                        </label>
-                        <input
-                          type="text"
-                          value={section}
-                          onChange={(e) => setSection(e.target.value)}
-                          placeholder="e.g. Section A"
-                          className="bg-slate-900/60 border border-white/10 rounded-xl py-2.5 px-3 text-xs font-semibold text-white focus:border-indigo-500 outline-none w-full transition-all placeholder-slate-500"
-                        />
-                      </div>
-                    ) : (
-                      <div>
-                        <label className="text-[10px] font-bold text-slate-400 tracking-wider uppercase block mb-1">
-                          Academic Year
-                        </label>
-                        <input
-                          type="text"
-                          value={academicYear}
-                          onChange={(e) => setAcademicYear(e.target.value)}
-                          placeholder="e.g. 2025-2026"
-                          className="bg-slate-900/60 border border-white/10 rounded-xl py-2.5 px-3 text-xs font-semibold text-white focus:border-indigo-500 outline-none w-full transition-all placeholder-slate-500"
-                        />
-                      </div>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="text-[10px] font-bold text-slate-400 tracking-wider uppercase block mb-1">
-                      Institution
-                    </label>
-                    <div className="flex items-center gap-2 bg-slate-950/80 border border-slate-700/60 rounded-xl py-2.5 px-3 text-xs font-bold text-slate-300">
-                      <Building2 className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                      <span className="truncate">TKR College of Engineering & Technology</span>
-                    </div>
-                  </div>
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  <span>Authenticating...</span>
+                </>
+              ) : (
+                <>
+                  <LogIn className="w-5 h-5" />
+                  <span>Sign In to Dashboard</span>
+                  <ArrowRight className="w-4 h-4 ml-1" />
                 </>
               )}
+            </button>
+          </form>
+        </div>
+      </main>
 
-              {/* Submit Button */}
-              <button
-                type="submit"
-                disabled={loading}
-                className={`w-full py-3.5 rounded-xl font-bold text-xs shadow-lg transition-all cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50 mt-2 ${
-                  tab === "student"
-                    ? "bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-500 hover:from-blue-500 hover:to-indigo-500 shadow-indigo-600/30"
-                    : "bg-gradient-to-r from-purple-600 via-violet-600 to-purple-500 hover:from-purple-500 hover:to-violet-500 shadow-purple-600/30"
-                } text-white`}
-              >
-                {loading ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    <span>{mode === "signin" ? "Signing In..." : "Creating Account..."}</span>
-                  </>
-                ) : (
-                  <>
-                    {mode === "signin" ? <LogIn className="w-4 h-4" /> : <UserPlus className="w-4 h-4" />}
-                    <span>
-                      {mode === "signin"
-                        ? `Sign In as ${tab === "student" ? "Student" : "Faculty"}`
-                        : `Register as ${tab === "student" ? "Student" : "Faculty"}`}
-                    </span>
-                    <ArrowRight className="w-4 h-4" />
-                  </>
-                )}
-              </button>
-            </form>
-          </div>
-
-          {/* Toggle mode footnote */}
-          <div className="pt-2 text-center text-xs text-slate-400">
-            {mode === "signin" ? (
-              <p>
-                Don't have an account?{" "}
-                <button
-                  type="button"
-                  onClick={() => switchMode("signup")}
-                  className="text-indigo-400 font-bold hover:underline"
-                >
-                  Create Student/Faculty Account
-                </button>
-              </p>
-            ) : (
-              <p>
-                Already registered?{" "}
-                <button
-                  type="button"
-                  onClick={() => switchMode("signin")}
-                  className="text-indigo-400 font-bold hover:underline"
-                >
-                  Sign In to your Portal
-                </button>
-              </p>
-            )}
-          </div>
-        </motion.div>
-      </div>
+      {/* Footer */}
+      <footer className="w-full py-4 text-center text-xs text-slate-500 z-10 border-t border-slate-900">
+        © 2026 SkillsCatalyst — TKR College of Engineering & Technology. All rights reserved.
+      </footer>
     </div>
   );
 }
