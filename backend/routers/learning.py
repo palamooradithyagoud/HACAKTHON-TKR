@@ -1303,3 +1303,58 @@ Respond ONLY with valid JSON in this exact structure:
                 ]
             }
         }
+
+
+# ── Roadmap Progress Sync Endpoints ───────────────────────────────────────────
+
+class RoadmapProgressRequest(BaseModel):
+    user_id: Optional[str] = None
+    roadmap_id: str
+    node_id: str
+    node_title: str
+    category: Optional[str] = ""
+    status: Optional[str] = "completed"
+
+
+@router.get("/roadmap-progress/{user_id}")
+def get_user_roadmap_progress(user_id: str):
+    """Fetch all roadmap progress entries for a given user from Supabase."""
+    sb = get_supabase()
+    if not sb:
+        return {"success": False, "progress": []}
+    try:
+        res = sb.table("roadmap_progress").select("*").eq("user_id", user_id).execute()
+        return {"success": True, "user_id": user_id, "progress": res.data or []}
+    except Exception as e:
+        logger.error(f"Error fetching roadmap progress for {user_id}: {e}")
+        return {"success": False, "error": str(e), "progress": []}
+
+
+@router.post("/roadmap-progress")
+def save_user_roadmap_progress(
+    req: RoadmapProgressRequest,
+    current_user_id: str = Depends(get_session_or_user_id)
+):
+    """Save or delete a roadmap progress node/subtopic entry in Supabase."""
+    user_id = req.user_id or current_user_id
+    sb = get_supabase()
+    if not sb:
+        raise HTTPException(status_code=503, detail="Supabase connection unavailable")
+    try:
+        if req.status in ["completed", "started"]:
+            res = sb.table("roadmap_progress").upsert({
+                "user_id": user_id,
+                "roadmap_id": req.roadmap_id,
+                "node_id": req.node_id,
+                "node_title": req.node_title,
+                "category": req.category or "",
+                "status": req.status,
+                "completed_at": "now()",
+            }, on_conflict="user_id,roadmap_id,node_id").execute()
+        else:
+            res = sb.table("roadmap_progress").delete().eq("user_id", user_id).eq("roadmap_id", req.roadmap_id).eq("node_id", req.node_id).execute()
+        return {"success": True, "user_id": user_id, "data": res.data}
+    except Exception as e:
+        logger.error(f"Error saving roadmap progress: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+

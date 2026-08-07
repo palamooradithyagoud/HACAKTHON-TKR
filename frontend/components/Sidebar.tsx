@@ -23,6 +23,7 @@ import {
   AlertTriangle,
   LogOut,
   BookOpen,
+  Trophy,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -39,13 +40,14 @@ const studentNavItems = [
   { name: "Practice", href: "/practice", icon: Target },
   { name: "Career", href: "/career", icon: Briefcase },
   { name: "Explore", href: "/explore", icon: ExploreIcon },
+  { name: "Messages", href: "/messages", icon: MessagesSquare },
   { name: "Analytics", href: "/analytics", icon: BarChart3 },
   { name: "Profile", href: "/settings", icon: UserIcon },
 ];
 
 const facultyNavItems = [
   { name: "Home", href: "/dashboard", icon: LayoutGrid },
-  { name: "Student Scoreboard", href: "/students", icon: Users },
+  { name: "Coding Leaderboard", href: "/students", icon: Trophy },
   { name: "Messages", href: "/messages", icon: MessagesSquare },
   { name: "Analytics", href: "/analytics", icon: BarChart3 },
   { name: "Warnings", href: "/warnings", icon: AlertTriangle },

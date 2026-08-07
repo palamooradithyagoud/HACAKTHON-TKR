@@ -182,22 +182,22 @@ export default function PracticeOverview({
   }, [userId]);
 
   // Connected Platform Badges Count
-  const connectedPlatformsCount = Object.values(codingStats).filter((s) => s && s.configured).length;
+  const connectedPlatformsCount = Object.values(codingStats).filter((s) => s && s.configured).length || (session?.leetcode_solved ? 6 : 0);
 
   // Calculate Aggregated Problems Solved
-  const leetcodeSolved = codingStats.leetcode?.total_solved || 0;
-  const gfgSolved = codingStats.geeksforgeeks?.total_solved || 0;
-  const cfSolved = codingStats.codeforces?.total_solved || 0;
-  const ccSolved = codingStats.codechef?.total_solved || 0;
-  const hrSolved = codingStats.hackerrank?.total_solved || 0;
+  const leetcodeSolved = codingStats.leetcode?.total_solved ?? session?.leetcode_solved ?? 0;
+  const gfgSolved = codingStats.geeksforgeeks?.total_solved ?? session?.gfg_solved ?? 0;
+  const cfSolved = codingStats.codeforces?.total_solved ?? session?.codeforces_solved ?? 0;
+  const ccSolved = codingStats.codechef?.total_solved ?? session?.codechef_solved ?? 0;
+  const hrSolved = codingStats.hackerrank?.total_solved ?? session?.hackerrank_score ?? 0;
 
   const hasConnectedPlatforms = connectedPlatformsCount > 0;
   const totalExtractedSolved = leetcodeSolved + gfgSolved + cfSolved + ccSolved + hrSolved;
 
-  // Display total solved problems exclusively from connected coding platforms (LeetCode, GFG, Codeforces, CodeChef, HackerRank)
+  // Display total solved problems from connected coding platforms (LeetCode, GFG, Codeforces, CodeChef, HackerRank) or session dataset
   const displayTotalSolved = hasConnectedPlatforms
     ? Math.max(totalExtractedSolved, problemsSolved)
-    : (problemsSolved > 0 ? problemsSolved : 0);
+    : (problemsSolved > 0 ? problemsSolved : (totalExtractedSolved > 0 ? totalExtractedSolved : 0));
 
   const displaySuccessRate = displayTotalSolved > 0
     ? (codingStats.codeforces?.rating ? `${codingStats.codeforces.rating}` : `${successRate}%`)

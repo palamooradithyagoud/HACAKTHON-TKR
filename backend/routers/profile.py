@@ -431,32 +431,94 @@ async def get_profile(user_id: str = Depends(get_session_or_user_id)):
     }
     coding_stats = {}
 
-    if sb:
-        try:
-            res_acad = sb.from_("user_academic_profile").select("*").eq("user_id", user_id).execute()
-            if res_acad.data:
-                academic_data.update(res_acad.data[0])
-                if not academic_data.get("college"):
-                    academic_data["college"] = "TKR College of Engineering & Technology"
+    # Check dataset student records
+    try:
+        from backend.services.student_auth import get_student_by_roll
+        student_info = get_student_by_roll(user_id)
+        if student_info:
+            academic_data["full_name"] = student_info.get("full_name") or academic_data["full_name"]
+            academic_data["department"] = student_info.get("department") or academic_data["department"]
+            academic_data["roll_number"] = student_info.get("roll_number") or user_id
+            academic_data["email"] = student_info.get("email") or f"{user_id.lower()}@tkrec.ac.in"
+            academic_data["college"] = student_info.get("college") or "TKR College of Engineering & Technology"
+            academic_data["attendance_percentage"] = float(student_info.get("attendance", 0))
+            academic_data["coding_score"] = int(student_info.get("coding_score", 0))
+            academic_data["target_role"] = student_info.get("target_role") or "Software Engineer"
+            academic_data["section"] = student_info.get("section") or "Section A"
+            academic_data["academic_year"] = student_info.get("academic_year") or "4th Year"
+            
+            lc_solved = int(student_info.get("leetcode_solved", 0))
+            gfg_solved = int(student_info.get("gfg_solved", 0))
+            cc_solved = int(student_info.get("codechef_solved", 0))
+            hr_score = int(student_info.get("hackerrank_score", 0))
+            cf_solved = int(student_info.get("codeforces_solved", 0))
+            gh_repos = int(student_info.get("github_repos", 0))
+            gh_commits = int(student_info.get("github_commits", 0))
 
-            res_code = sb.from_("user_coding_profiles").select("*").eq("user_id", user_id).execute()
-            if res_code.data:
-                c_row = res_code.data[0]
-                coding_inputs["leetcode"] = c_row.get("leetcode_url", "")
-                coding_inputs["github"] = c_row.get("github_url", "")
-                coding_inputs["hackerrank"] = c_row.get("hackerrank_url", "")
-                coding_inputs["codechef"] = c_row.get("codechef_url", "")
-                coding_inputs["geeksforgeeks"] = c_row.get("geeksforgeeks_url", "")
-                coding_inputs["codeforces"] = c_row.get("codeforces_url", "")
-                coding_stats = c_row.get("stats_json", {})
-        except Exception as e:
-            logger.warning(f"Failed to fetch profile from Supabase: {e}")
+            dataset_coding_stats = {
+                "leetcode": {
+                    "configured": True,
+                    "username": f"{user_id.lower()}_lc",
+                    "total_solved": lc_solved,
+                    "badge": f"{lc_solved} Solved",
+                    "summary": f"{lc_solved} Problems Solved"
+                },
+                "geeksforgeeks": {
+                    "configured": True,
+                    "username": f"{user_id.lower()}_gfg",
+                    "total_solved": gfg_solved,
+                    "overall_coding_score": gfg_solved * 8,
+                    "badge": f"{gfg_solved} Solved",
+                    "summary": f"{gfg_solved} Problems Solved"
+                },
+                "codechef": {
+                    "configured": True,
+                    "username": f"{user_id.lower()}_cc",
+                    "total_solved": cc_solved,
+                    "rating": cc_solved * 10,
+                    "stars": "3★" if cc_solved > 100 else "2★",
+                    "badge": f"{cc_solved} Solved",
+                    "summary": f"{cc_solved} Problems Solved"
+                },
+                "hackerrank": {
+                    "configured": True,
+                    "username": f"{user_id.lower()}_hr",
+                    "score": hr_score,
+                    "badge": f"{hr_score} pts",
+                    "summary": f"Score: {hr_score} pts"
+                },
+                "codeforces": {
+                    "configured": True,
+                    "username": f"{user_id.lower()}_cf",
+                    "total_solved": cf_solved,
+                    "rating": cf_solved * 12,
+                    "badge": f"{cf_solved} Solved",
+                    "summary": f"{cf_solved} Problems Solved"
+                },
+                "github": {
+                    "configured": True,
+                    "username": f"{user_id.lower()}_gh",
+                    "public_repos": gh_repos,
+                    "total_commits": gh_commits,
+                    "badge": f"{gh_repos} Repos ({gh_commits} Commits)",
+                    "summary": f"{gh_repos} Repositories | {gh_commits} Commits"
+                }
+            }
+            if not coding_stats:
+                coding_stats = dataset_coding_stats
+            else:
+                for k, v in dataset_coding_stats.items():
+                    if k not in coding_stats or not coding_stats[k].get("configured"):
+                        coding_stats[k] = v
+    except Exception as e:
+        logger.warning(f"Error merging student dataset in profile: {e}")
 
     return {
         "academic": academic_data,
         "coding_inputs": coding_inputs,
         "coding_stats": coding_stats,
     }
+
 
 
 @router.post("/academic")

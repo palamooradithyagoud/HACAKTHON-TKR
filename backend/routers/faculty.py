@@ -10,6 +10,7 @@ from backend.services.supabase_service import get_supabase
 from backend.services.auth_service import get_current_user_id, get_session_or_user_id
 from backend.services.groq_service import chat_with_groq
 from backend.services.score_calculator import compute_overall_coding_score
+from backend.services import messaging_service
 
 logger = logging.getLogger(__name__)
 
@@ -37,13 +38,57 @@ def load_db() -> Dict[str, Any]:
     except Exception as e:
         logger.error(f"Error loading faculty DB: {e}")
 
-    # Dynamically fetch real registered students from Supabase DB table
+    # 1. Load dataset students from list_all_students() if available
+    dataset_students_map = {}
+    try:
+        from backend.services.student_auth import list_all_students
+        dataset_students = list_all_students()
+        if dataset_students:
+            for s in dataset_students:
+                roll = s.get("roll_number", "")
+                name = s.get("full_name", roll)
+                dept = s.get("department", "CSE")
+                att = float(s.get("attendance", 0))
+                coding_score = int(s.get("coding_score", 0))
+                
+                dataset_students_map[roll] = {
+                    "id": roll,
+                    "roll_number": roll,
+                    "name": name,
+                    "department": dept,
+                    "section": s.get("section", "Section A"),
+                    "year": str(s.get("year", "4")),
+                    "academic_year": str(s.get("academic_year", "4th Year")),
+                    "college": s.get("college", "TKR College of Engineering & Technology"),
+                    "email": s.get("email", ""),
+                    "target_role": s.get("target_role", "Software Engineer"),
+                    "leetcode_handle": f"{roll.lower()}_lc",
+                    "github_handle": f"{roll.lower()}_gh",
+                    "attendance_percentage": att,
+                    "coding_score": coding_score,
+                    "leetcode_solved": s.get("leetcode_solved", 0),
+                    "gfg_solved": s.get("gfg_solved", 0),
+                    "codechef_solved": s.get("codechef_solved", 0),
+                    "hackerrank_score": s.get("hackerrank_score", 0),
+                    "codeforces_solved": s.get("codeforces_solved", 0),
+                    "github_repos": s.get("github_repos", 0),
+                    "github_commits": s.get("github_commits", 0),
+                    "placement_readiness_score": min(100.0, round((coding_score / 100.0), 1)),
+                    "faculty_notes": "",
+                    "timeline": [
+                        {"date": datetime.now().strftime("%Y-%m-%d"), "title": "Account Active", "description": "Enrolled in SkillsCatalyst platform."}
+                    ]
+                }
+    except Exception as e:
+        logger.warning(f"Failed to load dataset student profiles for faculty: {e}")
+
+    # 2. Dynamically fetch real registered students from Supabase DB table
     sb = get_supabase()
+    supabase_students = []
     if sb:
         try:
             res_acad = sb.from_("user_academic_profile").select("*").execute()
             if res_acad.data:
-                supabase_students = []
                 for idx, s in enumerate(res_acad.data):
                     uid = s.get("user_id") or f"stu_{idx+1}"
                     full_name = s.get("full_name") or f"Student {idx+1}"
@@ -69,10 +114,11 @@ def load_db() -> Dict[str, Any]:
                         pass
 
                     att_val = float(s.get("attendance_percentage") or 0.0)
+                    roll_num = s.get("roll_number") or f"22TK1A{(dept[:3] if dept else '05').upper()}{str(idx+1).zfill(2)}"
                     supabase_students.append({
                         "id": uid,
                         "name": full_name,
-                        "roll_number": s.get("roll_number") or f"22TK1A{(dept[:3] if dept else '05').upper()}{str(idx+1).zfill(2)}",
+                        "roll_number": roll_num,
                         "section": sec,
                         "department": dept,
                         "year": year,
@@ -80,7 +126,7 @@ def load_db() -> Dict[str, Any]:
                         "college": s.get("college") or "TKR College of Engineering & Technology",
                         "attendance_percentage": att_val,
                         "coding_score": computed_score,
-                        "placement_readiness_score": 0.0,
+                        "placement_readiness_score": min(100.0, round((computed_score / 100.0), 1)),
                         "faculty_notes": "",
                         "leetcode_handle": lc_handle,
                         "github_handle": gh_handle,
@@ -88,18 +134,20 @@ def load_db() -> Dict[str, Any]:
                             {"date": datetime.now().strftime("%Y-%m-%d"), "title": "Account Registered", "description": "Student joined SkillsCatalyst platform."}
                         ]
                     })
-                if supabase_students:
-                    existing_ids = {s["id"] for s in supabase_students}
-                    rest = [s for s in db_data["students"] if s["id"] not in existing_ids and not str(s.get("id", "")).startswith("STU") and "Student (" not in str(s.get("name", ""))]
-                    db_data["students"] = supabase_students + rest
-                else:
-                    db_data["students"] = [s for s in db_data["students"] if not str(s.get("id", "")).startswith("STU") and "Student (" not in str(s.get("name", ""))]
         except Exception as e:
             logger.warning(f"Failed to load Supabase student profiles: {e}")
 
-    # Remove any mock STU students from db_data
-    db_data["students"] = [s for s in db_data.get("students", []) if not str(s.get("id", "")).startswith("STU") and "Student (" not in str(s.get("name", ""))]
+    # Combine all student profiles
+    all_students_map = {**dataset_students_map}
+    for stu in supabase_students:
+        all_students_map[stu["id"]] = stu
+
+    if all_students_map:
+        db_data["students"] = list(all_students_map.values())
+    else:
+        db_data["students"] = [s for s in db_data.get("students", []) if not str(s.get("id", "")).startswith("STU") and "Student (" not in str(s.get("name", ""))]
     return db_data
+
 
 def save_db(data: Dict[str, Any]) -> None:
     """Helper to write our mock JSON database."""
@@ -162,6 +210,8 @@ class LearningMaterialCreate(BaseModel):
 class MessageSend(BaseModel):
     receiver_id: str
     content: str = Field(..., min_length=1)
+    sender_id: Optional[str] = None
+    sender_type: str = Field(default="faculty", description="'student' or 'faculty'")
 
 class AnnouncementCreate(BaseModel):
     title: str = Field(..., min_length=3)
@@ -657,44 +707,52 @@ async def get_learning_materials(current_user_id: str = Depends(get_session_or_u
 
 @router.get("/messages/{student_id}")
 async def get_chat_history(student_id: str, current_user_id: str = Depends(get_session_or_user_id)):
-    """Retrieve chat history thread between the faculty and a target student."""
-    db = load_db()
-    messages = db.get("messages", [])
-    
-    # Filter messages sent between faculty_demo and the student
-    chat = [
-        m for m in messages 
-        if (m["sender_id"] == "faculty_demo" and m["receiver_id"] == student_id) or
-           (m["sender_id"] == student_id and m["receiver_id"] == "faculty_demo")
-    ]
-    
-    # Mark messages as read if sent by student
-    for m in chat:
-        if m["sender_id"] == student_id:
-            m["is_read"] = True
-            
-    save_db(db)
-    return chat
+    """Retrieve chat history thread between faculty and a target student from Supabase PostgreSQL."""
+    faculty_id = current_user_id or "faculty_demo"
+    try:
+        messages = messaging_service.get_messages(
+            student_id=student_id,
+            faculty_id=faculty_id,
+        )
+        return messages
+    except Exception as e:
+        logger.error(f"Failed to fetch messages from Supabase: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Could not retrieve messages. Please check Supabase configuration."
+        )
 
 
 @router.post("/messages")
 async def send_chat_message(req: MessageSend, current_user_id: str = Depends(get_session_or_user_id)):
-    """Send a new direct private message to an assigned student."""
-    db = load_db()
-    messages = db.get("messages", [])
-    
-    next_id = max((m["id"] for m in messages), default=0) + 1
-    new_msg = {
-        "id": next_id,
-        "sender_id": "faculty_demo",  # Represent faculty session
-        "receiver_id": req.receiver_id,
-        "content": req.content,
-        "created_at": datetime.now(timezone.utc).isoformat(),
-        "is_read": False
-    }
-    messages.append(new_msg)
-    save_db(db)
-    return new_msg
+    """Send a new direct private message to an assigned student or faculty, persisted in Supabase PostgreSQL."""
+    sender_id = req.sender_id if (req.sender_id and req.sender_id.strip()) else (current_user_id or "faculty_demo")
+    sender_type = req.sender_type if req.sender_type in ("student", "faculty") else "faculty"
+
+    # Determine student_id and faculty_id from sender/receiver context
+    if sender_type == "faculty":
+        student_id = req.receiver_id
+        faculty_id = sender_id
+    else:
+        student_id = sender_id
+        faculty_id = req.receiver_id
+
+    try:
+        new_msg = messaging_service.send_message(
+            student_id=student_id,
+            faculty_id=faculty_id,
+            sender_id=sender_id,
+            sender_type=sender_type,
+            receiver_id=req.receiver_id,
+            content=req.content,
+        )
+        return new_msg
+    except Exception as e:
+        logger.error(f"Failed to send message via Supabase: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Could not send message. Please check Supabase configuration."
+        )
 
 
 @router.post("/announcements")

@@ -384,10 +384,20 @@ def get_dashboard_data(user_id: str = Depends(get_current_user_id)):
                         if isinstance(ts, (int, float)):
                             extracted_solved += int(ts)
 
-            # Problems solved strictly reflects connected external coding platform stats
-            problems_solved = extracted_solved
+            # Check if user_id is a student roll number
+            from backend.services.student_auth import get_student_by_roll
+            student_info = get_student_by_roll(user_id)
+            if student_info:
+                display_name = student_info.get("full_name") or display_name
+                user_attendance = float(student_info.get("attendance") or 0.0)
+                extracted_solved = (
+                    int(student_info.get("leetcode_solved", 0)) +
+                    int(student_info.get("gfg_solved", 0)) +
+                    int(student_info.get("codechef_solved", 0)) +
+                    int(student_info.get("hackerrank_score", 0)) +
+                    int(student_info.get("codeforces_solved", 0))
+                )
 
-            user_attendance = 0.0
             # 5. Fetch user name & attendance from academic profile if exists
             res_profile = (
                 sb.table("user_academic_profile")
@@ -408,6 +418,7 @@ def get_dashboard_data(user_id: str = Depends(get_current_user_id)):
                 .eq("user_id", user_id)
                 .execute()
             )
+
             if res_user_prog.data:
                 user_success_rate = float(res_user_prog.data[0].get("success_rate") or 0.0)
 

@@ -76,10 +76,17 @@ export async function getAuthHeaders(): Promise<Record<string, string>> {
     "x-session-id": getGuestSessionId(),
   };
   try {
+    if (typeof window !== "undefined") {
+      const studentToken = localStorage.getItem("skillscatalyst_student_token");
+      if (studentToken) {
+        headers.Authorization = `Bearer ${studentToken}`;
+        return headers;
+      }
+    }
+
     const { data } = await supabase.auth.getSession();
     let session = data.session;
 
-    // Auto-refresh token if expired or expiring within 30 seconds
     if (session && session.expires_at) {
       const isExpiringSoon = Date.now() / 1000 >= session.expires_at - 30;
       if (isExpiringSoon) {
@@ -102,10 +109,6 @@ export async function getAuthHeaders(): Promise<Record<string, string>> {
 }
 
 export async function getEffectiveUserId(): Promise<string> {
-  try {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session?.user?.id) return session.user.id;
-  } catch {}
   if (typeof window !== "undefined") {
     try {
       const raw = localStorage.getItem("skillscatalyst_user_session");
@@ -115,8 +118,13 @@ export async function getEffectiveUserId(): Promise<string> {
       }
     } catch {}
   }
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user?.id) return session.user.id;
+  } catch {}
   return getRawGuestSessionId();
 }
+
 
 function handleUnauthenticated(res: Response) {
   if ((res.status === 401 || res.status === 403) && typeof window !== "undefined") {
@@ -2162,5 +2170,108 @@ export async function fetchFacultyAIInsights() {
   if (!res.ok) throw new Error("Failed to fetch AI insights");
   return res.json();
 }
+
+/**
+ * Persists roadmap node/subtopic completion progress directly to Supabase via backend API
+ */
+export async function saveRoadmapProgress(payload: {
+  roadmap_id: string;
+  node_id: string;
+  node_title: string;
+  category?: string;
+  status?: "completed" | "started" | "unsolved";
+}) {
+  try {
+    const authHeaders = await getAuthHeaders();
+    const userId = await getEffectiveUserId();
+    
+    // Direct Supabase upsert
+    if (supabase) {
+      if (payload.status === "unsolved") {
+        await supabase
+          .from("roadmap_progress")
+          .delete()
+          .eq("user_id", userId)
+          .eq("roadmap_id", payload.roadmap_id)
+          .eq("node_id", payload.node_id);
+      } else {
+        await supabase
+          .from("roadmap_progress")
+          .upsert({
+            user_id: userId,
+            roadmap_id: payload.roadmap_id,
+            node_id: payload.node_id,
+            node_title: payload.node_title,
+            category: payload.category || "",
+            status: payload.status || "completed",
+            completed_at: new Date().toISOString(),
+          }, { onConflict: "user_id,roadmap_id,node_id" });
+      }
+    }
+
+    // Backend endpoint call
+    await apiFetch(`${API_BASE}/api/learning/roadmap-progress`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...authHeaders },
+      body: JSON.stringify({ ...payload, user_id: userId }),
+    });
+  } catch (e) {
+    console.warn("saveRoadmapProgress warning:", e);
+  }
+}
+
+/**
+ * Persists practice question solve state directly to Supabase via backend API
+ */
+export async function savePracticeProgress(payload: {
+  company_slug: string;
+  question_id: number;
+  question_title: string;
+  difficulty?: string;
+  acceptance?: string;
+  frequency?: string;
+  status?: "solved" | "unsolved";
+}) {
+  try {
+    const authHeaders = await getAuthHeaders();
+    const userId = await getEffectiveUserId();
+
+    // Direct Supabase upsert
+    if (supabase) {
+      if (payload.status === "unsolved") {
+        await supabase
+          .from("leetcode_progress")
+          .delete()
+          .eq("user_id", userId)
+          .eq("company_slug", payload.company_slug)
+          .eq("question_id", payload.question_id);
+      } else {
+        await supabase
+          .from("leetcode_progress")
+          .upsert({
+            user_id: userId,
+            company_slug: payload.company_slug,
+            question_id: payload.question_id,
+            question_title: payload.question_title,
+            difficulty: payload.difficulty || "Easy",
+            acceptance: payload.acceptance || "",
+            frequency: payload.frequency || "",
+            status: "solved",
+            solved_at: new Date().toISOString(),
+          }, { onConflict: "user_id,company_slug,question_id" });
+      }
+    }
+
+    // Backend endpoint call
+    await apiFetch(`${API_BASE}/api/practice/progress`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...authHeaders },
+      body: JSON.stringify({ ...payload, user_id: userId }),
+    });
+  } catch (e) {
+    console.warn("savePracticeProgress warning:", e);
+  }
+}
+
 
 

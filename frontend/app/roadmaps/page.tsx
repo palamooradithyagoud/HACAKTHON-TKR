@@ -3780,10 +3780,62 @@ function RoadmapDetailView({
 
   const isCareerRoadmap = selectedRoadmap.category === "career";
 
-  const toggleSubtopic = (subtopicId: string, nodeName: string) => {
+  React.useEffect(() => {
+    if (!userId) return;
+    async function loadSubtopics() {
+      try {
+        const { data } = await supabase
+          .from("roadmap_progress")
+          .select("node_id, status")
+          .eq("user_id", userId)
+          .eq("roadmap_id", selectedRoadmap.id)
+          .eq("category", "subtopic");
+
+        if (data) {
+          const map: Record<string, boolean> = {};
+          data.forEach((row) => {
+            map[row.node_id] = row.status === "completed";
+          });
+          setCompletedSubtopics((prev) => ({ ...prev, ...map }));
+        }
+      } catch (err) {}
+    }
+    loadSubtopics();
+  }, [userId, selectedRoadmap.id]);
+
+  const toggleSubtopic = async (subtopicId: string, nodeName: string) => {
     const isCurrentlyDone = !!completedSubtopics[subtopicId];
-    const updatedSubtopics = { ...completedSubtopics, [subtopicId]: !isCurrentlyDone };
+    const newDoneState = !isCurrentlyDone;
+    const updatedSubtopics = { ...completedSubtopics, [subtopicId]: newDoneState };
     setCompletedSubtopics(updatedSubtopics);
+
+    if (userId) {
+      try {
+        if (newDoneState) {
+          await supabase.from("roadmap_progress").upsert(
+            {
+              user_id: userId,
+              roadmap_id: selectedRoadmap.id,
+              node_id: subtopicId,
+              node_title: subtopicId,
+              category: "subtopic",
+              status: "completed",
+              completed_at: new Date().toISOString(),
+            },
+            { onConflict: "user_id,roadmap_id,node_id" }
+          );
+        } else {
+          await supabase
+            .from("roadmap_progress")
+            .delete()
+            .eq("user_id", userId)
+            .eq("roadmap_id", selectedRoadmap.id)
+            .eq("node_id", subtopicId);
+        }
+      } catch (err) {
+        console.warn("Failed to sync subtopic completion to Supabase:", err);
+      }
+    }
 
     const branchData = getRightBranchesForNode(nodeName, selectedRoadmap.id);
     const allTopics = branchData.groups.flatMap((g) => g.topics);

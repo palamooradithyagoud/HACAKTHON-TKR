@@ -12,3 +12,7 @@ if SUPABASE_URL and (SUPABASE_SERVICE_KEY or SUPABASE_ANON_KEY):
 
 def get_supabase() -> Client | None:
     return supabase_client
+
+def get_supabase_client() -> Client | None:
+    return supabase_client
+

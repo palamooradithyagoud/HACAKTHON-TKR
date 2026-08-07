@@ -8,15 +8,18 @@ import {
 } from "lucide-react";
 
 import { getSharedMockStudents } from "@/lib/mockData";
+import { API_BASE, apiFetch, getAuthHeaders } from "@/lib/api";
+import { supabase } from "@/lib/supabase";
 
 export default function AttendancePage() {
-  const students = getSharedMockStudents();
+  const [studentsList, setStudentsList] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   
   // Selection States
   const [subject, setSubject] = useState("Data Structures & Algorithms");
-  const [department, setDepartment] = useState("CSE");
-  const [year, setYear] = useState("3");
-  const [section, setSection] = useState("A");
+  const [department, setDepartment] = useState("all");
+  const [year, setYear] = useState("4");
+  const [section, setSection] = useState("all");
   const [date, setDate] = useState(() => new Date().toISOString().split("T")[0]);
 
   // Search State
@@ -27,17 +30,72 @@ export default function AttendancePage() {
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
 
+  useEffect(() => {
+    async function loadStudents() {
+      setLoading(true);
+      try {
+        const authHeaders = await getAuthHeaders();
+        const res = await apiFetch(`${API_BASE}/api/faculty/students`, {
+          headers: { ...authHeaders }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data) && data.length > 0) {
+            setStudentsList(data);
+            setLoading(false);
+            return;
+          }
+        }
+      } catch (e) {
+        console.warn("Failed to fetch students from API:", e);
+      }
+
+      // Query Supabase user_academic_profile directly
+      try {
+        if (supabase) {
+          const { data } = await supabase.from("user_academic_profile").select("*");
+          if (data && data.length > 0) {
+            const mapped = data.map((s, idx) => ({
+              id: s.user_id || `stu_${idx}`,
+              name: s.full_name || `Student ${idx + 1}`,
+              roll_number: `22TK1A${(s.department || "05").toUpperCase()}${String(idx + 1).padStart(2, "0")}`,
+              section: s.section || "Section A",
+              department: s.department || "CSE",
+              year: s.year || "4",
+              academic_year: s.academic_year || "4th Year",
+              college: s.college || "TKR College of Engineering & Technology",
+              attendance_percentage: 92.0,
+            }));
+            setStudentsList(mapped);
+            setLoading(false);
+            return;
+          }
+        }
+      } catch {}
+
+      setStudentsList(getSharedMockStudents());
+      setLoading(false);
+    }
+
+    loadStudents();
+  }, []);
+
   // Filter students by year, department, section and search
   const filteredStudents = useMemo(() => {
-    return students.filter((s: any) => {
-      const matchesYear = s.year === year;
-      const matchesDept = s.department === department;
-      const matchesSection = s.section === section;
-      const matchesSearch = s.name.toLowerCase().includes(search.toLowerCase()) || 
-                            s.roll_number.toLowerCase().includes(search.toLowerCase());
+    return studentsList.filter((s: any) => {
+      const sYear = String(s.year || s.academic_year || "");
+      const sDept = String(s.department || "").toUpperCase();
+      const sSec = String(s.section || "");
+
+      const matchesYear = year === "all" || sYear === year || sYear.includes(year) || (year === "4" && (sYear === "4" || sYear.includes("4")));
+      const matchesDept = department === "all" || sDept === department.toUpperCase();
+      const matchesSection = section === "all" || sSec === section || sSec === `Section ${section}` || sSec.toLowerCase().includes(section.toLowerCase());
+      const matchesSearch = (s.name || "").toLowerCase().includes(search.toLowerCase()) || 
+                            (s.roll_number || "").toLowerCase().includes(search.toLowerCase());
+
       return matchesYear && matchesDept && matchesSection && matchesSearch;
     });
-  }, [students, year, department, section, search]);
+  }, [studentsList, year, department, section, search]);
 
   // Pre-populate attendanceSheet with present by default whenever the filter changes
   useEffect(() => {
@@ -115,10 +173,11 @@ export default function AttendancePage() {
             onChange={(e) => setYear(e.target.value)}
             className="w-full px-3 py-2.5 rounded-xl bg-[#090e1a] border border-white/10 text-slate-300 text-xs font-semibold focus:outline-none focus:border-purple-500/50"
           >
-            <option value="1">Year 1</option>
-            <option value="2">Year 2</option>
-            <option value="3">Year 3</option>
+            <option value="all">All Years</option>
             <option value="4">Year 4</option>
+            <option value="3">Year 3</option>
+            <option value="2">Year 2</option>
+            <option value="1">Year 1</option>
           </select>
         </div>
 
@@ -129,6 +188,7 @@ export default function AttendancePage() {
             onChange={(e) => setDepartment(e.target.value)}
             className="w-full px-3 py-2.5 rounded-xl bg-[#090e1a] border border-white/10 text-slate-300 text-xs font-semibold focus:outline-none focus:border-purple-500/50"
           >
+            <option value="all">All Depts</option>
             <option value="CSE">CSE</option>
             <option value="CSM">CSM</option>
           </select>
@@ -141,6 +201,7 @@ export default function AttendancePage() {
             onChange={(e) => setSection(e.target.value)}
             className="w-full px-3 py-2.5 rounded-xl bg-[#090e1a] border border-white/10 text-slate-300 text-xs font-semibold focus:outline-none focus:border-purple-500/50"
           >
+            <option value="all">All Sections</option>
             <option value="A">Section A</option>
             <option value="B">Section B</option>
           </select>

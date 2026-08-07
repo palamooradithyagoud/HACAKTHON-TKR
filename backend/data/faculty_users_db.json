@@ -1,0 +1,46 @@
+[
+  {
+    "id": "FAC001",
+    "email": "sarah.chen@tkrec.ac.in",
+    "password_hash": "Sarah@2026",
+    "full_name": "Prof. Sarah Chen",
+    "designation": "Head of Dept (CSE & CSM)",
+    "department": "CSE & CSM",
+    "college": "TKR College of Engineering & Technology",
+    "role": "faculty",
+    "status": "Online"
+  },
+  {
+    "id": "FAC002",
+    "email": "rajesh.verma@tkrec.ac.in",
+    "password_hash": "Rajesh@2026",
+    "full_name": "Prof. Rajesh Verma",
+    "designation": "Placement & Training Lead",
+    "department": "Training & Placements",
+    "college": "TKR College of Engineering & Technology",
+    "role": "faculty",
+    "status": "Online"
+  },
+  {
+    "id": "FAC003",
+    "email": "vikram.anand@tkrec.ac.in",
+    "password_hash": "Vikram@2026",
+    "full_name": "Dr. Vikram Anand",
+    "designation": "Data Structures Lab Head",
+    "department": "Computer Science & Engineering",
+    "college": "TKR College of Engineering & Technology",
+    "role": "faculty",
+    "status": "Away"
+  },
+  {
+    "id": "FAC000",
+    "email": "faculty@tkrec.ac.in",
+    "password_hash": "faculty123",
+    "full_name": "Faculty Administrator",
+    "designation": "General Faculty Admin",
+    "department": "Computer Science",
+    "college": "TKR College of Engineering & Technology",
+    "role": "faculty",
+    "status": "Online"
+  }
+]

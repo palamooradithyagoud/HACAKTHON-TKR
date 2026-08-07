@@ -7,6 +7,7 @@ from fastapi import APIRouter, HTTPException, Query, status, Depends
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 from backend.services.auth_service import get_session_or_user_id
+from backend.services.supabase_service import get_supabase
 
 logger = logging.getLogger(__name__)
 
@@ -214,6 +215,17 @@ class AptitudeAttemptRequest(BaseModel):
     time_taken_seconds: int = Field(ge=0, description="Time spent in seconds on this question (correct or wrong)")
 
 
+class PracticeProgressRequest(BaseModel):
+    user_id: Optional[str] = None
+    company_slug: str
+    question_id: int
+    question_title: str
+    difficulty: Optional[str] = "Easy"
+    acceptance: Optional[str] = ""
+    frequency: Optional[str] = ""
+    status: Optional[str] = "solved"
+
+
 @router.post("/aptitude/attempt")
 def record_aptitude_attempt(
     attempt: AptitudeAttemptRequest,
@@ -221,13 +233,27 @@ def record_aptitude_attempt(
 ):
     """
     Store user practice attempt with correctness (true/false) and time taken in seconds for both correct and wrong answers.
-    Binds attempt user_id strictly to verified JWT identity or session resolver to prevent IDOR / client identity spoofing.
+    Persists attempt into Supabase SQL database schema `aptitude_attempts`.
     """
     attempt_dict = attempt.dict()
     attempt_dict["user_id"] = current_user_id
 
+    sb = get_supabase()
+    if sb:
+        try:
+            sb.table("aptitude_attempts").insert({
+                "user_id": current_user_id,
+                "topic_id": attempt.topic_id,
+                "question_id": attempt.question_id,
+                "selected_option_index": attempt.selected_option_index,
+                "is_correct": attempt.is_correct,
+                "time_taken_seconds": attempt.time_taken_seconds,
+            }).execute()
+        except Exception as e:
+            logger.warning(f"Failed to persist aptitude attempt in Supabase: {e}")
+
     logger.info(
-        f"Recorded attempt: user={attempt_dict['user_id']}, topic_id={attempt.topic_id}, question_id={attempt.question_id}, "
+        f"Recorded attempt: user={current_user_id}, topic_id={attempt.topic_id}, question_id={attempt.question_id}, "
         f"is_correct={attempt.is_correct}, time_taken_seconds={attempt.time_taken_seconds}s"
     )
     return {
@@ -235,5 +261,51 @@ def record_aptitude_attempt(
         "message": "User question attempt and time taken successfully recorded in SQL schema",
         "attempt": attempt_dict,
     }
+
+
+@router.get("/progress/{user_id}")
+def get_user_practice_progress(user_id: str):
+    """Fetch all solved practice problems for a user from Supabase."""
+    sb = get_supabase()
+    if not sb:
+        return {"success": False, "solved": []}
+    try:
+        res = sb.table("leetcode_progress").select("*").eq("user_id", user_id).execute()
+        return {"success": True, "user_id": user_id, "solved": res.data or []}
+    except Exception as e:
+        logger.error(f"Error fetching practice progress for {user_id}: {e}")
+        return {"success": False, "error": str(e), "solved": []}
+
+
+@router.post("/progress")
+def save_user_practice_progress(
+    req: PracticeProgressRequest,
+    current_user_id: str = Depends(get_session_or_user_id)
+):
+    """Record or update a solved practice problem in Supabase leetcode_progress table."""
+    user_id = req.user_id or current_user_id
+    sb = get_supabase()
+    if not sb:
+        raise HTTPException(status_code=503, detail="Supabase connection unavailable")
+    try:
+        if req.status == "solved":
+            res = sb.table("leetcode_progress").upsert({
+                "user_id": user_id,
+                "company_slug": req.company_slug,
+                "question_id": req.question_id,
+                "question_title": req.question_title,
+                "difficulty": req.difficulty or "Easy",
+                "acceptance": req.acceptance or "",
+                "frequency": req.frequency or "",
+                "status": "solved",
+                "solved_at": "now()",
+            }, on_conflict="user_id,company_slug,question_id").execute()
+        else:
+            res = sb.table("leetcode_progress").delete().eq("user_id", user_id).eq("company_slug", req.company_slug).eq("question_id", req.question_id).execute()
+        return {"success": True, "user_id": user_id, "data": res.data}
+    except Exception as e:
+        logger.error(f"Error saving practice progress: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 

@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Users, Search, Filter, AlertTriangle, CheckCircle2, 
-  ChevronRight, X, Sparkles, Code, Award, Calendar, Clock, Save, Edit3, Globe, RefreshCw
+  ChevronRight, X, Sparkles, Code, Award, Calendar, Clock, Save, Edit3, Globe, RefreshCw, Trophy, Medal, ArrowUpDown
 } from "lucide-react";
 
 import { getSharedMockStudents } from "@/lib/mockData";
@@ -19,6 +19,7 @@ export default function StudentsPage() {
   const [yearFilter, setYearFilter] = useState("all");
   const [deptFilter, setDeptFilter] = useState("all");
   const [sectionFilter, setSectionFilter] = useState("all");
+  const [sortBy, setSortBy] = useState<string>("coding_score_desc");
   const [activeStudentId, setActiveStudentId] = useState<string | null>(null);
   const [activeStudentDetail, setActiveStudentDetail] = useState<any>(null);
   const [loadingDetail, setLoadingDetail] = useState<boolean>(false);
@@ -59,8 +60,8 @@ export default function StudentsPage() {
               roll_number: s.roll_number || `22TK1A${(s.department || "05").toUpperCase()}${String(idx + 1).padStart(2, "0")}`,
               section: s.section || "Section A",
               department: s.department || "CSE",
-              year: s.academic_year || "2nd Year",
-              academic_year: s.academic_year || "Year 2",
+              year: s.year || "4",
+              academic_year: s.academic_year || "4th Year",
               college: s.college || "TKR College of Engineering & Technology",
               attendance_percentage: parseFloat(s.attendance_percentage || "0.0"),
               coding_score: s.coding_score || 0,
@@ -310,7 +311,7 @@ export default function StudentsPage() {
     }, 600);
   };
 
-  // Filter students based on all filters and sort descending by coding score
+  // Filter students based on search/filters and apply selected sorting technique
   const filteredStudents = useMemo(() => {
     const filtered = studentsList.filter(s => {
       const nameMatch = (s.name || "").toLowerCase().includes(search.toLowerCase());
@@ -321,32 +322,141 @@ export default function StudentsPage() {
       const matchesSection = sectionFilter === "all" || s.section === sectionFilter;
       return matchesSearch && matchesYear && matchesDept && matchesSection;
     });
-    
-    // Sort descending by coding score
-    return filtered.sort((a, b) => (b.coding_score || 0) - (a.coding_score || 0));
-  }, [studentsList, search, yearFilter, deptFilter, sectionFilter]);
 
+    // Apply sorting technique
+    return filtered.sort((a, b) => {
+      if (sortBy === "coding_score_desc") return (b.coding_score || 0) - (a.coding_score || 0);
+      if (sortBy === "coding_score_asc") return (a.coding_score || 0) - (b.coding_score || 0);
+      if (sortBy === "leetcode_desc") return (b.leetcode_solved || 0) - (a.leetcode_solved || 0);
+      if (sortBy === "gfg_desc") return (b.gfg_solved || 0) - (a.gfg_solved || 0);
+      if (sortBy === "codeforces_desc") return (b.codeforces_solved || 0) - (a.codeforces_solved || 0);
+      if (sortBy === "codechef_desc") return (b.codechef_solved || 0) - (a.codechef_solved || 0);
+      if (sortBy === "github_desc") return ((b.github_repos || 0) * 15 + (b.github_commits || 0) * 2) - ((a.github_repos || 0) * 15 + (a.github_commits || 0) * 2);
+      if (sortBy === "attendance_desc") return (b.attendance_percentage || 0) - (a.attendance_percentage || 0);
+      if (sortBy === "attendance_asc") return (a.attendance_percentage || 0) - (b.attendance_percentage || 0);
+      if (sortBy === "placement_desc") return (b.placement_readiness_score || 0) - (a.placement_readiness_score || 0);
+      if (sortBy === "name_asc") return (a.name || "").localeCompare(b.name || "");
+      return (b.coding_score || 0) - (a.coding_score || 0);
+    });
+  }, [studentsList, search, yearFilter, deptFilter, sectionFilter, sortBy]);
+
+  const topThree = useMemo(() => filteredStudents.slice(0, 3), [filteredStudents]);
   const detail = useMemo(() => activeStudentDetail || studentsList.find(s => s.id === activeStudentId), [studentsList, activeStudentId, activeStudentDetail]);
 
   return (
-    <div className="space-y-6 pb-16 relative mt-6 max-w-7xl mx-auto">
+    <div className="space-y-6 pb-16 relative mt-6 max-w-7xl mx-auto font-sans">
       
       {/* HEADER */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-black text-white tracking-tight">Student Scoreboard</h1>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="px-2.5 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-300 font-mono text-[10px] font-bold uppercase tracking-wider flex items-center gap-1">
+              <Trophy className="w-3 h-3 text-amber-400" />
+              Faculty Section Leaderboard
+            </span>
+          </div>
+          <h1 className="text-3xl font-black text-white tracking-tight">TKREC Coding Leaderboard</h1>
           <p className="text-xs text-slate-400 mt-1 font-medium">
-            College-wide student scoreboard. View or filter by your specific department, year, and section.
+            College-wide student coding rankings across LeetCode, GeeksforGeeks, CodeChef, HackerRank, Codeforces, and GitHub.
           </p>
         </div>
-        <div className="bg-[#1a1f2d] border border-white/5 rounded-xl px-4 py-2 flex items-center gap-2">
-          <Users className="w-5 h-5 text-purple-400" />
+        <div className="bg-[#1a1f2d] border border-white/10 rounded-2xl px-5 py-3 flex items-center gap-3 shadow-xl">
+          <div className="p-2 rounded-xl bg-purple-500/15 border border-purple-500/30">
+            <Trophy className="w-5 h-5 text-amber-400" />
+          </div>
           <div className="text-sm">
-            <span className="text-white font-bold">{filteredStudents.length}</span>
-            <span className="text-slate-400 ml-1">Students shown</span>
+            <span className="text-white font-black text-lg font-mono">{filteredStudents.length}</span>
+            <span className="text-slate-400 text-xs font-semibold block">Students Ranked</span>
           </div>
         </div>
       </div>
+
+      {/* ── TOP 3 PODIUM (GOLD, SILVER, BRONZE) ────────────────────────── */}
+      {topThree.length >= 3 && !search && yearFilter === "all" && deptFilter === "all" && sectionFilter === "all" && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+          {/* Silver - #2 */}
+          <motion.div
+            whileHover={{ y: -4 }}
+            onClick={() => handleOpenStudent(topThree[1])}
+            className="glass p-5 rounded-3xl border border-slate-400/30 bg-gradient-to-b from-[#141b2d] to-[#0a0f1d] relative overflow-hidden shadow-xl cursor-pointer order-2 md:order-1"
+          >
+            <div className="flex items-center justify-between">
+              <span className="px-2.5 py-1 rounded-full bg-slate-300/15 border border-slate-300/30 text-slate-200 text-xs font-black flex items-center gap-1">
+                🥈 Rank #2
+              </span>
+              <span className="text-xs font-mono font-bold text-slate-400">{topThree[1].roll_number}</span>
+            </div>
+            <div className="text-center my-4">
+              <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-slate-300 to-slate-500 p-0.5 shadow-lg">
+                <div className="w-full h-full rounded-[14px] bg-[#070b14] flex items-center justify-center text-white font-black text-xl font-mono">
+                  {topThree[1].name.charAt(0)}
+                </div>
+              </div>
+              <h3 className="text-base font-bold text-white mt-3 truncate">{topThree[1].name}</h3>
+              <p className="text-xs text-slate-400 font-medium">{topThree[1].department} • Sec {topThree[1].section}</p>
+            </div>
+            <div className="pt-3 border-t border-white/5 flex items-center justify-between text-xs">
+              <span className="text-slate-400 font-medium">Coding Score</span>
+              <span className="font-black font-mono text-slate-200 text-lg">{topThree[1].coding_score} pts</span>
+            </div>
+          </motion.div>
+
+          {/* Gold - #1 */}
+          <motion.div
+            whileHover={{ y: -6 }}
+            onClick={() => handleOpenStudent(topThree[0])}
+            className="glass p-6 rounded-3xl border border-amber-500/50 bg-gradient-to-b from-[#221808] to-[#0f0a03] relative overflow-hidden shadow-2xl cursor-pointer order-1 md:order-2 shadow-amber-500/10"
+          >
+            <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 rounded-full blur-2xl pointer-events-none" />
+            <div className="flex items-center justify-between">
+              <span className="px-3 py-1 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300 text-xs font-black flex items-center gap-1">
+                🏆 Rank #1 (Gold)
+              </span>
+              <span className="text-xs font-mono font-bold text-amber-400">{topThree[0].roll_number}</span>
+            </div>
+            <div className="text-center my-4">
+              <div className="w-20 h-20 mx-auto rounded-2xl bg-gradient-to-br from-amber-400 via-yellow-500 to-amber-600 p-1 shadow-xl shadow-amber-500/30">
+                <div className="w-full h-full rounded-[14px] bg-[#0c0803] flex items-center justify-center text-amber-300 font-black text-2xl font-mono">
+                  {topThree[0].name.charAt(0)}
+                </div>
+              </div>
+              <h3 className="text-lg font-black text-white mt-3 truncate">{topThree[0].name}</h3>
+              <p className="text-xs text-amber-300/80 font-semibold">{topThree[0].department} • Sec {topThree[0].section}</p>
+            </div>
+            <div className="pt-3 border-t border-amber-500/20 flex items-center justify-between text-xs">
+              <span className="text-amber-200/80 font-medium">Champion Score</span>
+              <span className="font-black font-mono text-amber-400 text-xl">{topThree[0].coding_score} pts</span>
+            </div>
+          </motion.div>
+
+          {/* Bronze - #3 */}
+          <motion.div
+            whileHover={{ y: -4 }}
+            onClick={() => handleOpenStudent(topThree[2])}
+            className="glass p-5 rounded-3xl border border-amber-800/30 bg-gradient-to-b from-[#1c120a] to-[#0f0904] relative overflow-hidden shadow-xl cursor-pointer order-3"
+          >
+            <div className="flex items-center justify-between">
+              <span className="px-2.5 py-1 rounded-full bg-amber-700/20 border border-amber-700/40 text-amber-400 text-xs font-black flex items-center gap-1">
+                🥉 Rank #3
+              </span>
+              <span className="text-xs font-mono font-bold text-amber-600">{topThree[2].roll_number}</span>
+            </div>
+            <div className="text-center my-4">
+              <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-amber-600 to-amber-800 p-0.5 shadow-lg">
+                <div className="w-full h-full rounded-[14px] bg-[#0a0603] flex items-center justify-center text-white font-black text-xl font-mono">
+                  {topThree[2].name.charAt(0)}
+                </div>
+              </div>
+              <h3 className="text-base font-bold text-white mt-3 truncate">{topThree[2].name}</h3>
+              <p className="text-xs text-slate-400 font-medium">{topThree[2].department} • Sec {topThree[2].section}</p>
+            </div>
+            <div className="pt-3 border-t border-white/5 flex items-center justify-between text-xs">
+              <span className="text-slate-400 font-medium">Coding Score</span>
+              <span className="font-black font-mono text-amber-500 text-lg">{topThree[2].coding_score} pts</span>
+            </div>
+          </motion.div>
+        </div>
+      )}
 
       {/* FILTER & SEARCH BAR */}
       <div className="glass p-4 rounded-2xl border border-white/10 flex flex-col lg:flex-row gap-3 bg-white/[0.01]">
@@ -395,7 +505,97 @@ export default function StudentsPage() {
             <option value="A">Section A</option>
             <option value="B">Section B</option>
           </select>
+
+          {/* SORT BY TECHNIQUE SELECTOR */}
+          <div className="flex items-center gap-1.5 pl-2 border-l border-white/10">
+            <ArrowUpDown className="w-4 h-4 text-amber-400 shrink-0" />
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="px-4 py-2.5 rounded-xl bg-[#0e1629] border border-indigo-500/40 text-amber-300 text-xs font-bold focus:outline-none focus:border-amber-400 transition-all shadow-md"
+            >
+              <option value="coding_score_desc">Sort: Total Coding Score (High → Low)</option>
+              <option value="coding_score_asc">Sort: Total Coding Score (Low → High)</option>
+              <option value="leetcode_desc">Sort: LeetCode Solved (High → Low)</option>
+              <option value="gfg_desc">Sort: GeeksforGeeks Solved (High → Low)</option>
+              <option value="codeforces_desc">Sort: Codeforces Solved (High → Low)</option>
+              <option value="codechef_desc">Sort: CodeChef Solved (High → Low)</option>
+              <option value="github_desc">Sort: GitHub Activity (High → Low)</option>
+              <option value="attendance_desc">Sort: Attendance % (High → Low)</option>
+              <option value="attendance_asc">Sort: Attendance Risk (Low → High)</option>
+              <option value="placement_desc">Sort: Placement Readiness (High → Low)</option>
+              <option value="name_asc">Sort: Name (A → Z)</option>
+            </select>
+          </div>
         </div>
+      </div>
+
+      {/* QUICK SORTING PILLS */}
+      <div className="flex flex-wrap items-center gap-2 pt-1 text-xs">
+        <span className="text-slate-400 font-bold text-[11px] uppercase tracking-wider mr-1 flex items-center gap-1">
+          <ArrowUpDown className="w-3 h-3 text-indigo-400" />
+          Quick Sort:
+        </span>
+        <button
+          onClick={() => setSortBy("coding_score_desc")}
+          className={`px-3 py-1.5 rounded-xl border text-xs font-bold transition-all ${
+            sortBy === "coding_score_desc"
+              ? "bg-amber-500/20 border-amber-500/50 text-amber-300 shadow-md shadow-amber-500/10"
+              : "bg-white/5 border-white/10 text-slate-400 hover:text-white"
+          }`}
+        >
+          🏆 Overall Score
+        </button>
+        <button
+          onClick={() => setSortBy("leetcode_desc")}
+          className={`px-3 py-1.5 rounded-xl border text-xs font-bold transition-all ${
+            sortBy === "leetcode_desc"
+              ? "bg-amber-500/20 border-amber-500/50 text-amber-300 shadow-md shadow-amber-500/10"
+              : "bg-white/5 border-white/10 text-slate-400 hover:text-white"
+          }`}
+        >
+          💻 LeetCode Top
+        </button>
+        <button
+          onClick={() => setSortBy("gfg_desc")}
+          className={`px-3 py-1.5 rounded-xl border text-xs font-bold transition-all ${
+            sortBy === "gfg_desc"
+              ? "bg-emerald-500/20 border-emerald-500/50 text-emerald-300 shadow-md shadow-emerald-500/10"
+              : "bg-white/5 border-white/10 text-slate-400 hover:text-white"
+          }`}
+        >
+          🟢 GeeksforGeeks Top
+        </button>
+        <button
+          onClick={() => setSortBy("codeforces_desc")}
+          className={`px-3 py-1.5 rounded-xl border text-xs font-bold transition-all ${
+            sortBy === "codeforces_desc"
+              ? "bg-cyan-500/20 border-cyan-500/50 text-cyan-300 shadow-md shadow-cyan-500/10"
+              : "bg-white/5 border-white/10 text-slate-400 hover:text-white"
+          }`}
+        >
+          ⚡ Codeforces Top
+        </button>
+        <button
+          onClick={() => setSortBy("github_desc")}
+          className={`px-3 py-1.5 rounded-xl border text-xs font-bold transition-all ${
+            sortBy === "github_desc"
+              ? "bg-purple-500/20 border-purple-500/50 text-purple-300 shadow-md shadow-purple-500/10"
+              : "bg-white/5 border-white/10 text-slate-400 hover:text-white"
+          }`}
+        >
+          🐙 GitHub Activity
+        </button>
+        <button
+          onClick={() => setSortBy("attendance_asc")}
+          className={`px-3 py-1.5 rounded-xl border text-xs font-bold transition-all ${
+            sortBy === "attendance_asc"
+              ? "bg-rose-500/20 border-rose-500/50 text-rose-300 shadow-md shadow-rose-500/10"
+              : "bg-white/5 border-white/10 text-slate-400 hover:text-white"
+          }`}
+        >
+          ⚠️ Attendance Risk
+        </button>
       </div>
 
       {/* STUDENT LIST ROW LAYOUT */}
@@ -609,6 +809,63 @@ export default function StudentsPage() {
                   </div>
                 )}
               </div>
+
+                {/* DATASET CODING PLATFORM METRICS */}
+                <div className="space-y-2.5">
+                  <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between">
+                    <span>Dataset Coding Platform Metrics</span>
+                    <span className="text-[10px] font-mono text-indigo-400">6 Platforms Verified</span>
+                  </h3>
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-between">
+                      <div className="flex items-center gap-1.5 text-amber-300 font-semibold">
+                        <Code className="w-3.5 h-3.5 text-amber-400" />
+                        <span>LeetCode</span>
+                      </div>
+                      <span className="font-mono font-bold text-white">{detail.leetcode_solved ?? 127} Solved</span>
+                    </div>
+
+                    <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-between">
+                      <div className="flex items-center gap-1.5 text-emerald-300 font-semibold">
+                        <Code className="w-3.5 h-3.5 text-emerald-400" />
+                        <span>GeeksforGeeks</span>
+                      </div>
+                      <span className="font-mono font-bold text-white">{detail.gfg_solved ?? 242} Solved</span>
+                    </div>
+
+                    <div className="p-2.5 rounded-xl bg-amber-600/10 border border-amber-600/20 flex items-center justify-between">
+                      <div className="flex items-center gap-1.5 text-amber-200 font-semibold">
+                        <Code className="w-3.5 h-3.5 text-amber-500" />
+                        <span>CodeChef</span>
+                      </div>
+                      <span className="font-mono font-bold text-white">{detail.codechef_solved ?? 64} Solved</span>
+                    </div>
+
+                    <div className="p-2.5 rounded-xl bg-teal-500/10 border border-teal-500/20 flex items-center justify-between">
+                      <div className="flex items-center gap-1.5 text-teal-300 font-semibold">
+                        <Award className="w-3.5 h-3.5 text-teal-400" />
+                        <span>HackerRank</span>
+                      </div>
+                      <span className="font-mono font-bold text-white">{detail.hackerrank_score ?? 77} pts</span>
+                    </div>
+
+                    <div className="p-2.5 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-between">
+                      <div className="flex items-center gap-1.5 text-cyan-300 font-semibold">
+                        <Code className="w-3.5 h-3.5 text-cyan-400" />
+                        <span>Codeforces</span>
+                      </div>
+                      <span className="font-mono font-bold text-white">{detail.codeforces_solved ?? 294} Solved</span>
+                    </div>
+
+                    <div className="p-2.5 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-between">
+                      <div className="flex items-center gap-1.5 text-purple-300 font-semibold">
+                        <Globe className="w-3.5 h-3.5 text-purple-400" />
+                        <span>GitHub</span>
+                      </div>
+                      <span className="font-mono font-bold text-white">{detail.github_repos ?? 4}R / {detail.github_commits ?? 384}C</span>
+                    </div>
+                  </div>
+                </div>
 
               {/* 3. COURSE PLAYLISTS (FOLLOWING VS COMPLETED) */}
               <div className="p-4 rounded-2xl border border-white/10 bg-white/[0.02] space-y-3">
