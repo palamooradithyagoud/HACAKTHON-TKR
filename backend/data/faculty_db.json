@@ -1,6 +1,52 @@
 {
   "students": [
     {
+      "id": "guest_f3wtaw3fl_1786095874173",
+      "name": "Palamoor Adithya Goud",
+      "roll_number": "22TK1ACSM01",
+      "section": "A",
+      "department": "CSM",
+      "year": "2nd Year",
+      "academic_year": "Year 2nd Year",
+      "college": "TKR College of Engineering & Technology",
+      "attendance_percentage": 92.0,
+      "coding_score": 650,
+      "placement_readiness_score": 88.0,
+      "faculty_notes": "",
+      "leetcode_handle": "https://leetcode.com/u/Palamoor_Adithya_Goud/",
+      "github_handle": "",
+      "timeline": [
+        {
+          "date": "2026-08-07",
+          "title": "Account Registered",
+          "description": "Student joined SkillsCatalyst platform."
+        }
+      ]
+    },
+    {
+      "id": "guest_s7s7r4dbc_1786097510656",
+      "name": "shiva",
+      "roll_number": "22TK1ACSM02",
+      "section": "Section A",
+      "department": "CSM",
+      "year": "2nd Year",
+      "academic_year": "Year 2nd Year",
+      "college": "TKR College of Engineering & Technology",
+      "attendance_percentage": 92.0,
+      "coding_score": 650,
+      "placement_readiness_score": 88.0,
+      "faculty_notes": "",
+      "leetcode_handle": "",
+      "github_handle": "",
+      "timeline": [
+        {
+          "date": "2026-08-07",
+          "title": "Account Registered",
+          "description": "Student joined SkillsCatalyst platform."
+        }
+      ]
+    },
+    {
       "id": "STU1CSEA1",
       "name": "Student 1 (CSE)",
       "roll_number": "22XX1A0501",

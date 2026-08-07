@@ -1,6 +1,6 @@
 import { supabase } from "@/lib/supabase";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+export const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 export function getGuestSessionId(): string {
   if (typeof window === "undefined") return "guest_session_default";
@@ -99,6 +99,23 @@ export async function getAuthHeaders(): Promise<Record<string, string>> {
     }
   } catch {}
   return headers;
+}
+
+export async function getEffectiveUserId(): Promise<string> {
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user?.id) return session.user.id;
+  } catch {}
+  if (typeof window !== "undefined") {
+    try {
+      const raw = localStorage.getItem("skillscatalyst_user_session");
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed?.user_id) return parsed.user_id;
+      }
+    } catch {}
+  }
+  return getRawGuestSessionId();
 }
 
 function handleUnauthenticated(res: Response) {
@@ -586,6 +603,42 @@ export function getRoadmapMeta(rawTitleOrId: string, userCompletedNodes: string[
 
 async function mergeLocalDashboardMetrics(backendData: any) {
   if (!backendData || !backendData.metrics) return backendData;
+
+  // Calculate local completed video count from LocalStorage
+  let localCompletedCount = 0;
+  if (typeof window !== "undefined") {
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith("sc_video_completed_") && localStorage.getItem(key) === "true") {
+          localCompletedCount++;
+        }
+      }
+    } catch {}
+  }
+
+  // Calculate total saved playlist videos
+  const { saved } = await fetchSavedPlaylists();
+  let totalV = 0;
+  if (saved && saved.length > 0) {
+    for (const pl of saved) {
+      const match = String(pl.video_count || "10").match(/\d+/);
+      totalV += match ? parseInt(match[0], 10) : 10;
+    }
+  }
+
+  const backendCompleted = backendData.metrics.learningProgress?.completedVideos || 0;
+  const finalCompleted = Math.max(backendCompleted, localCompletedCount);
+  const finalTotal = Math.max(backendData.metrics.learningProgress?.totalVideos || 0, totalV, finalCompleted);
+  const pct = finalTotal > 0 ? Math.min(100, Math.round((finalCompleted / finalTotal) * 100)) : (finalCompleted > 0 ? 100 : 0);
+
+  backendData.metrics.learningProgress = {
+    percentage: pct,
+    completedVideos: finalCompleted,
+    totalVideos: finalTotal,
+    subtitle: `${finalCompleted}/${finalTotal} videos completed`,
+  };
+
   if (!backendData.metrics.roadmapProgress?.roadmaps) {
     const activeRm = await getFallbackActiveRoadmapData();
     if (activeRm && activeRm.roadmaps) {
@@ -666,6 +719,38 @@ async function getFallbackDashboardData() {
     console.warn("Supabase dashboard fallback error:", e);
   }
 
+  // Aggregate LocalStorage completed videos
+  let localCompletedCount = 0;
+  if (typeof window !== "undefined") {
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith("sc_video_completed_") && localStorage.getItem(key) === "true") {
+          localCompletedCount++;
+        }
+      }
+    } catch {}
+  }
+
+  const { saved } = await fetchSavedPlaylists();
+  if (saved && saved.length > 0) {
+    savedPlaylistsCount = saved.length;
+    let computedTotal = 0;
+    for (const pl of saved) {
+      const match = String(pl.video_count || "10").match(/\d+/);
+      computedTotal += match ? parseInt(match[0], 10) : 10;
+    }
+    if (computedTotal > totalVideos) totalVideos = computedTotal;
+  }
+
+  const finalCompleted = Math.max(completedCount, localCompletedCount);
+  if (totalVideos < finalCompleted) {
+    totalVideos = finalCompleted;
+  }
+
+  const pct = totalVideos > 0 ? Math.min(100, Math.round((finalCompleted / totalVideos) * 100)) : (finalCompleted > 0 ? 100 : 0);
+  const subtitle = `${finalCompleted}/${totalVideos} videos completed`;
+
   // Parse active roadmap from localStorage if present
   let localActiveRoadmapName = "";
   if (typeof window !== "undefined") {
@@ -685,18 +770,6 @@ async function getFallbackDashboardData() {
     const lScore = parseInt(localResumeScoreRaw, 10);
     if (lScore > resumeScore) resumeScore = lScore;
   }
-
-  const activeTotal = getActivePlaylistTotal();
-  if (activeTotal > totalVideos) {
-    totalVideos = activeTotal;
-  }
-
-  if (totalVideos > 0 && completedCount > totalVideos) {
-    totalVideos = completedCount;
-  }
-
-  const pct = totalVideos > 0 ? Math.round((completedCount / totalVideos) * 100) : 0;
-  const subtitle = totalVideos > 0 ? `${completedCount}/${totalVideos} videos completed` : `${completedCount} video${completedCount !== 1 ? "s" : ""} completed`;
 
   const roadmapPct = roadmapCount > 0 ? Math.min(100, Math.round((roadmapCount / 20) * 100)) : 0;
   const roadmapSubtitle = roadmapCount > 0 ? `${roadmapCount} topic${roadmapCount !== 1 ? "s" : ""} completed` : "0 topics completed";
@@ -917,6 +990,22 @@ export async function searchSkill(
   }
 }
 
+function getLocalSavedPlaylists(): Playlist[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem("sc_saved_playlists");
+    if (raw) return JSON.parse(raw);
+  } catch {}
+  return [];
+}
+
+function setLocalSavedPlaylists(playlists: Playlist[]): void {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem("sc_saved_playlists", JSON.stringify(playlists));
+  } catch {}
+}
+
 export async function savePlaylist(playlist: Playlist, skillQuery: string) {
   const cleanId = cleanPlaylistId(playlist.id);
   const row = {
@@ -934,6 +1023,27 @@ export async function savePlaylist(playlist: Playlist, skillQuery: string) {
     created_at: new Date().toISOString(),
   };
 
+  // 0. Always save to LocalStorage first for instant, resilient offline state
+  try {
+    const localSaved = getLocalSavedPlaylists();
+    if (!localSaved.some((p) => (p.id || (p as any).playlist_id) === row.playlist_id)) {
+      localSaved.unshift({
+        id: row.playlist_id,
+        title: row.title,
+        channel: row.channel,
+        description: row.description,
+        level: row.level,
+        video_count: row.video_count,
+        duration: row.duration,
+        playlist_url: row.playlist_url,
+        thumbnail: row.thumbnail,
+        source: row.source,
+        skill_query: row.skill_query,
+      });
+      setLocalSavedPlaylists(localSaved);
+    }
+  } catch {}
+
   const sessionId = getRawGuestSessionId();
 
   // 1. Save via FastAPI backend
@@ -950,8 +1060,7 @@ export async function savePlaylist(playlist: Playlist, skillQuery: string) {
 
   // 2. Direct Supabase DB write (saved_playlists table)
   try {
-    const { data: { session } } = await supabase.auth.getSession();
-    const targetUserId = session?.user?.id;
+    const targetUserId = await getEffectiveUserId();
     if (targetUserId) {
       await supabase
         .from("saved_playlists")
@@ -1033,6 +1142,14 @@ export async function syncSavedPlaylists(playlists: any[]): Promise<{ success: b
 export async function unsavePlaylist(playlistId: string) {
   const cleanId = cleanPlaylistId(playlistId);
 
+  // 0. Remove from LocalStorage
+  try {
+    const localSaved = getLocalSavedPlaylists().filter(
+      (p) => p.id !== cleanId && p.id !== playlistId && (p as any).playlist_id !== cleanId
+    );
+    setLocalSavedPlaylists(localSaved);
+  } catch {}
+
   try {
     const authHeaders = await getAuthHeaders();
     await apiFetch(`${API_BASE}/api/learning/save/${encodeURIComponent(cleanId)}`, {
@@ -1044,12 +1161,12 @@ export async function unsavePlaylist(playlistId: string) {
   }
 
   try {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session?.user?.id) {
+    const targetUserId = await getEffectiveUserId();
+    if (targetUserId) {
       await supabase
         .from("saved_playlists")
         .delete()
-        .eq("user_id", session.user.id)
+        .eq("user_id", targetUserId)
         .or(`playlist_id.eq.${cleanId},playlist_id.eq.${playlistId}`);
     }
   } catch (e) {
@@ -1057,9 +1174,7 @@ export async function unsavePlaylist(playlistId: string) {
   }
 
   try {
-    const sessionId = getRawGuestSessionId();
-    const { data: { session } } = await supabase.auth.getSession();
-    const sid = session?.user?.id || sessionId;
+    const sid = await getEffectiveUserId();
     const { data: lpData } = await supabase
       .from("learning_progress")
       .select("completed_steps")
@@ -1073,7 +1188,6 @@ export async function unsavePlaylist(playlistId: string) {
       );
       await supabase.from("learning_progress").upsert({
         session_id: sid,
-        user_id: session?.user?.id || null,
         skill_name: "saved_playlists",
         completed_steps: steps,
         updated_at: new Date().toISOString()
@@ -1088,7 +1202,6 @@ export async function unsavePlaylist(playlistId: string) {
 
 export async function fetchSavedPlaylists(): Promise<{ saved: Playlist[]; count: number }> {
   let backendSaved: Playlist[] = [];
-  const sessionId = getRawGuestSessionId();
 
   // 1. Primary: Fetch saved playlists from Supabase via FastAPI backend API
   try {
@@ -1100,7 +1213,7 @@ export async function fetchSavedPlaylists(): Promise<{ saved: Playlist[]; count:
     if (res.ok) {
       const json = await res.json();
       if (json.saved && Array.isArray(json.saved) && json.saved.length > 0) {
-        return { saved: json.saved, count: json.saved.length };
+        backendSaved = json.saved;
       }
     }
   } catch (e) {
@@ -1108,39 +1221,39 @@ export async function fetchSavedPlaylists(): Promise<{ saved: Playlist[]; count:
   }
 
   // 2. Direct Supabase DB Query (saved_playlists table)
-  try {
-    const { data: { session } } = await supabase.auth.getSession();
-    const targetUserId = session?.user?.id;
-    if (targetUserId) {
-      const { data } = await supabase
-        .from("saved_playlists")
-        .select("*")
-        .eq("user_id", targetUserId)
-        .order("created_at", { ascending: false });
+  if (backendSaved.length === 0) {
+    try {
+      const targetUserId = await getEffectiveUserId();
+      if (targetUserId) {
+        const { data } = await supabase
+          .from("saved_playlists")
+          .select("*")
+          .eq("user_id", targetUserId)
+          .order("created_at", { ascending: false });
 
-      if (data && data.length > 0) {
-        backendSaved = data.map((row: any) => ({
-          id: row.playlist_id,
-          title: row.title,
-          channel: row.channel,
-          description: row.description,
-          level: row.level,
-          video_count: row.video_count,
-          duration: row.duration,
-          playlist_url: row.playlist_url,
-          thumbnail: row.thumbnail,
-          source: row.source,
-        }));
+        if (data && data.length > 0) {
+          backendSaved = data.map((row: any) => ({
+            id: row.playlist_id,
+            title: row.title,
+            channel: row.channel,
+            description: row.description,
+            level: row.level,
+            video_count: row.video_count,
+            duration: row.duration,
+            playlist_url: row.playlist_url,
+            thumbnail: row.thumbnail,
+            source: row.source,
+          }));
+        }
       }
+    } catch (e) {
+      console.warn("Fetch saved playlists from Supabase DB failed:", e);
     }
-  } catch (e) {
-    console.warn("Fetch saved playlists from Supabase DB failed:", e);
   }
 
   // 3. Direct Supabase DB Query (learning_progress JSONB table - supports both auth user & guest session)
   try {
-    const { data: { session } } = await supabase.auth.getSession();
-    const sid = session?.user?.id || sessionId;
+    const sid = await getEffectiveUserId();
     const { data: lpData } = await supabase
       .from("learning_progress")
       .select("completed_steps")
@@ -1176,7 +1289,17 @@ export async function fetchSavedPlaylists(): Promise<{ saved: Playlist[]; count:
     console.warn("Fetch saved playlists from learning_progress failed:", e);
   }
 
-  return { saved: backendSaved, count: backendSaved.length };
+  // 4. Merge with LocalStorage playlists so state is ALWAYS persistent
+  const localSaved = getLocalSavedPlaylists();
+  const resultMap = new Map<string, Playlist>();
+  [...backendSaved, ...localSaved].forEach((p) => {
+    if (p && p.id && !resultMap.has(p.id)) {
+      resultMap.set(p.id, p);
+    }
+  });
+
+  const finalSaved = Array.from(resultMap.values());
+  return { saved: finalSaved, count: finalSaved.length };
 }
 
 
@@ -1316,6 +1439,17 @@ export async function fetchPlaylistVideos(
     console.warn("Fetch playlist videos from learning_progress failed:", e);
   }
 
+  // 4. Always merge LocalStorage video watch state for zero-reset persistence
+  if (typeof window !== "undefined" && resultVideos.length > 0) {
+    resultVideos = resultVideos.map((v) => {
+      const isLocalDone = localStorage.getItem(`sc_video_completed_${cleanId}_${v.videoId}`) === "true";
+      return {
+        ...v,
+        watched: v.watched || isLocalDone,
+      };
+    });
+  }
+
   return { videos: resultVideos, count: resultVideos.length };
 }
 
@@ -1325,7 +1459,13 @@ export async function markVideoWatched(
   watched: boolean
 ): Promise<void> {
   const cleanId = cleanPlaylistId(playlistId);
-  const sessionId = getRawGuestSessionId();
+
+  // 0. Always save to LocalStorage first for instant persistence
+  if (typeof window !== "undefined") {
+    try {
+      localStorage.setItem(`sc_video_completed_${cleanId}_${videoId}`, watched ? "true" : "false");
+    } catch {}
+  }
 
   // 1. Save to Supabase via FastAPI backend
   try {
@@ -1345,8 +1485,7 @@ export async function markVideoWatched(
 
   // 2. Direct Supabase DB Client write (video_progress table)
   try {
-    const { data: { session } } = await supabase.auth.getSession();
-    const targetUserId = session?.user?.id;
+    const targetUserId = await getEffectiveUserId();
     if (targetUserId) {
       const row = {
         user_id: targetUserId,
@@ -1366,8 +1505,7 @@ export async function markVideoWatched(
 
   // 3. Direct Supabase DB Client write (learning_progress JSONB table)
   try {
-    const { data: { session } } = await supabase.auth.getSession();
-    const sid = session?.user?.id || sessionId;
+    const sid = await getEffectiveUserId();
     const { data: lpData } = await supabase
       .from("learning_progress")
       .select("completed_steps")
@@ -1403,7 +1541,6 @@ export async function markVideoWatched(
 
         await supabase.from("learning_progress").upsert({
           session_id: sid,
-          user_id: session?.user?.id || null,
           skill_name: "saved_playlists",
           completed_steps: playlists,
           completion_pct: pct,
@@ -1442,10 +1579,10 @@ export async function saveVideoProgress(
   } catch {}
 
   try {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session?.user?.id) {
+    const targetUserId = await getEffectiveUserId();
+    if (targetUserId) {
       const row = {
-        user_id: session.user.id,
+        user_id: targetUserId,
         playlist_id: playlistId,
         video_id: videoId,
         last_position: Math.round(lastPosition),
@@ -1470,8 +1607,14 @@ export async function completeVideo(
   watchTime: number,
 ): Promise<{ success: boolean; completed_at?: string; playlist_stats?: { completed_videos: number } }> {
   const cleanId = cleanPlaylistId(playlistId);
-  const sessionId = getRawGuestSessionId();
   const nowIso = new Date().toISOString();
+
+  // 0. Always save completion to LocalStorage for zero-reset persistence
+  if (typeof window !== "undefined") {
+    try {
+      localStorage.setItem(`sc_video_completed_${cleanId}_${videoId}`, "true");
+    } catch {}
+  }
 
   try {
     const authHeaders = await getAuthHeaders();
@@ -1492,8 +1635,7 @@ export async function completeVideo(
   }
 
   try {
-    const { data: { session } } = await supabase.auth.getSession();
-    const targetUserId = session?.user?.id;
+    const targetUserId = await getEffectiveUserId();
     if (targetUserId) {
       const row = {
         user_id: targetUserId,
@@ -1514,8 +1656,7 @@ export async function completeVideo(
 
   // Direct update to learning_progress JSONB table
   try {
-    const { data: { session } } = await supabase.auth.getSession();
-    const sid = session?.user?.id || sessionId;
+    const sid = await getEffectiveUserId();
     const { data: lpData } = await supabase
       .from("learning_progress")
       .select("completed_steps")
@@ -1547,7 +1688,6 @@ export async function completeVideo(
 
         await supabase.from("learning_progress").upsert({
           session_id: sid,
-          user_id: session?.user?.id || null,
           skill_name: "saved_playlists",
           completed_steps: playlists,
           updated_at: nowIso
@@ -1693,6 +1833,7 @@ export interface AcademicProfile {
   full_name: string;
   college: string;
   department: string;
+  section?: string;
   academic_year: string;
   target_role: string;
 }
@@ -1714,23 +1855,6 @@ export interface PlatformStat {
   badge?: string;
   summary?: string;
   [key: string]: any;
-}
-
-export async function getEffectiveUserId(): Promise<string> {
-  try {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session?.user?.id) return session.user.id;
-  } catch {}
-  if (typeof window !== "undefined") {
-    try {
-      const customSessionStr = localStorage.getItem("skillscatalyst_user_session");
-      if (customSessionStr) {
-        const parsed = JSON.parse(customSessionStr);
-        if (parsed?.user_id) return parsed.user_id;
-      }
-    } catch {}
-  }
-  return getRawGuestSessionId();
 }
 
 export async function fetchProfileData() {
@@ -1792,8 +1916,9 @@ export async function saveAcademicProfile(data: AcademicProfile) {
     const payload = {
       user_id: userId,
       full_name: data.full_name || "",
-      college: data.college || "",
+      college: data.college || "TKR College of Engineering & Technology",
       department: data.department || "",
+      section: data.section || "",
       academic_year: data.academic_year || "",
       target_role: data.target_role || "",
       updated_at: new Date().toISOString(),

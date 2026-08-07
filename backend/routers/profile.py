@@ -17,8 +17,9 @@ router = APIRouter(prefix="/api/profile", tags=["profile"])
 class AcademicProfileModel(BaseModel):
     # user_id is intentionally excluded — identity comes from verified JWT only
     full_name: str = ""
-    college: str = ""
+    college: str = "TKR College of Engineering & Technology"
     department: str = ""
+    section: str = ""
     academic_year: str = ""
     target_role: str = ""
 
@@ -413,8 +414,9 @@ async def get_profile(user_id: str = Depends(get_session_or_user_id)):
     academic_data = {
         "user_id": user_id,
         "full_name": "",
-        "college": "",
+        "college": "TKR College of Engineering & Technology",
         "department": "",
+        "section": "",
         "academic_year": "",
         "target_role": "",
     }
@@ -433,6 +435,8 @@ async def get_profile(user_id: str = Depends(get_session_or_user_id)):
             res_acad = sb.from_("user_academic_profile").select("*").eq("user_id", user_id).execute()
             if res_acad.data:
                 academic_data.update(res_acad.data[0])
+                if not academic_data.get("college"):
+                    academic_data["college"] = "TKR College of Engineering & Technology"
 
             res_code = sb.from_("user_coding_profiles").select("*").eq("user_id", user_id).execute()
             if res_code.data:
@@ -468,8 +472,9 @@ async def save_academic_profile(
     data = {
         "user_id": user_id,
         "full_name": body.full_name,
-        "college": body.college,
+        "college": body.college or "TKR College of Engineering & Technology",
         "department": body.department,
+        "section": body.section,
         "academic_year": body.academic_year,
         "target_role": body.target_role,
         # updated_at is auto-managed by Supabase default — do NOT include it

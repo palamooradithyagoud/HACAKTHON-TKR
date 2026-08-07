@@ -13,6 +13,7 @@ import {
   Sparkles,
   Award,
   Globe,
+  Lock,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useQueryClient } from "@tanstack/react-query";
@@ -32,8 +33,9 @@ export default function SettingsPage() {
 
   // Academic Profile State
   const [fullName, setFullName] = useState("");
-  const [college, setCollege] = useState("");
+  const [college, setCollege] = useState("TKR College of Engineering & Technology");
   const [department, setDepartment] = useState("");
+  const [section, setSection] = useState("");
   const [academicYear, setAcademicYear] = useState("");
   const [targetRole, setTargetRole] = useState("");
   const [savingAcademic, setSavingAcademic] = useState(false);
@@ -76,6 +78,7 @@ export default function SettingsPage() {
           if (a.full_name)     setFullName(a.full_name);
           if (a.college)       setCollege(a.college);
           if (a.department)    setDepartment(a.department);
+          if (a.section)       setSection(a.section);
           if (a.academic_year) setAcademicYear(a.academic_year);
           if (a.target_role)   setTargetRole(a.target_role);
         }
@@ -101,8 +104,9 @@ export default function SettingsPage() {
         if (data) {
           if (data.academic) {
             if (data.academic.full_name)     setFullName(data.academic.full_name);
-            if (data.academic.college)       setCollege(data.academic.college);
+            setCollege(data.academic.college || "TKR College of Engineering & Technology");
             if (data.academic.department)    setDepartment(data.academic.department);
+            if (data.academic.section)       setSection(data.academic.section);
             if (data.academic.academic_year) setAcademicYear(data.academic.academic_year);
             if (data.academic.target_role)   setTargetRole(data.academic.target_role);
           }
@@ -132,8 +136,9 @@ export default function SettingsPage() {
     const payload = {
       user_id: userId,
       full_name: fullName,
-      college: college,
+      college: college || "TKR College of Engineering & Technology",
       department: department,
+      section: section,
       academic_year: academicYear,
       target_role: targetRole,
     };
@@ -230,7 +235,7 @@ export default function SettingsPage() {
                   {fullName || "Palamoor Adithya"}
                 </h1>
                 <p className="text-xs text-slate-400 font-medium mt-0.5">
-                  {session?.email || "adithya@example.com"} • {college || "Vardhaman College"}
+                  {session?.email || "adithya@example.com"} • {college || "TKR College of Engineering & Technology"}
                 </p>
               </div>
 
@@ -305,7 +310,7 @@ export default function SettingsPage() {
                   Academic & Institutional Profile
                 </h2>
                 <p className="text-xs text-slate-400 mt-1">
-                  Specify your current academic year, college/university, and department.
+                  Specify your current academic year, college/university, department, and section.
                 </p>
               </div>
             </div>
@@ -327,15 +332,20 @@ export default function SettingsPage() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-[11px] font-extrabold text-slate-400 tracking-wider uppercase block mb-1.5">
-                    College / University
-                  </label>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-[11px] font-extrabold text-slate-400 tracking-wider uppercase block">
+                      College / University
+                    </label>
+                    <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30 flex items-center gap-1">
+                      <Lock className="w-2.5 h-2.5" /> Institutional Lock
+                    </span>
+                  </div>
                   <input
                     type="text"
-                    value={college}
-                    onChange={(e) => setCollege(e.target.value)}
-                    placeholder="e.g. Vardhaman College Of Engineering"
-                    className="input-glass w-full px-4 py-3 text-xs font-semibold text-white rounded-xl focus:border-indigo-500 outline-none"
+                    value="TKR College of Engineering & Technology"
+                    readOnly
+                    disabled
+                    className="w-full px-4 py-3 text-xs font-bold text-slate-300 rounded-xl bg-slate-900/90 border border-slate-700/60 cursor-not-allowed select-none opacity-85 shadow-inner"
                   />
                 </div>
 
@@ -353,7 +363,20 @@ export default function SettingsPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                  <label className="text-[11px] font-extrabold text-slate-400 tracking-wider uppercase block mb-1.5">
+                    Section / Batch
+                  </label>
+                  <input
+                    type="text"
+                    value={section}
+                    onChange={(e) => setSection(e.target.value)}
+                    placeholder="e.g. Section A / B / C"
+                    className="input-glass w-full px-4 py-3 text-xs font-semibold text-white rounded-xl focus:border-indigo-500 outline-none"
+                  />
+                </div>
+
                 <div>
                   <label className="text-[11px] font-extrabold text-slate-400 tracking-wider uppercase block mb-1.5">
                     Class / Academic Year
