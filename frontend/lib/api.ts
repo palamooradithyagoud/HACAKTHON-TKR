@@ -1982,25 +1982,30 @@ export async function fetchCompanyQuestions(
     }
   }
 
-  // Tier 2: Try fetching from FastAPI backend API (when backend server is active)
-  try {
-    const params = new URLSearchParams({ period, limit: String(limit), offset: String(offset) });
-    if (difficulty) params.set("difficulty", difficulty);
-    if (search) params.set("search", search);
+  // Tier 2: Try fetching from FastAPI backend API (only when on localhost or when remote API_BASE is configured)
+  const isBrowserOnVercel = typeof window !== "undefined" && window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1";
+  const isLocalApiBase = API_BASE.startsWith("http://localhost") || API_BASE.startsWith("http://127.0.0.1");
 
-    const authHeaders = await getAuthHeaders();
-    const res = await apiFetch(
-      `${API_BASE}/api/practice/questions/${encodeURIComponent(companySlug)}?${params}`,
-      { headers: { ...authHeaders }, cache: "no-store" },
-    );
-    if (res.ok) {
-      const data = await res.json();
-      if (data && Array.isArray(data.questions) && data.questions.length > 0) {
-        return data;
+  if (!isBrowserOnVercel || !isLocalApiBase) {
+    try {
+      const params = new URLSearchParams({ period, limit: String(limit), offset: String(offset) });
+      if (difficulty) params.set("difficulty", difficulty);
+      if (search) params.set("search", search);
+
+      const authHeaders = await getAuthHeaders();
+      const res = await apiFetch(
+        `${API_BASE}/api/practice/questions/${encodeURIComponent(companySlug)}?${params}`,
+        { headers: { ...authHeaders }, cache: "no-store" },
+      );
+      if (res.ok) {
+        const data = await res.json();
+        if (data && Array.isArray(data.questions) && data.questions.length > 0) {
+          return data;
+        }
       }
+    } catch (e) {
+      console.warn(`Backend fetch notice for '${companySlug}':`, e);
     }
-  } catch (e) {
-    console.warn(`Backend fetch notice for '${companySlug}':`, e);
   }
 
   // Tier 3: Curated Fallback Question Dataset (guarantees questions always show on Vercel deployment)

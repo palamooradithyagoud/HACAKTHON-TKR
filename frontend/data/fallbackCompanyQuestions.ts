@@ -1,6 +1,6 @@
 import { PracticeQuestion, CompanyQuestionsResult, QuestionPeriod } from "@/lib/api";
 
-// Fallback question sets for popular companies when backend service is unreachable
+// Fallback question sets for popular companies when backend/database service is unreachable
 export const FALLBACK_DATA: Record<string, PracticeQuestion[]> = {
   google: [
     { id: 1, title: "Two Sum", url: "https://leetcode.com/problems/two-sum", difficulty: "Easy", acceptance: "57.1%", frequency: "100.0%" },
@@ -66,6 +66,78 @@ export const FALLBACK_DATA: Record<string, PracticeQuestion[]> = {
     { id: 8, title: "String to Integer (atoi)", url: "https://leetcode.com/problems/string-to-integer-atoi", difficulty: "Medium", acceptance: "20.6%", frequency: "65.0%" },
     { id: 11, title: "Container With Most Water", url: "https://leetcode.com/problems/container-with-most-water", difficulty: "Medium", acceptance: "59.5%", frequency: "76.0%" },
     { id: 21, title: "Merge Two Sorted Lists", url: "https://leetcode.com/problems/merge-two-sorted-lists", difficulty: "Easy", acceptance: "65.1%", frequency: "80.0%" }
+  ],
+  netflix: [
+    { id: 146, title: "LRU Cache", url: "https://leetcode.com/problems/lru-cache", difficulty: "Medium", acceptance: "44.2%", frequency: "95.0%" },
+    { id: 49, title: "Group Anagrams", url: "https://leetcode.com/problems/group-anagrams", difficulty: "Medium", acceptance: "68.2%", frequency: "85.0%" },
+    { id: 20, title: "Valid Parentheses", url: "https://leetcode.com/problems/valid-parentheses", difficulty: "Easy", acceptance: "41.2%", frequency: "90.0%" },
+    { id: 227, title: "Basic Calculator II", url: "https://leetcode.com/problems/basic-calculator-ii", difficulty: "Medium", acceptance: "46.6%", frequency: "80.0%" },
+    { id: 560, title: "Subarray Sum Equals K", url: "https://leetcode.com/problems/subarray-sum-equals-k", difficulty: "Medium", acceptance: "43.8%", frequency: "75.0%" },
+    { id: 23, title: "Merge k Sorted Lists", url: "https://leetcode.com/problems/merge-k-sorted-lists", difficulty: "Hard", acceptance: "55.4%", frequency: "78.0%" },
+    { id: 4, title: "Median of Two Sorted Arrays", url: "https://leetcode.com/problems/median-of-two-sorted-arrays", difficulty: "Hard", acceptance: "45.9%", frequency: "70.0%" },
+    { id: 139, title: "Word Break", url: "https://leetcode.com/problems/word-break", difficulty: "Medium", acceptance: "47.5%", frequency: "72.0%" }
+  ],
+  uber: [
+    { id: 815, title: "Bus Routes", url: "https://leetcode.com/problems/bus-routes", difficulty: "Hard", acceptance: "47.2%", frequency: "95.0%" },
+    { id: 68, title: "Text Justification", url: "https://leetcode.com/problems/text-justification", difficulty: "Hard", acceptance: "45.1%", frequency: "90.0%" },
+    { id: 200, title: "Number of Islands", url: "https://leetcode.com/problems/number-of-islands", difficulty: "Medium", acceptance: "61.2%", frequency: "88.0%" },
+    { id: 139, title: "Word Break II", url: "https://leetcode.com/problems/word-break-ii", difficulty: "Hard", acceptance: "52.4%", frequency: "80.0%" },
+    { id: 150, title: "Evaluate Reverse Polish Notation", url: "https://leetcode.com/problems/evaluate-reverse-polish-notation", difficulty: "Medium", acceptance: "52.8%", frequency: "75.0%" },
+    { id: 332, title: "Reconstruct Itinerary", url: "https://leetcode.com/problems/reconstruct-itinerary", difficulty: "Hard", acceptance: "42.8%", frequency: "85.0%" }
+  ],
+  adobe: [
+    { id: 1, title: "Two Sum", url: "https://leetcode.com/problems/two-sum", difficulty: "Easy", acceptance: "57.1%", frequency: "95.0%" },
+    { id: 2, title: "Add Two Numbers", url: "https://leetcode.com/problems/add-two-numbers", difficulty: "Medium", acceptance: "47.9%", frequency: "85.0%" },
+    { id: 7, title: "Reverse Integer", url: "https://leetcode.com/problems/reverse-integer", difficulty: "Medium", acceptance: "29.2%", frequency: "80.0%" },
+    { id: 14, title: "Longest Common Prefix", url: "https://leetcode.com/problems/longest-common-prefix", difficulty: "Easy", acceptance: "47.1%", frequency: "90.0%" },
+    { id: 20, title: "Valid Parentheses", url: "https://leetcode.com/problems/valid-parentheses", difficulty: "Easy", acceptance: "41.2%", frequency: "88.0%" },
+    { id: 21, title: "Merge Two Sorted Lists", url: "https://leetcode.com/problems/merge-two-sorted-lists", difficulty: "Easy", acceptance: "65.1%", frequency: "82.0%" }
+  ],
+  "goldman-sachs": [
+    { id: 1086, title: "High Five", url: "https://leetcode.com/problems/high-five", difficulty: "Easy", acceptance: "76.4%", frequency: "90.0%" },
+    { id: 166, title: "Fraction to Recurring Decimal", url: "https://leetcode.com/problems/fraction-to-recurring-decimal", difficulty: "Medium", acceptance: "25.8%", frequency: "95.0%" },
+    { id: 42, title: "Trapping Rain Water", url: "https://leetcode.com/problems/trapping-rain-water", difficulty: "Hard", acceptance: "66.8%", frequency: "85.0%" },
+    { id: 209, title: "Minimum Size Subarray Sum", url: "https://leetcode.com/problems/minimum-size-subarray-sum", difficulty: "Medium", acceptance: "48.2%", frequency: "80.0%" },
+    { id: 443, title: "String Compression", url: "https://leetcode.com/problems/string-compression", difficulty: "Medium", acceptance: "55.9%", frequency: "82.0%" }
+  ],
+  tcs: [
+    { id: 1, title: "Two Sum", url: "https://leetcode.com/problems/two-sum", difficulty: "Easy", acceptance: "57.1%", frequency: "95.0%" },
+    { id: 9, title: "Palindrome Number", url: "https://leetcode.com/problems/palindrome-number", difficulty: "Easy", acceptance: "60.2%", frequency: "90.0%" },
+    { id: 344, title: "Reverse String", url: "https://leetcode.com/problems/reverse-string", difficulty: "Easy", acceptance: "79.1%", frequency: "85.0%" },
+    { id: 509, title: "Fibonacci Number", url: "https://leetcode.com/problems/fibonacci-number", difficulty: "Easy", acceptance: "72.4%", frequency: "88.0%" },
+    { id: 242, title: "Valid Anagram", url: "https://leetcode.com/problems/valid-anagram", difficulty: "Easy", acceptance: "67.8%", frequency: "80.0%" },
+    { id: 268, title: "Missing Number", url: "https://leetcode.com/problems/missing-number", difficulty: "Easy", acceptance: "71.6%", frequency: "82.0%" }
+  ],
+  accenture: [
+    { id: 1, title: "Two Sum", url: "https://leetcode.com/problems/two-sum", difficulty: "Easy", acceptance: "57.1%", frequency: "95.0%" },
+    { id: 20, title: "Valid Parentheses", url: "https://leetcode.com/problems/valid-parentheses", difficulty: "Easy", acceptance: "41.2%", frequency: "90.0%" },
+    { id: 21, title: "Merge Two Sorted Lists", url: "https://leetcode.com/problems/merge-two-sorted-lists", difficulty: "Easy", acceptance: "65.1%", frequency: "85.0%" },
+    { id: 121, title: "Best Time to Buy and Sell Stock", url: "https://leetcode.com/problems/best-time-to-buy-and-sell-stock", difficulty: "Easy", acceptance: "54.8%", frequency: "88.0%" },
+    { id: 125, title: "Valid Palindrome", url: "https://leetcode.com/problems/valid-palindrome", difficulty: "Easy", acceptance: "48.2%", frequency: "80.0%" }
+  ],
+  deloitte: [
+    { id: 1, title: "Two Sum", url: "https://leetcode.com/problems/two-sum", difficulty: "Easy", acceptance: "57.1%", frequency: "90.0%" },
+    { id: 151, title: "Reverse Words in a String", url: "https://leetcode.com/problems/reverse-words-in-a-string", difficulty: "Medium", acceptance: "46.2%", frequency: "85.0%" },
+    { id: 242, title: "Valid Anagram", url: "https://leetcode.com/problems/valid-anagram", difficulty: "Easy", acceptance: "67.8%", frequency: "82.0%" },
+    { id: 268, title: "Missing Number", url: "https://leetcode.com/problems/missing-number", difficulty: "Easy", acceptance: "71.6%", frequency: "80.0%" }
+  ],
+  wipro: [
+    { id: 1, title: "Two Sum", url: "https://leetcode.com/problems/two-sum", difficulty: "Easy", acceptance: "57.1%", frequency: "90.0%" },
+    { id: 9, title: "Palindrome Number", url: "https://leetcode.com/problems/palindrome-number", difficulty: "Easy", acceptance: "60.2%", frequency: "88.0%" },
+    { id: 412, title: "Fizz Buzz", url: "https://leetcode.com/problems/fizz-buzz", difficulty: "Easy", acceptance: "73.2%", frequency: "85.0%" },
+    { id: 136, title: "Single Number", url: "https://leetcode.com/problems/single-number", difficulty: "Easy", acceptance: "74.8%", frequency: "82.0%" }
+  ],
+  infosys: [
+    { id: 1, title: "Two Sum", url: "https://leetcode.com/problems/two-sum", difficulty: "Easy", acceptance: "57.1%", frequency: "92.0%" },
+    { id: 242, title: "Valid Anagram", url: "https://leetcode.com/problems/valid-anagram", difficulty: "Easy", acceptance: "67.8%", frequency: "86.0%" },
+    { id: 206, title: "Reverse Linked List", url: "https://leetcode.com/problems/reverse-linked-list", difficulty: "Easy", acceptance: "80.2%", frequency: "88.0%" },
+    { id: 70, title: "Climbing Stairs", url: "https://leetcode.com/problems/climbing-stairs", difficulty: "Easy", acceptance: "53.1%", frequency: "84.0%" }
+  ],
+  flipkart: [
+    { id: 239, title: "Sliding Window Maximum", url: "https://leetcode.com/problems/sliding-window-maximum", difficulty: "Hard", acceptance: "47.8%", frequency: "95.0%" },
+    { id: 146, title: "LRU Cache", url: "https://leetcode.com/problems/lru-cache", difficulty: "Medium", acceptance: "44.2%", frequency: "90.0%" },
+    { id: 42, title: "Trapping Rain Water", url: "https://leetcode.com/problems/trapping-rain-water", difficulty: "Hard", acceptance: "66.8%", frequency: "88.0%" },
+    { id: 207, title: "Course Schedule", url: "https://leetcode.com/problems/course-schedule", difficulty: "Medium", acceptance: "49.1%", frequency: "82.0%" }
   ]
 };
 
