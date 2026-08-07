@@ -47,8 +47,9 @@ app = FastAPI(
     description="FastAPI Backend for SkillsCatalyst Career & AI Learning Platform",
     version="1.0.0",
     lifespan=lifespan,
-    docs_url="/docs" if ENVIRONMENT.lower() != "production" else None,
-    redoc_url=None,
+    docs_url="/docs",
+    redoc_url="/redoc",
+    openapi_url="/openapi.json",
 )
 
 import contextvars
@@ -208,16 +209,25 @@ app.include_router(explore.router)
 
 # ── Railway Probes & System Endpoints ─────────────────────────────────────────
 @app.get("/health", status_code=status.HTTP_200_OK, tags=["System"])
+@app.get("/api/health", status_code=status.HTTP_200_OK, tags=["System"])
 def health_check():
     """Railway Liveness Probe Endpoint."""
-    return {"status": "healthy"}
+    return {"status": "healthy", "environment": ENVIRONMENT}
 
 @app.get("/ready", status_code=status.HTTP_200_OK, tags=["System"])
 def readiness_check():
     """Railway Readiness Probe Endpoint."""
-    return {"status": "ready"}
+    return {"status": "ready", "environment": ENVIRONMENT}
 
 @app.get("/", status_code=status.HTTP_200_OK, tags=["System"])
+@app.get("/api", status_code=status.HTTP_200_OK, tags=["System"])
 def root():
     """Root status endpoint."""
-    return {"status": "online", "message": "SkillsCatalyst API is running"}
+    return {
+        "status": "online",
+        "service": "SkillsCatalyst API",
+        "environment": ENVIRONMENT,
+        "docs": "/docs",
+        "redoc": "/redoc",
+        "openapi": "/openapi.json"
+    }
