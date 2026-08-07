@@ -25,7 +25,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth, UserRole } from "@/lib/auth";
-import { saveAcademicProfile } from "@/lib/api";
+import { saveAcademicProfile, API_BASE } from "@/lib/api";
 import { supabase } from "@/lib/supabase";
 
 type AuthTab = "student" | "faculty";
@@ -106,34 +106,42 @@ export default function LoginPage() {
 
     try {
       const cleanEmail = email.trim().toLowerCase();
-      const sanitizedId = `${tab}_${cleanEmail.replace(/[^a-z0-9]/gi, "_")}`;
 
       if (mode === "signup") {
-        if (!supabase) {
-          throw new Error("Supabase auth client is uninitialized.");
-        }
-
-        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-          email: cleanEmail,
-          password: password,
-          options: {
-            data: {
-              full_name: fullName,
-              role: tab,
-              department: department,
-              section: section,
-              college: "TKR College of Engineering & Technology",
-            },
-          },
+        // Use backend Admin API endpoint — creates user with email already confirmed
+        // No email verification required, no rate limit issues
+        const res = await fetch(`${API_BASE}/api/auth/register`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: cleanEmail,
+            password: password,
+            full_name: fullName,
+            role: tab,
+            department: department || "CSM",
+            section: section || (tab === "student" ? "Section A" : ""),
+            academic_year: academicYear || "2nd Year",
+            college: "TKR College of Engineering & Technology",
+          }),
         });
 
-        if (signUpError) {
-          throw new Error(signUpError.message || "Registration failed.");
+        const regData = await res.json();
+
+        if (!res.ok) {
+          const msg = (regData?.detail || regData?.message || "Registration failed.") as string;
+          // Rate limit already handled by admin API — but surface friendly messages
+          if (msg.toLowerCase().includes("already exists") || msg.toLowerCase().includes("already registered")) {
+            setErrorMessage("⚠️ An account with this email already exists. Please sign in instead.");
+          } else {
+            setErrorMessage(msg);
+          }
+          setLoading(false);
+          return;
         }
 
-        const realUserId = signUpData.user?.id || sanitizedId;
+        const realUserId = regData.user_id || cleanEmail;
 
-        // Save student / faculty academic record to DB & localStorage
+        // Cache academic profile locally
         const academicPayload = {
           user_id: realUserId,
           full_name: fullName,
@@ -143,22 +151,22 @@ export default function LoginPage() {
           academic_year: academicYear || "2nd Year",
           target_role: tab === "student" ? "Software Engineer" : "Faculty",
         };
-
         try {
           localStorage.setItem(`sc_academic_profile_${realUserId}`, JSON.stringify(academicPayload));
-          await saveAcademicProfile(academicPayload).catch(() => {});
         } catch {}
 
-        // Enforce email verification check on signup
-        const isConfirmed = signUpData?.user?.email_confirmed_at || signUpData?.user?.confirmed_at;
-        if (!isConfirmed && signUpData?.session === null) {
-          setSuccessMessage("✅ Account created! We have sent a verification link to " + cleanEmail + ". Please check your email inbox and verify your email address before logging in.");
-          setLoading(false);
-          return;
+        // If the backend returned an access token, set the Supabase session
+        if (regData.access_token && supabase) {
+          try {
+            await supabase.auth.setSession({
+              access_token: regData.access_token,
+              refresh_token: regData.refresh_token || regData.access_token,
+            });
+          } catch {}
         }
 
-        setSuccessMessage("Account created successfully! Logging you in...");
-        await new Promise((r) => setTimeout(r, 600));
+        setSuccessMessage(`✅ Account created successfully! Welcome, ${fullName}. Logging you in...`);
+        await new Promise((r) => setTimeout(r, 700));
 
         login(cleanEmail, realUserId, fullName, tab as UserRole);
       } else {
@@ -194,7 +202,7 @@ export default function LoginPage() {
           return;
         }
 
-        const realUserId = userObj?.id || sanitizedId;
+        const realUserId = userObj?.id || `${tab}_${cleanEmail.replace(/[^a-z0-9]/gi, "_")}`;
         const derivedName = userObj?.user_metadata?.full_name || fullName || cleanEmail.split("@")[0].replace(/[._]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
         login(cleanEmail, realUserId, derivedName, tab as UserRole);
       }
