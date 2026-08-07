@@ -56,15 +56,15 @@ export default function StudentsPage() {
             const mapped = data.map((s, idx) => ({
               id: s.user_id || `stu_${idx}`,
               name: s.full_name || `Student ${idx + 1}`,
-              roll_number: `22TK1A${(s.department || "05").toUpperCase()}${String(idx + 1).padStart(2, "0")}`,
+              roll_number: s.roll_number || `22TK1A${(s.department || "05").toUpperCase()}${String(idx + 1).padStart(2, "0")}`,
               section: s.section || "Section A",
               department: s.department || "CSE",
               year: s.academic_year || "2nd Year",
               academic_year: s.academic_year || "Year 2",
               college: s.college || "TKR College of Engineering & Technology",
-              attendance_percentage: 92.0,
-              coding_score: 550,
-              placement_readiness_score: 88.0,
+              attendance_percentage: parseFloat(s.attendance_percentage || "0.0"),
+              coding_score: s.coding_score || 0,
+              placement_readiness_score: 0.0,
               faculty_notes: "",
               leetcode_handle: "",
               github_handle: "",
@@ -83,7 +83,7 @@ export default function StudentsPage() {
     loadStudents();
   }, []);
 
-  // Fetch full student detail when activeStudentId changes
+  // Fetch full student detail directly from Supabase tables (user_coding_profiles, saved_playlists) + API
   useEffect(() => {
     if (!activeStudentId) {
       setActiveStudentDetail(null);
@@ -94,18 +94,128 @@ export default function StudentsPage() {
     setLoadingDetail(true);
 
     async function fetchDetail() {
+      let sbDetail: any = null;
       try {
-        const res = await apiFetch(`/api/faculty/students/${activeStudentId}`);
+        if (supabase) {
+          const { data: acadData } = await supabase
+            .from("user_academic_profile")
+            .select("*")
+            .eq("user_id", activeStudentId);
+
+          const { data: codeData } = await supabase
+            .from("user_coding_profiles")
+            .select("*")
+            .eq("user_id", activeStudentId);
+
+          const { data: plData } = await supabase
+            .from("saved_playlists")
+            .select("*")
+            .eq("user_id", activeStudentId);
+
+          const baseStudent = studentsList.find((s) => s.id === activeStudentId) || {};
+          const acadRow = acadData && acadData[0] ? acadData[0] : {};
+          const codeRow = codeData && codeData[0] ? codeData[0] : {};
+
+          let totalSolved = 0;
+          const platforms: any[] = [];
+          const lcUrl = codeRow.leetcode_url || baseStudent.leetcode_handle || "";
+          const ghUrl = codeRow.github_url || baseStudent.github_handle || "";
+
+          if (codeRow.stats_json) {
+            for (const [pName, pData] of Object.entries<any>(codeRow.stats_json)) {
+              if (pData && typeof pData === "object") {
+                let solved = pData.total_solved || pData.solved || 0;
+                if (!solved && (pData.badge || pData.summary)) {
+                  const m = String(pData.badge || pData.summary).match(/(\d+)/);
+                  if (m) solved = parseInt(m[1], 10);
+                }
+                if (solved && typeof solved === "number" && solved > 0) {
+                  totalSolved += solved;
+                  platforms.push({ name: pName.charAt(0).toUpperCase() + pName.slice(1), solved });
+                }
+              }
+            }
+          }
+
+          const followingPlaylists = (plData || []).map((pl: any) => ({
+            id: pl.playlist_id,
+            title: pl.title || "Untitled Playlist",
+            channel: pl.channel || "",
+            video_count: pl.video_count || "?",
+            thumbnail: pl.thumbnail || "",
+          }));
+
+          sbDetail = {
+            ...baseStudent,
+            id: activeStudentId,
+            name: acadRow.full_name || baseStudent.name,
+            roll_number: acadRow.roll_number || baseStudent.roll_number,
+            department: acadRow.department || baseStudent.department,
+            section: acadRow.section || baseStudent.section,
+            year: acadRow.academic_year || baseStudent.year,
+            attendance_percentage: acadRow.attendance_percentage || baseStudent.attendance_percentage || 0,
+            coding_profiles: {
+              leetcode_url: lcUrl,
+              github_url: ghUrl,
+              total_solved: totalSolved,
+              platforms: platforms,
+            },
+            playlists_info: {
+              following: followingPlaylists,
+              completed: [],
+            },
+            roadmaps_info: {
+              following: [],
+              completed: [],
+            },
+            attendance_info: {
+              percentage: acadRow.attendance_percentage || 0,
+              status: (acadRow.attendance_percentage || 0) >= 75 ? "Safe (≥75%)" : "Attention Required (<75%)",
+            },
+          };
+        }
+      } catch (e) {
+        console.warn("Direct Supabase query error:", e);
+      }
+
+      // Fetch from Backend API as enrichment fallback
+      try {
+        const authHeaders = await getAuthHeaders();
+        const res = await apiFetch(`${API_BASE}/api/faculty/students/${activeStudentId}`, {
+          headers: { ...authHeaders },
+        });
         if (res.ok) {
-          const data = await res.json();
+          const apiData = await res.json();
           if (isMounted) {
-            setActiveStudentDetail(data);
+            setActiveStudentDetail({
+              ...sbDetail,
+              ...apiData,
+              coding_profiles: {
+                ...sbDetail?.coding_profiles,
+                ...apiData?.coding_profiles,
+                total_solved: apiData?.coding_profiles?.total_solved || sbDetail?.coding_profiles?.total_solved || 0,
+                platforms: apiData?.coding_profiles?.platforms?.length ? apiData.coding_profiles.platforms : sbDetail?.coding_profiles?.platforms || [],
+              },
+              playlists_info: {
+                following: apiData?.playlists_info?.following?.length ? apiData.playlists_info.following : sbDetail?.playlists_info?.following || [],
+                completed: apiData?.playlists_info?.completed || [],
+              },
+            });
+            setLoadingDetail(false);
+            return;
           }
         }
       } catch (e) {
-        console.warn("Failed to fetch student detail:", e);
-      } finally {
-        if (isMounted) setLoadingDetail(false);
+        console.warn("Backend API fetch error:", e);
+      }
+
+      if (isMounted) {
+        if (sbDetail) {
+          setActiveStudentDetail(sbDetail);
+        } else {
+          setActiveStudentDetail(studentsList.find((s) => s.id === activeStudentId));
+        }
+        setLoadingDetail(false);
       }
     }
 
@@ -113,7 +223,7 @@ export default function StudentsPage() {
     return () => {
       isMounted = false;
     };
-  }, [activeStudentId]);
+  }, [activeStudentId, studentsList]);
 
   const handleOpenStudent = (student: any) => {
     setActiveStudentId(student.id);
