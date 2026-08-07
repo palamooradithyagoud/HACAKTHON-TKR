@@ -21,6 +21,8 @@ import {
   Megaphone,
   Settings,
   AlertTriangle,
+  LogOut,
+  BookOpen,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -44,6 +46,7 @@ const studentNavItems = [
 const facultyNavItems = [
   { name: "Home", href: "/dashboard", icon: LayoutGrid },
   { name: "Students", href: "/students", icon: Users },
+  { name: "Messages", href: "/messages", icon: MessagesSquare },
   { name: "Analytics", href: "/analytics", icon: BarChart3 },
   { name: "Warnings", href: "/warnings", icon: AlertTriangle },
 ];
@@ -191,7 +194,7 @@ export default function Sidebar() {
         </nav>
       </div>
 
-      {/* ── Streak Widget or Faculty Settings ── */}
+      {/* ── Streak Widget or Faculty Logout ── */}
       {session.role === "faculty" ? (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -199,13 +202,15 @@ export default function Sidebar() {
           transition={{ delay: 0.7, duration: 0.5, ease: "easeOut" }}
           className="pt-4 border-t border-white/5"
         >
-          <Link
-            href="/settings"
-            className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-slate-400 hover:text-white hover:bg-white/[0.03] transition-all w-full"
+          <button
+            onClick={() => {
+              // Add logout logic here later if needed
+            }}
+            className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-rose-400 hover:text-rose-300 hover:bg-rose-500/[0.05] transition-all w-full"
           >
-            <Settings className="w-[18px] h-[18px] text-slate-500" />
-            <span>Settings</span>
-          </Link>
+            <LogOut className="w-[18px] h-[18px] text-rose-500" />
+            <span>Logout</span>
+          </button>
         </motion.div>
       ) : (
         <motion.div
