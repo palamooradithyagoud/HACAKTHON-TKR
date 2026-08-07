@@ -61,6 +61,32 @@ export default function LoginPage() {
     setSuccessMessage("");
   };
 
+  const handleResendVerification = async () => {
+    if (!email || !email.includes("@")) {
+      setErrorMessage("Please enter a valid email address to resend verification link.");
+      return;
+    }
+    setLoading(true);
+    setErrorMessage("");
+    try {
+      if (supabase) {
+        const { error } = await supabase.auth.resend({
+          type: "signup",
+          email: email.trim().toLowerCase(),
+        });
+        if (error) {
+          setErrorMessage(error.message);
+        } else {
+          setSuccessMessage("Verification email resent to " + email.trim() + "! Please check your inbox.");
+        }
+      }
+    } catch (err: any) {
+      setErrorMessage(err?.message || "Failed to resend verification email.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage("");
@@ -83,29 +109,33 @@ export default function LoginPage() {
       const sanitizedId = `${tab}_${cleanEmail.replace(/[^a-z0-9]/gi, "_")}`;
 
       if (mode === "signup") {
-        // Try registering in Supabase Auth first
-        try {
-          if (supabase) {
-            await supabase.auth.signUp({
-              email: cleanEmail,
-              password: password,
-              options: {
-                data: {
-                  full_name: fullName,
-                  role: tab,
-                  department: department,
-                  section: section,
-                },
-              },
-            });
-          }
-        } catch (sbErr) {
-          console.warn("Supabase auth signup warning:", sbErr);
+        if (!supabase) {
+          throw new Error("Supabase auth client is uninitialized.");
         }
+
+        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+          email: cleanEmail,
+          password: password,
+          options: {
+            data: {
+              full_name: fullName,
+              role: tab,
+              department: department,
+              section: section,
+              college: "TKR College of Engineering & Technology",
+            },
+          },
+        });
+
+        if (signUpError) {
+          throw new Error(signUpError.message || "Registration failed.");
+        }
+
+        const realUserId = signUpData.user?.id || sanitizedId;
 
         // Save student / faculty academic record to DB & localStorage
         const academicPayload = {
-          user_id: sanitizedId,
+          user_id: realUserId,
           full_name: fullName,
           college: "TKR College of Engineering & Technology",
           department: department || "CSM",
@@ -115,30 +145,58 @@ export default function LoginPage() {
         };
 
         try {
-          localStorage.setItem(`sc_academic_profile_${sanitizedId}`, JSON.stringify(academicPayload));
+          localStorage.setItem(`sc_academic_profile_${realUserId}`, JSON.stringify(academicPayload));
           await saveAcademicProfile(academicPayload).catch(() => {});
         } catch {}
+
+        // Enforce email verification check on signup
+        const isConfirmed = signUpData?.user?.email_confirmed_at || signUpData?.user?.confirmed_at;
+        if (!isConfirmed && signUpData?.session === null) {
+          setSuccessMessage("✅ Account created! We have sent a verification link to " + cleanEmail + ". Please check your email inbox and verify your email address before logging in.");
+          setLoading(false);
+          return;
+        }
 
         setSuccessMessage("Account created successfully! Logging you in...");
         await new Promise((r) => setTimeout(r, 600));
 
-        login(cleanEmail, sanitizedId, fullName, tab as UserRole);
+        login(cleanEmail, realUserId, fullName, tab as UserRole);
       } else {
-        // Sign In Flow
-        try {
-          if (supabase) {
-            await supabase.auth.signInWithPassword({
-              email: cleanEmail,
-              password: password,
-            });
-          }
-        } catch (sbErr) {
-          console.warn("Supabase auth signin warning:", sbErr);
+        // Sign In Flow with strict email verification
+        if (!supabase) {
+          throw new Error("Supabase auth client is uninitialized.");
         }
 
-        await new Promise((r) => setTimeout(r, 500));
-        const derivedName = fullName || cleanEmail.split("@")[0].replace(/[._]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-        login(cleanEmail, sanitizedId, derivedName, tab as UserRole);
+        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+          email: cleanEmail,
+          password: password,
+        });
+
+        if (signInError) {
+          const msg = signInError.message.toLowerCase();
+          if (msg.includes("email not confirmed")) {
+            setErrorMessage("⚠️ Email not verified! Please check your email inbox (" + cleanEmail + ") and click the verification link before logging in.");
+          } else {
+            setErrorMessage(signInError.message || "Invalid email or password.");
+          }
+          setLoading(false);
+          return;
+        }
+
+        const userObj = signInData?.user;
+        const isConfirmed = userObj?.email_confirmed_at || userObj?.confirmed_at;
+
+        // Block login if email is not confirmed
+        if (userObj && !isConfirmed) {
+          await supabase.auth.signOut();
+          setErrorMessage("⚠️ Email verification required! Please check your email inbox (" + cleanEmail + ") and verify your account before logging in.");
+          setLoading(false);
+          return;
+        }
+
+        const realUserId = userObj?.id || sanitizedId;
+        const derivedName = userObj?.user_metadata?.full_name || fullName || cleanEmail.split("@")[0].replace(/[._]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+        login(cleanEmail, realUserId, derivedName, tab as UserRole);
       }
     } catch (err: any) {
       setErrorMessage(err?.message || "Authentication failed. Please check your credentials.");
@@ -311,10 +369,22 @@ export default function LoginPage() {
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: "auto" }}
                 exit={{ opacity: 0, height: 0 }}
-                className="relative z-10 p-3 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-300 text-xs font-semibold flex items-center gap-2"
+                className="relative z-10 p-3.5 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-300 text-xs font-semibold space-y-2"
               >
-                <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
-                <span>{errorMessage}</span>
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+                  <span>{errorMessage}</span>
+                </div>
+                {(errorMessage.toLowerCase().includes("verify") || errorMessage.toLowerCase().includes("confirmed")) && (
+                  <button
+                    type="button"
+                    onClick={handleResendVerification}
+                    className="mt-1 px-3 py-1.5 rounded-lg bg-rose-500/20 border border-rose-500/40 text-rose-200 text-[11px] font-bold hover:bg-rose-500/30 transition-all flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Mail className="w-3.5 h-3.5" />
+                    <span>Resend Verification Link</span>
+                  </button>
+                )}
               </motion.div>
             )}
             {successMessage && (
@@ -322,7 +392,7 @@ export default function LoginPage() {
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: "auto" }}
                 exit={{ opacity: 0, height: 0 }}
-                className="relative z-10 p-3 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs font-semibold flex items-center gap-2"
+                className="relative z-10 p-3.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs font-semibold flex items-center gap-2"
               >
                 <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
                 <span>{successMessage}</span>
