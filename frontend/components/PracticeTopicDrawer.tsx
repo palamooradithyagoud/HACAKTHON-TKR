@@ -260,10 +260,11 @@ export default function PracticeTopicDrawer({
   };
 
   return (
-    <AnimatePresence>
-      <div className="fixed inset-0 z-50 overflow-hidden flex justify-end select-none">
+    <AnimatePresence mode="wait">
+      <div key="drawer-overlay-wrapper" className="fixed inset-0 z-50 overflow-hidden flex justify-end select-none">
         {/* Backdrop overlay */}
         <motion.div
+          key="drawer-backdrop"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -273,6 +274,7 @@ export default function PracticeTopicDrawer({
 
         {/* Slide-over Drawer Panel */}
         <motion.div
+          key="drawer-panel"
           initial={{ x: "100%" }}
           animate={{ x: 0 }}
           exit={{ x: "100%" }}
@@ -486,10 +488,11 @@ export default function PracticeTopicDrawer({
       </div>
 
       {/* ── In-App Embedded Video Player Overlay Modal ── */}
-      <AnimatePresence>
+      <AnimatePresence mode="wait">
         {activeVideo && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 bg-black/90 backdrop-blur-2xl">
+          <div key="video-modal-backdrop-wrap" className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 bg-black/90 backdrop-blur-2xl">
             <motion.div
+              key="video-modal-content"
               initial={{ opacity: 0, scale: 0.95, y: 12 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 12 }}
