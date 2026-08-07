@@ -45,7 +45,7 @@ const studentNavItems = [
 
 const facultyNavItems = [
   { name: "Home", href: "/dashboard", icon: LayoutGrid },
-  { name: "Students", href: "/students", icon: Users },
+  { name: "Student Scoreboard", href: "/students", icon: Users },
   { name: "Messages", href: "/messages", icon: MessagesSquare },
   { name: "Analytics", href: "/analytics", icon: BarChart3 },
   { name: "Warnings", href: "/warnings", icon: AlertTriangle },
