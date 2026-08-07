@@ -1,22 +1,22 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import {
   UserCheck, 
   FilePlus, 
-  MessageSquare,
   Upload,
   Calendar,
   GraduationCap,
-  BookOpen,
   Zap,
   BarChart2,
   ClipboardCheck,
   Mail,
   AlertTriangle
 } from "lucide-react";
+
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 import { useAuth } from "@/lib/auth";
 import { getSharedMockStudents } from "@/lib/mockData";
@@ -39,6 +39,38 @@ export default function FacultyDashboard() {
   const assignmentWarnings = students.filter(s => s.unsubmitted_assignments && s.unsubmitted_assignments.length > 0).slice(0, 3);
   const totalAttendanceWarnings = students.filter(s => s.attendance_percentage < 65).length;
   const totalAssignmentWarnings = students.filter(s => s.unsubmitted_assignments && s.unsubmitted_assignments.length > 0).length;
+
+  // Live counts from backend
+  const [pendingReviews, setPendingReviews] = useState<number | null>(null);
+  const [newMessages, setNewMessages] = useState<number | null>(null);
+
+  useEffect(() => {
+    // Fetch pending assignment reviews count
+    fetch(`${API_BASE}/api/faculty/assignments`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data?.submissions) {
+          const pending = data.submissions.filter((s: any) => s.status === "pending").length;
+          setPendingReviews(pending);
+        }
+      })
+      .catch(() => {});
+
+    // Fetch unread messages count across all students
+    const allStudents = getSharedMockStudents();
+    let unread = 0;
+    let fetched = 0;
+    allStudents.forEach((s: any) => {
+      fetch(`${API_BASE}/api/faculty/messages/${s.id}`)
+        .then(r => r.ok ? r.json() : [])
+        .then((msgs: any[]) => {
+          unread += msgs.filter((m: any) => m.sender_id !== "faculty_demo" && !m.is_read).length;
+          fetched++;
+          if (fetched === allStudents.length) setNewMessages(unread);
+        })
+        .catch(() => { fetched++; if (fetched === allStudents.length) setNewMessages(unread); });
+    });
+  }, []);
 
   return (
     <motion.div variants={containerVariants} initial="hidden" animate="show" className="w-full max-w-5xl mx-auto space-y-8 text-[#f0f4ff] font-sans antialiased mt-6 px-2">
@@ -69,7 +101,7 @@ export default function FacultyDashboard() {
         <h3 className="text-[15px] font-bold text-white flex items-center gap-2">
           <Zap className="w-4 h-4 fill-white" /> Quick Actions
         </h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           
           <Link href="/attendance" className="flex flex-col items-center justify-center p-6 rounded-2xl bg-[#1a1f2d] hover:bg-[#222839] border border-white/5 transition-colors group h-40">
             <div className="w-12 h-12 rounded-full bg-[#44337a]/30 flex items-center justify-center mb-4">
@@ -83,13 +115,6 @@ export default function FacultyDashboard() {
               <FilePlus className="w-5 h-5 text-[#38b2ac]" />
             </div>
             <span className="text-[13px] font-semibold text-slate-300">Create Assignment</span>
-          </Link>
-
-          <Link href="/messages" className="flex flex-col items-center justify-center p-6 rounded-2xl bg-[#1a1f2d] hover:bg-[#222839] border border-white/5 transition-colors group h-40">
-            <div className="w-12 h-12 rounded-full bg-[#7b341e]/30 flex items-center justify-center mb-4">
-              <MessageSquare className="w-5 h-5 text-[#ed8936]" />
-            </div>
-            <span className="text-[13px] font-semibold text-slate-300">Message Student</span>
           </Link>
 
           <Link href="/learning-materials" className="flex flex-col items-center justify-center p-6 rounded-2xl bg-[#1a1f2d] hover:bg-[#222839] border border-white/5 transition-colors group h-40">
@@ -109,25 +134,29 @@ export default function FacultyDashboard() {
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           
-          <div className="flex flex-col justify-between p-6 rounded-2xl bg-[#1a1f2d] border border-white/5 h-44 hover:bg-[#222839] transition-colors">
+          <Link href="/assignments" className="flex flex-col justify-between p-6 rounded-2xl bg-[#1a1f2d] border border-white/5 h-44 hover:bg-[#222839] transition-colors cursor-pointer">
             <div className="w-10 h-10 rounded-lg bg-[#7b341e]/30 flex items-center justify-center border border-[#ed8936]/10">
               <ClipboardCheck className="w-5 h-5 text-[#ed8936]" />
             </div>
             <div>
-              <div className="text-4xl font-bold text-white tracking-tight mb-1">14</div>
+              <div className="text-4xl font-bold text-white tracking-tight mb-1">
+                {pendingReviews !== null ? pendingReviews : "—"}
+              </div>
               <div className="text-[13px] font-medium text-[#8a94a6]">Pending Reviews</div>
             </div>
-          </div>
+          </Link>
 
-          <div className="flex flex-col justify-between p-6 rounded-2xl bg-[#1a1f2d] border border-white/5 h-44 hover:bg-[#222839] transition-colors">
+          <Link href="/messages" className="flex flex-col justify-between p-6 rounded-2xl bg-[#1a1f2d] border border-white/5 h-44 hover:bg-[#222839] transition-colors cursor-pointer">
             <div className="w-10 h-10 rounded-lg bg-[#44337a]/30 flex items-center justify-center border border-[#9f7aea]/10">
               <Mail className="w-5 h-5 text-[#9f7aea]" />
             </div>
             <div>
-              <div className="text-4xl font-bold text-white tracking-tight mb-1">5</div>
+              <div className="text-4xl font-bold text-white tracking-tight mb-1">
+                {newMessages !== null ? newMessages : "—"}
+              </div>
               <div className="text-[13px] font-medium text-[#8a94a6]">New Messages</div>
             </div>
-          </div>
+          </Link>
 
         </div>
       </motion.div>
