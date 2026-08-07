@@ -6,7 +6,7 @@ from fastapi import APIRouter, HTTPException, status, Depends
 from pydantic import BaseModel
 import httpx
 from backend.services.supabase_service import get_supabase
-from backend.services.auth_service import get_current_user_id
+from backend.services.auth_service import get_current_user_id, get_session_or_user_id
 
 logger = logging.getLogger(__name__)
 
@@ -37,10 +37,21 @@ class CodingProfilesInputModel(BaseModel):
 def _clean_handle(url_or_handle: Optional[str]) -> str:
     if not url_or_handle:
         return ""
-    text = url_or_handle.strip().rstrip("/")
-    if "://" in text:
+    text = url_or_handle.strip().split("?")[0].split("#")[0].rstrip("/")
+    if text.startswith("@"):
+        text = text[1:].strip()
+
+    if "leetcode.com" in text or "github.com" in text or "codeforces.com" in text or "codechef.com" in text or "geeksforgeeks.org" in text or "hackerrank.com" in text or "://" in text:
         parts = text.split("/")
-        return parts[-1] if parts[-1] else (parts[-2] if len(parts) > 1 else text)
+        ignored = {
+            "http:", "https:", "", "leetcode.com", "www.leetcode.com", "github.com", "www.github.com",
+            "codeforces.com", "www.codeforces.com", "codechef.com", "www.codechef.com",
+            "geeksforgeeks.org", "www.geeksforgeeks.org", "hackerrank.com", "www.hackerrank.com",
+            "u", "profile", "users", "user"
+        }
+        filtered = [p.strip() for p in parts if p.strip() and p.strip().lower() not in ignored]
+        if filtered:
+            return filtered[-1]
     return text
 
 
@@ -67,16 +78,20 @@ async def _extract_leetcode(input_val: str) -> Dict[str, Any]:
       }
     }
     """
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+        "Content-Type": "application/json",
+        "Referer": f"https://leetcode.com/u/{handle}/",
+        "Origin": "https://leetcode.com"
+    }
+
+    # 1. Try direct LeetCode GraphQL query
     try:
-        async with httpx.AsyncClient(timeout=8.0) as client:
+        async with httpx.AsyncClient(timeout=8.0, follow_redirects=True) as client:
             resp = await client.post(
                 url,
                 json={"query": query, "variables": {"username": handle}},
-                headers={
-                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-                    "Content-Type": "application/json",
-                    "Referer": f"https://leetcode.com/{handle}/"
-                }
+                headers=headers
             )
             if resp.status_code == 200:
                 data = resp.json().get("data", {}).get("matchedUser")
@@ -99,7 +114,7 @@ async def _extract_leetcode(input_val: str) -> Dict[str, Any]:
                     return {
                         "configured": True,
                         "username": handle,
-                        "url": f"https://leetcode.com/{handle}",
+                        "url": f"https://leetcode.com/u/{handle}",
                         "total_solved": total_solved,
                         "easy_solved": easy_solved,
                         "medium_solved": medium_solved,
@@ -109,12 +124,44 @@ async def _extract_leetcode(input_val: str) -> Dict[str, Any]:
                         "summary": f"{total_solved} Solved (Easy: {easy_solved}, Med: {medium_solved}, Hard: {hard_solved})"
                     }
     except Exception as e:
-        logger.warning(f"LeetCode fetch error for {handle}: {e}")
+        logger.warning(f"Direct LeetCode GraphQL fetch error for {handle}: {e}")
+
+    # 2. Public Fallback APIs
+    fallback_urls = [
+        f"https://alfa-leetcode-api.onrender.com/userProfile/{handle}",
+        f"https://alfa-leetcode-api.onrender.com/{handle}/solved",
+    ]
+    for fb_url in fallback_urls:
+        try:
+            async with httpx.AsyncClient(timeout=8.0, follow_redirects=True) as client:
+                resp = await client.get(fb_url)
+                if resp.status_code == 200:
+                    data = resp.json()
+                    total = data.get("totalSolved") or data.get("solvedProblem") or 0
+                    easy = data.get("easySolved", 0)
+                    medium = data.get("mediumSolved", 0)
+                    hard = data.get("hardSolved", 0)
+                    ranking = data.get("ranking", 0)
+                    if total > 0 or "totalSolved" in data or "solvedProblem" in data:
+                        return {
+                            "configured": True,
+                            "username": handle,
+                            "url": f"https://leetcode.com/u/{handle}",
+                            "total_solved": total,
+                            "easy_solved": easy,
+                            "medium_solved": medium,
+                            "hard_solved": hard,
+                            "ranking": ranking,
+                            "badge": f"{total} Solved",
+                            "summary": f"{total} Solved (Easy: {easy}, Med: {medium}, Hard: {hard})"
+                        }
+        except Exception as e:
+            logger.warning(f"LeetCode fallback API error for {handle}: {e}")
 
     return {
         "configured": True,
         "username": handle,
-        "url": f"https://leetcode.com/{handle}",
+        "url": f"https://leetcode.com/u/{handle}",
         "badge": "Connected",
         "summary": f"Linked @{handle}"
     }
@@ -358,7 +405,7 @@ async def _extract_hackerrank(input_val: str) -> Dict[str, Any]:
 # ── Endpoints ─────────────────────────────────────────────────────────────────
 
 @router.get("")
-async def get_profile(user_id: str = Depends(get_current_user_id)):
+async def get_profile(user_id: str = Depends(get_session_or_user_id)):
     """
     Fetch current user's Academic Profile and Coding Profiles with extracted stats.
     """
@@ -410,7 +457,7 @@ async def get_profile(user_id: str = Depends(get_current_user_id)):
 @router.post("/academic")
 async def save_academic_profile(
     body: AcademicProfileModel,
-    current_user_id: str = Depends(get_current_user_id)
+    current_user_id: str = Depends(get_session_or_user_id)
 ):
     """
     Save academic profile info into Supabase.
@@ -441,7 +488,7 @@ async def save_academic_profile(
 @router.post("/coding")
 async def save_coding_profiles(
     body: CodingProfilesInputModel,
-    current_user_id: str = Depends(get_current_user_id)
+    current_user_id: str = Depends(get_session_or_user_id)
 ):
     """
     Save coding profile URLs/handles, automatically extract live stats from public APIs, and update DB.

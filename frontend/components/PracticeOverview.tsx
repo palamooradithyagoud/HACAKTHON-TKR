@@ -90,47 +90,92 @@ export default function PracticeOverview({
     return () => clearTimeout(timer);
   }, []);
 
-  // Fetch coding profile stats from API & Supabase DB
+  // Fetch coding profile stats from API, Supabase DB & localStorage
   useEffect(() => {
     async function loadData() {
-      if (!userId) {
-        setCodingStats({});
-        setCsvSolvedCount(0);
-        setLoading(false);
-        return;
-      }
-
       setLoading(true);
-      // 1. Fetch extracted coding profiles
-      const profData = await fetchProfileData();
-      if (profData && profData.coding_stats) {
-        setCodingStats(profData.coding_stats);
-      }
 
-      // 2. Fetch solved LeetCode CSV questions from Supabase
+      const effectiveId = userId || "guest";
+
+      // ── Step 1: Instant load from localStorage (cached stats & profiles) ──
       try {
-        const { count } = await supabase
-          .from("leetcode_progress")
-          .select("*", { count: "exact", head: true })
-          .eq("user_id", userId)
-          .eq("status", "solved");
+        const rawStats =
+          localStorage.getItem(`sc_coding_stats_${effectiveId}`) ||
+          localStorage.getItem(`sc_coding_stats_${userId}`) ||
+          localStorage.getItem("sc_coding_stats_guest");
 
-        if (count && count > 0) {
-          setCsvSolvedCount(count);
+        if (rawStats) {
+          const parsed = JSON.parse(rawStats);
+          if (parsed && Object.keys(parsed).length > 0) {
+            setCodingStats(parsed);
+          }
         } else {
-          // Check localStorage as fallback
-          const saved = localStorage.getItem(`skillscatalyst_solved_questions_${userId}`);
-          if (saved) {
-            const parsed = JSON.parse(saved);
-            const keys = Object.keys(parsed).filter((k) => parsed[k] && k.startsWith("q_"));
-            setCsvSolvedCount(keys.length);
-          } else {
-            setCsvSolvedCount(0);
+          // Check profile link inputs as fallback
+          const rawInputs =
+            localStorage.getItem(`sc_coding_profiles_${effectiveId}`) ||
+            localStorage.getItem(`sc_coding_profiles_${userId}`) ||
+            localStorage.getItem("sc_coding_profiles_guest");
+
+          if (rawInputs) {
+            const inputs = JSON.parse(rawInputs);
+            const fallbackStats: Record<string, PlatformStat> = {};
+            if (inputs.leetcode) fallbackStats.leetcode = { configured: true, url: inputs.leetcode, badge: "Connected", summary: `Linked @${inputs.leetcode}` };
+            if (inputs.github) fallbackStats.github = { configured: true, url: inputs.github, badge: "Connected", summary: `Linked @${inputs.github}` };
+            if (inputs.codeforces) fallbackStats.codeforces = { configured: true, url: inputs.codeforces, badge: "Connected", summary: `Linked @${inputs.codeforces}` };
+            if (inputs.codechef) fallbackStats.codechef = { configured: true, url: inputs.codechef, badge: "Connected", summary: `Linked @${inputs.codechef}` };
+            if (inputs.geeksforgeeks) fallbackStats.geeksforgeeks = { configured: true, url: inputs.geeksforgeeks, badge: "Connected", summary: `Linked @${inputs.geeksforgeeks}` };
+            if (inputs.hackerrank) fallbackStats.hackerrank = { configured: true, url: inputs.hackerrank, badge: "Connected", summary: `Linked @${inputs.hackerrank}` };
+
+            if (Object.keys(fallbackStats).length > 0) {
+              setCodingStats(fallbackStats);
+            }
           }
         }
-      } catch (e) {
-        console.warn("Supabase count check error:", e);
+
+        // Load solved CSV questions count from localStorage
+        const savedQuestions =
+          localStorage.getItem(`skillscatalyst_solved_questions_${effectiveId}`) ||
+          localStorage.getItem(`skillscatalyst_solved_questions_${userId}`) ||
+          localStorage.getItem("skillscatalyst_solved_questions_guest");
+
+        if (savedQuestions) {
+          const parsed = JSON.parse(savedQuestions);
+          const keys = Object.keys(parsed).filter((k) => parsed[k] && (k.startsWith("q_") || k.startsWith("lc_")));
+          if (keys.length > 0) {
+            setCsvSolvedCount(keys.length);
+          }
+        }
+      } catch (err) {
+        console.warn("localStorage profile load error:", err);
       }
+
+      // ── Step 2: Sync with API & Supabase DB ──
+      try {
+        const profData = await fetchProfileData();
+        if (profData && profData.coding_stats && Object.keys(profData.coding_stats).length > 0) {
+          setCodingStats(profData.coding_stats);
+          try {
+            localStorage.setItem(`sc_coding_stats_${effectiveId}`, JSON.stringify(profData.coding_stats));
+          } catch {}
+        }
+      } catch {}
+
+      if (userId) {
+        try {
+          const { count } = await supabase
+            .from("leetcode_progress")
+            .select("*", { count: "exact", head: true })
+            .eq("user_id", userId)
+            .eq("status", "solved");
+
+          if (count && count > 0) {
+            setCsvSolvedCount(count);
+          }
+        } catch (e) {
+          console.warn("Supabase count check error:", e);
+        }
+      }
+
       setLoading(false);
     }
     loadData();

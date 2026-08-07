@@ -161,20 +161,41 @@ export default function SettingsPage() {
       geeksforgeeks: gfgInput,
       codeforces: codeforcesInput,
     };
-    // Always save inputs locally first
-    try { localStorage.setItem(LS_CODING, JSON.stringify(codingPayload)); } catch {}
+    // Always save inputs locally first across user & guest keys
+    try {
+      localStorage.setItem(LS_CODING, JSON.stringify(codingPayload));
+      localStorage.setItem("sc_coding_profiles_guest", JSON.stringify(codingPayload));
+
+      // Build instant fallback stats
+      const fallbackStats: Record<string, PlatformStat> = {};
+      if (leetcodeInput) fallbackStats.leetcode = { configured: true, url: leetcodeInput, badge: "Connected", summary: `Linked @${leetcodeInput}` };
+      if (githubInput) fallbackStats.github = { configured: true, url: githubInput, badge: "Connected", summary: `Linked @${githubInput}` };
+      if (codeforcesInput) fallbackStats.codeforces = { configured: true, url: codeforcesInput, badge: "Connected", summary: `Linked @${codeforcesInput}` };
+      if (codechefInput) fallbackStats.codechef = { configured: true, url: codechefInput, badge: "Connected", summary: `Linked @${codechefInput}` };
+      if (gfgInput) fallbackStats.geeksforgeeks = { configured: true, url: gfgInput, badge: "Connected", summary: `Linked @${gfgInput}` };
+      if (hackerrankInput) fallbackStats.hackerrank = { configured: true, url: hackerrankInput, badge: "Connected", summary: `Linked @${hackerrankInput}` };
+
+      if (Object.keys(fallbackStats).length > 0) {
+        setCodingStats((prev) => ({ ...prev, ...fallbackStats }));
+        localStorage.setItem(LS_STATS, JSON.stringify({ ...codingStats, ...fallbackStats }));
+        localStorage.setItem("sc_coding_stats_guest", JSON.stringify({ ...codingStats, ...fallbackStats }));
+      }
+    } catch {}
+
     // Then try Supabase + live stats extraction
     const res = await saveCodingProfiles(codingPayload).catch(() => null);
     qc.invalidateQueries({ queryKey: ["dashboard"] });
     qc.invalidateQueries({ queryKey: ["profile"] });
     setSyncingCoding(false);
-    if (res && res.success && res.stats) {
+    if (res && res.success && res.stats && Object.keys(res.stats).length > 0) {
       setCodingStats(res.stats);
-      try { localStorage.setItem(LS_STATS, JSON.stringify(res.stats)); } catch {}
+      try {
+        localStorage.setItem(LS_STATS, JSON.stringify(res.stats));
+        localStorage.setItem("sc_coding_stats_guest", JSON.stringify(res.stats));
+      } catch {}
       setCodingSuccessMsg("Coding profiles saved & live stats extracted!");
     } else {
-      // Even if Supabase failed, inputs are saved locally
-      setCodingSuccessMsg("Profiles saved locally! Stats will sync when Supabase is ready.");
+      setCodingSuccessMsg("Profiles saved locally! Live stats will sync when backend connection is available.");
     }
     setTimeout(() => setCodingSuccessMsg(""), 4000);
   };

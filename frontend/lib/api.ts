@@ -1716,15 +1716,42 @@ export interface PlatformStat {
   [key: string]: any;
 }
 
-export async function fetchProfileData() {
+export async function getEffectiveUserId(): Promise<string> {
   try {
     const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user?.id) return session.user.id;
+  } catch {}
+  if (typeof window !== "undefined") {
+    try {
+      const customSessionStr = localStorage.getItem("skillscatalyst_user_session");
+      if (customSessionStr) {
+        const parsed = JSON.parse(customSessionStr);
+        if (parsed?.user_id) return parsed.user_id;
+      }
+    } catch {}
+  }
+  return getRawGuestSessionId();
+}
 
-    if (!session?.user?.id) return null;
+export async function fetchProfileData() {
+  try {
+    const authHeaders = await getAuthHeaders();
+    try {
+      const res = await apiFetch(`${API_BASE}/api/profile`, {
+        headers: authHeaders,
+      });
+      if (res.ok) {
+        const json = await res.json();
+        if (json && (json.academic || json.coding_inputs || json.coding_stats)) {
+          return json;
+        }
+      }
+    } catch {}
 
-    const userId = session.user.id;
+    const userId = await getEffectiveUserId();
+    if (!userId) return null;
 
-    // Fetch profile data directly from Supabase DB
+    // Fallback: Fetch profile data directly from Supabase DB
     const [academicRes, codingRes] = await Promise.all([
       supabase.from("user_academic_profile").select("*").eq("user_id", userId).maybeSingle(),
       supabase.from("user_coding_profiles").select("*").eq("user_id", userId).maybeSingle(),
@@ -1761,11 +1788,9 @@ export async function fetchProfileData() {
 
 export async function saveAcademicProfile(data: AcademicProfile) {
   try {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session?.user?.id) return null;
-
+    const userId = await getEffectiveUserId();
     const payload = {
-      user_id: session.user.id,
+      user_id: userId,
       full_name: data.full_name || "",
       college: data.college || "",
       department: data.department || "",
@@ -1775,21 +1800,21 @@ export async function saveAcademicProfile(data: AcademicProfile) {
     };
 
     // Save directly to Supabase DB
-    const { error } = await supabase
-      .from("user_academic_profile")
-      .upsert(payload, { onConflict: "user_id" });
-
-    if (error) throw error;
-
-    // Async sync to FastAPI backend if online
-    const authHeaders = await getAuthHeaders();
-    if (authHeaders.Authorization) {
-      apiFetch(`${API_BASE}/api/profile/academic`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", ...authHeaders },
-        body: JSON.stringify(data),
-      }).catch(() => {});
+    if (userId) {
+      try {
+        await supabase
+          .from("user_academic_profile")
+          .upsert(payload, { onConflict: "user_id" });
+      } catch {}
     }
+
+    // Async sync to FastAPI backend
+    const authHeaders = await getAuthHeaders();
+    await apiFetch(`${API_BASE}/api/profile/academic`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...authHeaders },
+      body: JSON.stringify(data),
+    }).catch(() => {});
 
     return { success: true };
   } catch (e) {
@@ -1800,11 +1825,9 @@ export async function saveAcademicProfile(data: AcademicProfile) {
 
 export async function saveCodingProfiles(data: CodingProfilesInput) {
   try {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session?.user?.id) return null;
-
+    const userId = await getEffectiveUserId();
     const payload = {
-      user_id: session.user.id,
+      user_id: userId,
       leetcode_url: data.leetcode || "",
       github_url: data.github || "",
       hackerrank_url: data.hackerrank || "",
@@ -1815,26 +1838,28 @@ export async function saveCodingProfiles(data: CodingProfilesInput) {
     };
 
     // Save directly to Supabase DB
-    const { error } = await supabase
-      .from("user_coding_profiles")
-      .upsert(payload, { onConflict: "user_id" });
-
-    if (error) throw error;
+    if (userId) {
+      try {
+        await supabase
+          .from("user_coding_profiles")
+          .upsert(payload, { onConflict: "user_id" });
+      } catch {}
+    }
 
     let extractedStats = {};
     const authHeaders = await getAuthHeaders();
-    if (authHeaders.Authorization) {
-      try {
-        const res = await apiFetch(`${API_BASE}/api/profile/coding`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json", ...authHeaders },
-          body: JSON.stringify(data),
-        });
-        if (res.ok) {
-          const json = await res.json();
-          if (json.stats) extractedStats = json.stats;
-        }
-      } catch {}
+    try {
+      const res = await apiFetch(`${API_BASE}/api/profile/coding`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeaders },
+        body: JSON.stringify(data),
+      });
+      if (res.ok) {
+        const json = await res.json();
+        if (json.stats) extractedStats = json.stats;
+      }
+    } catch (err) {
+      console.warn("Backend coding extraction error:", err);
     }
 
     return { success: true, stats: extractedStats };
