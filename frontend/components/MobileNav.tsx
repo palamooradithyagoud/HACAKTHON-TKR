@@ -26,6 +26,7 @@ import {
   Megaphone,
   Settings,
   AlertTriangle,
+  LogOut,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -69,7 +70,7 @@ const facultyBottomBarItems = [
 
 export default function MobileNav() {
   const pathname = usePathname();
-  const { session, isLoading } = useAuth();
+  const { session, isLoading, logout } = useAuth();
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   if (pathname === "/login" || isLoading || !session) {
@@ -225,22 +226,37 @@ export default function MobileNav() {
                 </nav>
               </div>
 
-              {/* Drawer Footer: Streak Badge */}
-              <div className="glass rounded-2xl p-4 mt-6 border border-white/10 bg-white/[0.02]">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-300 uppercase tracking-wider">
-                    <Flame className="w-4 h-4 text-orange-400 fill-orange-400/30" />
-                    Daily Learning Streak
+              {/* Drawer Footer: Streak Badge or Faculty Logout */}
+              {session?.role === "faculty" ? (
+                <div className="pt-4 border-t border-white/10 mt-6">
+                  <button
+                    onClick={() => {
+                      setDrawerOpen(false);
+                      logout();
+                    }}
+                    className="flex items-center justify-center gap-2.5 w-full py-3 rounded-xl font-medium text-rose-400 bg-rose-500/10 border border-rose-500/20 hover:bg-rose-500/20 transition-all cursor-pointer"
+                  >
+                    <LogOut className="w-4 h-4 text-rose-400" />
+                    <span>Logout</span>
+                  </button>
+                </div>
+              ) : (
+                <div className="glass rounded-2xl p-4 mt-6 border border-white/10 bg-white/[0.02]">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-300 uppercase tracking-wider">
+                      <Flame className="w-4 h-4 text-orange-400 fill-orange-400/30" />
+                      Daily Learning Streak
+                    </div>
+                    <Zap className="w-4 h-4 text-amber-400 animate-bounce" />
                   </div>
-                  <Zap className="w-4 h-4 text-amber-400 animate-bounce" />
+                  <div className="text-2xl font-black text-white tracking-tight">
+                    0 <span className="text-xs font-semibold text-slate-400">days active</span>
+                  </div>
+                  <div className="w-full bg-white/10 h-1.5 rounded-full overflow-hidden mt-2">
+                    <div className="streak-bar h-full w-[10%]" />
+                  </div>
                 </div>
-                <div className="text-2xl font-black text-white tracking-tight">
-                  0 <span className="text-xs font-semibold text-slate-400">days active</span>
-                </div>
-                <div className="w-full bg-white/10 h-1.5 rounded-full overflow-hidden mt-2">
-                  <div className="streak-bar h-full w-[10%]" />
-                </div>
-              </div>
+              )}
             </motion.div>
           </>
         )}

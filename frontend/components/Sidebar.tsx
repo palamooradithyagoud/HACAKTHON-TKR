@@ -71,7 +71,7 @@ const navItemVariants = {
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const { session, isLoading } = useAuth();
+  const { session, isLoading, logout } = useAuth();
   const learningIconRef = useRef<AnimatedIconHandle>(null);
   const profileIconRef = useRef<AnimatedIconHandle>(null);
 
@@ -203,10 +203,8 @@ export default function Sidebar() {
           className="pt-4 border-t border-white/5"
         >
           <button
-            onClick={() => {
-              // Add logout logic here later if needed
-            }}
-            className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-rose-400 hover:text-rose-300 hover:bg-rose-500/[0.05] transition-all w-full"
+            onClick={logout}
+            className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-rose-400 hover:text-rose-300 hover:bg-rose-500/[0.05] transition-all w-full cursor-pointer"
           >
             <LogOut className="w-[18px] h-[18px] text-rose-500" />
             <span>Logout</span>
