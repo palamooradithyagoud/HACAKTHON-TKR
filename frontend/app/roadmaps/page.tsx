@@ -48,7 +48,6 @@ import { useQueryClient } from "@tanstack/react-query";
 import BrandReactIcon from "@/components/icons/BrandReactIcon";
 import PythonIcon from "@/components/icons/PythonIcon";
 import BrandNextjsIcon from "@/components/icons/BrandNextjsIcon";
-import PythonGrowthCanvas from "@/components/PythonGrowthCanvas";
 import SubtopicDetailDrawer, { SubtopicDetailInfo } from "@/components/SubtopicDetailDrawer";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
@@ -4073,379 +4072,267 @@ function RoadmapDetailView({
         )}
       </motion.div>
 
-      {/* ── Timeline Tree + Realistic Growth Widget Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-        {/* Left 2 Columns: Timeline Tree */}
-        <div className="lg:col-span-2 space-y-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-xl md:text-2xl font-extrabold text-white">
-                {selectedRoadmap.displayTitle} Timeline Tree
-              </h2>
-              <p className="text-xs md:text-sm text-slate-400 mt-0.5">
-                {selectedRoadmap.timelineSubtitle}
-              </p>
-            </div>
-
-            <span className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-500/15 text-purple-300 border border-purple-500/30 text-xs font-bold">
-              <Sparkles className="w-3.5 h-3.5 text-purple-400" />
-              Interactive Learning Path
-            </span>
+      {/* ── Timeline Tree Container */}
+      <div className="w-full space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-xl md:text-2xl font-extrabold text-white">
+              {selectedRoadmap.displayTitle} Timeline Tree
+            </h2>
+            <p className="text-xs md:text-sm text-slate-400 mt-0.5">
+              {selectedRoadmap.timelineSubtitle}
+            </p>
           </div>
 
-          {/* Vertical Tree Container with Scroll-Animated Laser Light */}
-          <div ref={treeContainerRef} className="relative pl-7 space-y-10">
-            {/* Background dim track line - centered at 13px */}
-            <div className="absolute left-[12px] top-[18px] bottom-[18px] w-0.5 bg-slate-800/90 rounded-full pointer-events-none" />
-
-            {/* Illuminated Laser beam scaling down as you scroll - centered at 13px */}
-            <motion.div
-              className="absolute left-[11px] top-[18px] bottom-[18px] w-1 rounded-full origin-top pointer-events-none z-10"
-              style={{
-                scaleY,
-                background: "linear-gradient(180deg, #38bdf8 0%, #818cf8 50%, #c084fc 100%)",
-                boxShadow: "0 0 14px #38bdf8, 0 0 28px #818cf8",
-              }}
-            />
-
-            {/* Travelling Light Orb following scroll down the tree - centered at 13px */}
-            <motion.div
-              className="absolute left-[7px] w-3 h-3 rounded-full bg-cyan-300 z-20 pointer-events-none"
-              style={{
-                top: lightTop,
-                boxShadow: "0 0 16px 5px #38bdf8, 0 0 32px 10px #818cf8",
-              }}
-            />
-
-            {selectedRoadmap.sections.map((section, sIdx) => {
-              const sectionDoneCount = section.nodes.filter((n) =>
-                isNodeDone(selectedRoadmap.title, n, false)
-              ).length;
-              const isSectionComplete = sectionDoneCount === section.nodes.length;
-
-              return (
-                <motion.div
-                  key={sIdx}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: sIdx * 0.08, duration: 0.4 }}
-                  className="relative space-y-4"
-                >
-                  {/* Glowing Node Dot - centered at 13px */}
-                  <div
-                    className={`absolute -left-[27px] top-1.5 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all z-20 ${
-                      isSectionComplete
-                        ? "bg-emerald-500 border-emerald-400 text-white shadow-lg shadow-emerald-500/50"
-                        : "bg-[#0b0f19] border-indigo-400 text-indigo-400 shadow-md ring-4 ring-indigo-500/20"
-                    }`}
-                  >
-                    {isSectionComplete ? (
-                      <Check className="w-3.5 h-3.5 stroke-[3]" />
-                    ) : (
-                      <div className="w-2 h-2 rounded-full bg-indigo-400" />
-                    )}
-                  </div>
-
-                  {/* Section Header */}
-                  <div>
-                    <h3 className="text-lg md:text-xl font-extrabold text-white flex items-center gap-2">
-                      <span>{section.title}</span>
-                      {isSectionComplete && (
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                          COMPLETED
-                        </span>
-                      )}
-                    </h3>
-                    <p className="text-xs md:text-sm text-slate-400 mt-1 leading-relaxed">
-                      {section.subtitle}
-                    </p>
-                  </div>
-
-                  {/* Nodes Grid Pills with Right-Side Tree Roots Branching Flowchart */}
-                  <div className="space-y-4 pt-1">
-                    {section.nodes.map((nodeName, nIdx) => {
-                      const done = isNodeDone(selectedRoadmap.title, nodeName, false);
-                      const isExpanded = expandedNodeName === nodeName;
-                      const branchData = getRightBranchesForNode(nodeName, selectedRoadmap.id);
-
-                      return (
-                        <div key={nIdx} className="w-full relative">
-                          <div className="flex flex-col lg:flex-row items-stretch lg:items-start gap-4">
-                            {/* Parent Node Button */}
-                            <motion.button
-                              whileHover={{ scale: 1.01 }}
-                              whileTap={{ scale: 0.99 }}
-                              onClick={() =>
-                                setExpandedNodeName(isExpanded ? null : nodeName)
-                              }
-                              className={`relative flex items-center justify-between gap-3 px-4.5 py-3.5 rounded-2xl text-xs font-bold transition-all duration-200 shadow-md cursor-pointer border overflow-hidden shrink-0 lg:w-96 ${
-                                isExpanded
-                                  ? "bg-[#141d33] border-cyan-400 text-white ring-2 ring-cyan-500/40 shadow-[0_0_25px_rgba(56,189,248,0.25)]"
-                                  : done
-                                  ? "bg-indigo-600/20 border-indigo-500 text-white shadow-indigo-500/10 hover:border-indigo-400"
-                                  : "bg-[#131b2e]/90 border-slate-800 hover:border-slate-600 text-slate-300 hover:text-white"
-                              }`}
-                            >
-                              {/* Left accent bar */}
-                              <div
-                                className={`absolute left-0 top-0 bottom-0 w-1.5 transition-all ${
-                                  isExpanded
-                                    ? "bg-gradient-to-b from-cyan-400 via-indigo-500 to-purple-500 shadow-[0_0_12px_#38bdf8]"
-                                    : done
-                                    ? "bg-emerald-400"
-                                    : "bg-indigo-500/60"
-                                }`}
-                              />
-
-                              <div className="flex items-center gap-3 pl-1.5">
-                                <div
-                                  className={`p-1.5 rounded-lg flex items-center justify-center transition-colors ${
-                                    done
-                                      ? "bg-emerald-500 text-white"
-                                      : isExpanded
-                                      ? "bg-cyan-400 text-slate-950 font-bold"
-                                      : "bg-slate-800 text-slate-400"
-                                  }`}
-                                >
-                                  <Terminal className="w-3.5 h-3.5" />
-                                </div>
-
-                                <span className="font-extrabold text-sm tracking-tight text-white">{nodeName}</span>
-                              </div>
-
-                              <div className="flex items-center gap-2">
-                                <span
-                                  className={`text-[10px] px-2.5 py-0.5 rounded-full font-bold transition-colors ${
-                                    done
-                                      ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40"
-                                      : "bg-slate-800/80 text-slate-400 border border-slate-700/60"
-                                  }`}
-                                >
-                                  {done ? "Completed" : "Pending"}
-                                </span>
-
-                                <ChevronRight
-                                  className={`w-4 h-4 transition-transform ${
-                                    isExpanded ? "rotate-90 text-cyan-400" : "text-slate-500"
-                                  }`}
-                                />
-                              </div>
-
-                              {/* Right Connection Pin Dot */}
-                              {isExpanded && (
-                                <div className="absolute right-1 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-cyan-400 shadow-[0_0_10px_#38bdf8] animate-pulse hidden lg:block" />
-                              )}
-                            </motion.button>
-
-                            {/* Right-Side Tree Roots Branch Flowchart Container */}
-                            <AnimatePresence>
-                              {isExpanded && (
-                                <motion.div
-                                  initial={{ opacity: 0, x: -15, scale: 0.98 }}
-                                  animate={{ opacity: 1, x: 0, scale: 1 }}
-                                  exit={{ opacity: 0, x: -15, scale: 0.98 }}
-                                  transition={{ duration: 0.3, ease: "easeOut" }}
-                                  className="relative flex-1"
-                                >
-                                  {/* SVG Connector Curved Roots branching out to the right */}
-                                  <div className="hidden lg:block absolute -left-4 top-6 w-4 h-8 pointer-events-none text-cyan-400">
-                                    <svg className="w-full h-full" viewBox="0 0 16 32">
-                                      <path
-                                        d="M 0 16 C 8 16, 8 16, 16 16"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        strokeWidth="2.5"
-                                      />
-                                    </svg>
-                                  </div>
-
-                                  <div className="p-4 md:p-5 rounded-2xl bg-[#0a0f1d]/95 border-2 border-cyan-500/40 shadow-2xl backdrop-blur-xl space-y-4">
-                                    {/* Header Bar */}
-                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-white/[0.08]">
-                                      <div className="flex items-center gap-2.5">
-                                        <div className="p-1.5 rounded-lg bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
-                                          <GitBranch className="w-4 h-4" />
-                                        </div>
-                                        <div>
-                                          <h4 className="text-xs font-black text-cyan-300 tracking-wider uppercase flex items-center gap-2">
-                                            <span>Flowchart Tree Roots</span>
-                                            <span className="text-[9px] px-1.5 py-0.2 rounded bg-amber-400/20 text-amber-300 font-mono">
-                                              RIGHT BRANCHING
-                                            </span>
-                                          </h4>
-                                          <p className="text-xs text-slate-300 font-medium mt-0.5">
-                                            {branchData.description}
-                                          </p>
-                                        </div>
-                                      </div>
-                                    </div>
-
-                                    {/* Tree Root Topics branching out to the right */}
-                                    <div className="space-y-3">
-                                      {branchData.groups.map((group, gIdx) => (
-                                        <div key={gIdx} className="space-y-2">
-                                          {group.groupName && (
-                                            <div className="text-[10px] font-mono font-bold uppercase tracking-wider text-indigo-300 flex items-center gap-1.5">
-                                              <span className="w-1.5 h-1.5 rounded-full bg-indigo-400" />
-                                              <span>{group.groupName}</span>
-                                            </div>
-                                          )}
-
-                                          <div className="flex flex-wrap items-center gap-2.5">
-                                            {group.topics.map((topic) => {
-                                              const isSubDone = !!completedSubtopics[topic.id];
-                                              const isRec = isCareerRoadmap && !!topic.isRecommended;
-                                              const isAlt = isCareerRoadmap && !!topic.isAlternative;
-
-                                              return (
-                                                <motion.div
-                                                  key={topic.id}
-                                                  whileHover={{ scale: 1.04, y: -1 }}
-                                                  whileTap={{ scale: 0.96 }}
-                                                  onClick={() =>
-                                                    setSelectedSubtopic({
-                                                      id: topic.id,
-                                                      name: topic.name,
-                                                      parentName: nodeName,
-                                                      isRecommended: isRec,
-                                                      isAlternative: isAlt,
-                                                      isOrderNotStrict: topic.isOrderNotStrict,
-                                                      docUrl: topic.docUrl,
-                                                      desc: topic.desc,
-                                                    })
-                                                  }
-                                                  className={`group flex items-center gap-2.5 px-3.5 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer shadow-md ${
-                                                    isSubDone
-                                                      ? "bg-emerald-500/20 border-emerald-400 text-white shadow-emerald-500/20"
-                                                      : isRec
-                                                      ? "bg-purple-950/70 border-purple-500/90 text-purple-200 hover:bg-purple-900/80 hover:border-purple-300 shadow-purple-500/20"
-                                                      : isAlt
-                                                      ? "bg-amber-400/10 border-amber-400/80 text-amber-200 hover:bg-amber-400/20 hover:border-amber-300 shadow-amber-500/10"
-                                                      : topic.isOrderNotStrict
-                                                      ? "bg-slate-800/80 border-slate-600 text-slate-400 hover:border-slate-400"
-                                                      : "bg-[#131b2e] border-slate-700 text-slate-300 hover:border-slate-500"
-                                                  }`}
-                                                >
-                                                  <span className="font-extrabold text-white">{topic.name}</span>
-
-                                                  {/* Checkmark Badge Circle - Stops Propagation to Toggle Directly */}
-                                                  <div
-                                                    onClick={(e) => {
-                                                      e.stopPropagation();
-                                                      toggleSubtopic(topic.id, nodeName);
-                                                    }}
-                                                    className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] transition-colors ${
-                                                      isSubDone
-                                                        ? "bg-emerald-400 text-slate-950 font-black"
-                                                        : isRec
-                                                        ? "bg-purple-500 text-white shadow-[0_0_8px_rgba(168,85,247,0.7)]"
-                                                        : isAlt
-                                                        ? "bg-amber-400 text-slate-950 font-bold shadow-[0_0_8px_rgba(251,191,36,0.7)]"
-                                                        : "bg-slate-700 text-slate-400 border border-slate-600"
-                                                    }`}
-                                                  >
-                                                    <Check className="w-2.5 h-2.5 stroke-[3]" />
-                                                  </div>
-                                                </motion.div>
-                                              );
-                                            })}
-                                          </div>
-                                        </div>
-                                      ))}
-                                    </div>
-                                  </div>
-                                </motion.div>
-                              )}
-                            </AnimatePresence>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </motion.div>
-              );
-            })}
-          </div>
+          <span className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-500/15 text-purple-300 border border-purple-500/30 text-xs font-bold">
+            <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+            Interactive Learning Path
+          </span>
         </div>
 
-        {/* Right Column: Realistic Growth Widget */}
-        <div className="sticky top-6 space-y-6">
+        {/* Vertical Tree Container with Scroll-Animated Laser Light */}
+        <div ref={treeContainerRef} className="relative pl-7 space-y-10">
+          {/* Background dim track line - centered at 13px */}
+          <div className="absolute left-[12px] top-[18px] bottom-[18px] w-0.5 bg-slate-800/90 rounded-full pointer-events-none" />
+
+          {/* Illuminated Laser beam scaling down as you scroll - centered at 13px */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="glass rounded-2xl p-6 border border-white/[0.08] relative overflow-hidden"
+            className="absolute left-[11px] top-[18px] bottom-[18px] w-1 rounded-full origin-top pointer-events-none z-10"
             style={{
-              background: "linear-gradient(135deg, rgba(19,27,46,0.95) 0%, rgba(10,15,28,0.98) 100%)",
-              boxShadow: "0 10px 30px rgba(0,0,0,0.3)",
+              scaleY,
+              background: "linear-gradient(180deg, #38bdf8 0%, #818cf8 50%, #c084fc 100%)",
+              boxShadow: "0 0 14px #38bdf8, 0 0 28px #818cf8",
             }}
-          >
-            {/* Card Title */}
-            <div className="flex items-center justify-between mb-5">
-              <div className="flex items-center gap-2">
-                <div className="p-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400">
-                  <Trophy className="w-4 h-4" />
-                </div>
-                <h3 className="text-sm font-bold text-white">{growthTitle}</h3>
-              </div>
-              <span className="text-[10px] font-bold text-slate-400 bg-white/5 px-2 py-1 rounded-md">
-                {doneCount}/{allNodes.length} Skills
-              </span>
-            </div>
+          />
 
-            {/* Graphic Stage Container */}
-            <div className="relative h-64 rounded-xl bg-slate-950/80 border border-slate-800 overflow-hidden flex flex-col items-center justify-center p-6 text-center">
-              {/* Background ambient glowing rings */}
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <div
-                  className="w-40 h-40 rounded-full border border-indigo-500/20 animate-ping opacity-25"
-                  style={{ animationDuration: "4s" }}
-                />
-                <div
-                  className="w-32 h-32 rounded-full border border-emerald-500/30 animate-pulse"
-                  style={{ animationDuration: "2s" }}
-                />
-                <div
-                  className="w-24 h-24 rounded-full blur-2xl opacity-40"
-                  style={{ background: currentPhase.color }}
-                />
-              </div>
+          {/* Travelling Light Orb following scroll down the tree - centered at 13px */}
+          <motion.div
+            className="absolute left-[7px] w-3 h-3 rounded-full bg-cyan-300 z-20 pointer-events-none"
+            style={{
+              top: lightTop,
+              boxShadow: "0 0 16px 5px #38bdf8, 0 0 32px 10px #818cf8",
+            }}
+          />
 
-              {/* 90 FPS Animated Python Growth Canvas */}
-              <div className="relative z-10 my-1">
-                <PythonGrowthCanvas progressPct={progressPct} phaseIndex={phaseIndex} />
-              </div>
+          {selectedRoadmap.sections.map((section, sIdx) => {
+            const sectionDoneCount = section.nodes.filter((n) =>
+              isNodeDone(selectedRoadmap.title, n, false)
+            ).length;
+            const isSectionComplete = sectionDoneCount === section.nodes.length;
 
-              {/* Phase Text & Subtitle */}
-              <div className="relative z-10 mt-2 space-y-1">
+            return (
+              <motion.div
+                key={sIdx}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: sIdx * 0.08, duration: 0.4 }}
+                className="relative space-y-4"
+              >
+                {/* Glowing Node Dot - centered at 13px */}
                 <div
-                  className="text-xs font-black tracking-wider uppercase"
-                  style={{ color: currentPhase.color }}
+                  className={`absolute -left-[27px] top-1.5 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all z-20 ${
+                    isSectionComplete
+                      ? "bg-emerald-500 border-emerald-400 text-white shadow-lg shadow-emerald-500/50"
+                      : "bg-[#0b0f19] border-indigo-400 text-indigo-400 shadow-md ring-4 ring-indigo-500/20"
+                  }`}
                 >
-                  {currentPhase.phase}
+                  {isSectionComplete ? (
+                    <Check className="w-3.5 h-3.5 stroke-[3]" />
+                  ) : (
+                    <div className="w-2 h-2 rounded-full bg-indigo-400" />
+                  )}
                 </div>
-                <p className="text-[11px] text-slate-400 leading-tight px-2">
-                  {currentPhase.description}
-                </p>
-              </div>
 
-              {/* Bottom Phase Progress Bar */}
-              <div className="w-full bg-slate-800/80 h-2 rounded-full mt-4 overflow-hidden relative z-10 border border-slate-700/50">
-                <motion.div
-                  className="h-full rounded-full"
-                  style={{
-                    background: `linear-gradient(90deg, ${currentPhase.color}, #6366f1)`,
-                  }}
-                  initial={{ width: 0 }}
-                  animate={{ width: `${progressPct}%` }}
-                  transition={{ duration: 0.6 }}
-                />
-              </div>
-            </div>
+                {/* Section Header */}
+                <div>
+                  <h3 className="text-lg md:text-xl font-extrabold text-white flex items-center gap-2">
+                    <span>{section.title}</span>
+                    {isSectionComplete && (
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                        COMPLETED
+                      </span>
+                    )}
+                  </h3>
+                  <p className="text-xs md:text-sm text-slate-400 mt-1 leading-relaxed">
+                    {section.subtitle}
+                  </p>
+                </div>
 
-            <div className="mt-4 text-[11px] text-slate-500 text-center font-medium">
-              Complete more skills in the timeline tree to unlock higher evolution phases! 🚀
-            </div>
-          </motion.div>
+                {/* Nodes Grid Pills with Right-Side Tree Roots Branching Flowchart */}
+                <div className="space-y-4 pt-1">
+                  {section.nodes.map((nodeName, nIdx) => {
+                    const done = isNodeDone(selectedRoadmap.title, nodeName, false);
+                    const isExpanded = expandedNodeName === nodeName;
+                    const branchData = getRightBranchesForNode(nodeName, selectedRoadmap.id);
+
+                    return (
+                      <div key={nIdx} className="w-full relative">
+                        <div className="flex flex-col lg:flex-row items-stretch lg:items-start gap-4">
+                          {/* Parent Node Button */}
+                          <motion.button
+                            whileHover={{ scale: 1.01 }}
+                            whileTap={{ scale: 0.99 }}
+                            onClick={() =>
+                              setExpandedNodeName(isExpanded ? null : nodeName)
+                            }
+                            className={`relative flex items-center justify-between gap-3 px-4.5 py-3.5 rounded-2xl text-xs font-bold transition-all duration-200 shadow-md cursor-pointer border overflow-hidden shrink-0 lg:w-96 ${
+                              isExpanded
+                                ? "bg-[#141d33] border-cyan-400 text-white ring-2 ring-cyan-500/40 shadow-[0_0_25px_rgba(56,189,248,0.25)]"
+                                : done
+                                ? "bg-indigo-600/20 border-indigo-500 text-white shadow-indigo-500/10 hover:border-indigo-400"
+                                : "bg-[#131b2e]/90 border-slate-800 hover:border-slate-600 text-slate-300 hover:text-white"
+                            }`}
+                          >
+                            {/* Left accent bar */}
+                            <div
+                              className={`absolute left-0 top-0 bottom-0 w-1.5 transition-all ${
+                                isExpanded
+                                  ? "bg-gradient-to-b from-cyan-400 via-indigo-500 to-purple-500 shadow-[0_0_12px_#38bdf8]"
+                                  : done
+                                  ? "bg-emerald-400"
+                                  : "bg-indigo-500/60"
+                              }`}
+                            />
+
+                            <div className="flex items-center gap-3 pl-1.5">
+                              <div
+                                className={`p-1.5 rounded-lg flex items-center justify-center transition-colors ${
+                                  done
+                                    ? "bg-emerald-500 text-white"
+                                    : isExpanded
+                                    ? "bg-cyan-400 text-slate-950 font-bold"
+                                    : "bg-slate-800 text-slate-400"
+                                }`}
+                              >
+                                <Terminal className="w-3.5 h-3.5" />
+                              </div>
+
+                              <span className="font-extrabold text-sm tracking-tight text-white">{nodeName}</span>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                              <span
+                                className={`text-[10px] px-2.5 py-0.5 rounded-full font-bold transition-colors ${
+                                  done
+                                    ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40"
+                                    : "bg-slate-800/80 text-slate-400 border border-slate-700/60"
+                                }`}
+                              >
+                                {done ? "Completed" : "Pending"}
+                              </span>
+                              <ChevronRight
+                                className={`w-4 h-4 transition-transform duration-200 ${
+                                  isExpanded ? "rotate-90 text-cyan-400" : "text-slate-500"
+                                }`}
+                              />
+                            </div>
+                          </motion.button>
+                        </div>
+
+                        {/* Expandable Subtopics Flowchart Drawer */}
+                        <AnimatePresence>
+                          {isExpanded && (
+                            <motion.div
+                              initial={{ opacity: 0, height: 0 }}
+                              animate={{ opacity: 1, height: "auto" }}
+                              exit={{ opacity: 0, height: 0 }}
+                              transition={{ duration: 0.3, ease: "easeInOut" }}
+                              className="overflow-hidden mt-3 pl-4 lg:pl-8 border-l-2 border-dashed border-cyan-500/30"
+                            >
+                              <div className="glass p-4 md:p-5 rounded-2xl border border-cyan-500/20 bg-[#0c1324]/90 space-y-4 shadow-xl">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-xs font-bold text-cyan-300 uppercase tracking-wider flex items-center gap-1.5">
+                                    <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+                                    Skill Modules & Subtopics
+                                  </span>
+                                  <span className="text-[10px] text-slate-400 font-medium">
+                                    Click any card to open resources
+                                  </span>
+                                </div>
+
+                                <div className="space-y-3">
+                                  {branchData.groups.map((group, gIdx) => (
+                                    <div key={gIdx} className="space-y-2">
+                                      {group.groupName && (
+                                        <div className="text-[10px] font-mono font-bold uppercase tracking-wider text-indigo-300 flex items-center gap-1.5">
+                                          <span className="w-1.5 h-1.5 rounded-full bg-indigo-400" />
+                                          <span>{group.groupName}</span>
+                                        </div>
+                                      )}
+
+                                      <div className="flex flex-wrap items-center gap-2.5">
+                                        {group.topics.map((topic) => {
+                                          const isSubDone = !!completedSubtopics[topic.id];
+                                          const isRec = isCareerRoadmap && !!topic.isRecommended;
+                                          const isAlt = isCareerRoadmap && !!topic.isAlternative;
+
+                                          return (
+                                            <motion.div
+                                              key={topic.id}
+                                              whileHover={{ scale: 1.04, y: -1 }}
+                                              whileTap={{ scale: 0.96 }}
+                                              onClick={() =>
+                                                setSelectedSubtopic({
+                                                  id: topic.id,
+                                                  name: topic.name,
+                                                  parentName: nodeName,
+                                                  isRecommended: isRec,
+                                                  isAlternative: isAlt,
+                                                  isOrderNotStrict: topic.isOrderNotStrict,
+                                                  docUrl: topic.docUrl,
+                                                  desc: topic.desc,
+                                                })
+                                              }
+                                              className={`group flex items-center gap-2.5 px-3.5 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer shadow-md ${
+                                                isSubDone
+                                                  ? "bg-emerald-500/20 border-emerald-400 text-white shadow-emerald-500/20"
+                                                  : isRec
+                                                  ? "bg-purple-950/70 border-purple-500/90 text-purple-200 hover:bg-purple-900/80 hover:border-purple-300 shadow-purple-500/20"
+                                                  : isAlt
+                                                  ? "bg-amber-400/10 border-amber-400/80 text-amber-200 hover:bg-amber-400/20 hover:border-amber-300 shadow-amber-500/10"
+                                                  : topic.isOrderNotStrict
+                                                  ? "bg-slate-800/80 border-slate-600 text-slate-400 hover:border-slate-400"
+                                                  : "bg-[#131b2e] border-slate-700 text-slate-300 hover:border-slate-500"
+                                              }`}
+                                            >
+                                              <span className="font-extrabold text-white">{topic.name}</span>
+
+                                              {/* Checkmark Badge Circle */}
+                                              <div
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  toggleSubtopic(topic.id, nodeName);
+                                                }}
+                                                className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] transition-colors ${
+                                                  isSubDone
+                                                    ? "bg-emerald-400 text-slate-950 font-black"
+                                                    : isRec
+                                                    ? "bg-purple-500 text-white shadow-[0_0_8px_rgba(168,85,247,0.7)]"
+                                                    : isAlt
+                                                    ? "bg-amber-400 text-slate-950 font-bold shadow-[0_0_8px_rgba(251,191,36,0.7)]"
+                                                    : "bg-slate-700 text-slate-400 border border-slate-600"
+                                                }`}
+                                              >
+                                                <Check className="w-2.5 h-2.5 stroke-[3]" />
+                                              </div>
+                                            </motion.div>
+                                          );
+                                        })}
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
+                    );
+                  })}
+                </div>
+              </motion.div>
+            );
+          })}
         </div>
       </div>
 
