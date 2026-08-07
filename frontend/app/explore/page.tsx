@@ -27,7 +27,9 @@ import {
   RefreshCw,
   Newspaper,
   Layers,
+  Smile,
 } from "lucide-react";
+import MemeLearningSection from "@/components/MemeLearningSection";
 import {
   fetchOpportunities,
   fetchCompanyDetails,
@@ -36,7 +38,7 @@ import {
   triggerApifyCrawl,
 } from "@/lib/api";
 
-type MainTab = "opportunities" | "companies" | "trends";
+type MainTab = "opportunities" | "companies" | "trends" | "memes";
 type CategoryFilter = "all" | "internship" | "job" | "hackathon" | "contest" | "scholarship";
 
 export default function ExplorePage() {
@@ -399,7 +401,7 @@ export default function ExplorePage() {
         </div>
 
         {/* ── Main Navigation Tabs ────────────────────────────────────────────── */}
-        <div className="mt-8 pt-4 border-t border-slate-800/80 grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="mt-8 pt-4 border-t border-slate-800/80 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           <button
             onClick={() => setActiveTab("opportunities")}
             className={`p-3.5 rounded-2xl border text-left transition-all flex items-center gap-3 ${
@@ -454,6 +456,25 @@ export default function ExplorePage() {
                 Tech Trends &amp; Insights
               </div>
               <p className="text-[11px] text-slate-400">In-Demand Skills &amp; AI News</p>
+            </div>
+          </button>
+
+          <button
+            onClick={() => setActiveTab("memes")}
+            className={`p-3.5 rounded-2xl border text-left transition-all flex items-center gap-3 ${
+              activeTab === "memes"
+                ? "bg-purple-600/20 border-purple-500/50 text-white shadow-lg shadow-purple-500/10 ring-1 ring-purple-500/30"
+                : "bg-slate-900/40 border-slate-800 text-slate-400 hover:border-slate-700 hover:text-slate-200"
+            }`}
+          >
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${activeTab === "memes" ? "bg-purple-500 text-white" : "bg-slate-800 text-slate-400"}`}>
+              <Smile className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="text-sm font-bold flex items-center gap-1.5">
+                Meme Learning Hub 🎭
+              </div>
+              <p className="text-[11px] text-slate-400">Coding &amp; DSA via Memes</p>
             </div>
           </button>
         </div>
@@ -944,6 +965,13 @@ export default function ExplorePage() {
               )}
             </div>
           ) : null}
+        </motion.div>
+      )}
+
+      {/* ── TAB 4: 🎭 MEME LEARNING HUB ────────────────────────────────────── */}
+      {activeTab === "memes" && (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+          <MemeLearningSection />
         </motion.div>
       )}
     </motion.div>
