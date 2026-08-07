@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field
 from backend.services.supabase_service import get_supabase
 from backend.services.auth_service import get_current_user_id, get_session_or_user_id
 from backend.services.groq_service import chat_with_groq
+from backend.services.score_calculator import compute_overall_coding_score
 
 logger = logging.getLogger(__name__)
 
@@ -50,14 +51,20 @@ def load_db() -> Dict[str, Any]:
                     sec = s.get("section") or "Section A"
                     year = s.get("academic_year") or "2nd Year"
                     
-                    # Fetch student coding profile
+                    # Fetch student coding profile and compute score from formulas
                     lc_handle = ""
                     gh_handle = ""
+                    computed_score = int(s.get("coding_score") or 0)
                     try:
                         res_code = sb.from_("user_coding_profiles").select("*").eq("user_id", uid).execute()
                         if res_code.data:
-                            lc_handle = res_code.data[0].get("leetcode_url", "")
-                            gh_handle = res_code.data[0].get("github_url", "")
+                            c_row = res_code.data[0]
+                            lc_handle = c_row.get("leetcode_url", "")
+                            gh_handle = c_row.get("github_url", "")
+                            stats_json = c_row.get("stats_json") or {}
+                            score_result = compute_overall_coding_score(stats_json)
+                            if score_result["overall_score"] > 0:
+                                computed_score = score_result["overall_score"]
                     except Exception:
                         pass
 
@@ -72,7 +79,7 @@ def load_db() -> Dict[str, Any]:
                         "academic_year": f"Year {year}",
                         "college": s.get("college") or "TKR College of Engineering & Technology",
                         "attendance_percentage": att_val,
-                        "coding_score": int(s.get("coding_score") or 0),
+                        "coding_score": computed_score,
                         "placement_readiness_score": 0.0,
                         "faculty_notes": "",
                         "leetcode_handle": lc_handle,
@@ -288,37 +295,32 @@ async def get_student_detail(student_id: str, current_user_id: str = Depends(get
             })
     student["assignment_history"] = student_assignments
 
-    # 1. Fetch Coding Profiles & Questions Solved
+    # 1. Fetch Coding Profiles & Questions Solved — with formula-based score breakdown
     coding_profiles = {
         "leetcode_url": student.get("leetcode_handle", ""),
         "github_url": student.get("github_handle", ""),
         "total_solved": 0,
+        "overall_score": 0,
         "platforms": []
     }
     if sb:
         try:
+            import re
             res_code = sb.table("user_coding_profiles").select("*").eq("user_id", student_id).execute()
             if res_code.data and res_code.data[0]:
                 c_row = res_code.data[0]
                 coding_profiles["leetcode_url"] = c_row.get("leetcode_url") or coding_profiles["leetcode_url"]
                 coding_profiles["github_url"] = c_row.get("github_url") or coding_profiles["github_url"]
                 stats = c_row.get("stats_json") or {}
-                
-                import re
-                total_s = 0
-                platforms_list = []
-                for p_name, p_data in stats.items():
-                    if isinstance(p_data, dict):
-                        solved = p_data.get("total_solved") or p_data.get("solved") or 0
-                        if not solved and (p_data.get("badge") or p_data.get("summary")):
-                            m = re.search(r"(\d+)", str(p_data.get("badge") or p_data.get("summary")))
-                            if m:
-                                solved = int(m.group(1))
-                        if isinstance(solved, (int, float)) and solved > 0:
-                            total_s += int(solved)
-                            platforms_list.append({"name": p_name.title(), "solved": int(solved)})
-                coding_profiles["total_solved"] = total_s
-                coding_profiles["platforms"] = platforms_list
+
+                # Compute official score from formulas
+                score_result = compute_overall_coding_score(stats)
+                coding_profiles["overall_score"] = score_result["overall_score"]
+                coding_profiles["total_solved"] = score_result["total_solved"]
+                coding_profiles["platforms"] = score_result["platforms"]
+
+                # Update the student object with computed score
+                student["coding_score"] = score_result["overall_score"]
         except Exception as e:
             logger.warning(f"Error fetching coding profiles for {student_id}: {e}")
 

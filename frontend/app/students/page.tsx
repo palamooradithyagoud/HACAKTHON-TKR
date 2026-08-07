@@ -122,18 +122,80 @@ export default function StudentsPage() {
           const ghUrl = codeRow.github_url || baseStudent.github_handle || "";
 
           if (codeRow.stats_json) {
-            for (const [pName, pData] of Object.entries<any>(codeRow.stats_json)) {
-              if (pData && typeof pData === "object") {
-                let solved = pData.total_solved || pData.solved || 0;
-                if (!solved && (pData.badge || pData.summary)) {
-                  const m = String(pData.badge || pData.summary).match(/(\d+)/);
-                  if (m) solved = parseInt(m[1], 10);
-                }
-                if (solved && typeof solved === "number" && solved > 0) {
-                  totalSolved += solved;
-                  platforms.push({ name: pName.charAt(0).toUpperCase() + pName.slice(1), solved });
-                }
-              }
+            const statsJson = codeRow.stats_json as any;
+
+            // HackerRank - direct score
+            const hr = statsJson.hackerrank;
+            if (hr?.configured) {
+              const score = Number(hr.score || hr.direct_score || 0);
+              const solved = Number(hr.problems_solved || hr.total_solved || 0);
+              if (score > 0 || solved > 0) { totalSolved += solved; platforms.push({ name: "HackerRank", solved, score: Math.round(score) }); }
+            }
+
+            // CodeChef: (problems*2) + ((rating-1200)^2/10) + (contests*50)
+            const cc = statsJson.codechef;
+            if (cc?.configured) {
+              const problems = Number(cc.total_solved || cc.problems_solved || 0);
+              const rating = Number(cc.rating || 0);
+              const contests = Number(cc.contests || cc.contests_count || 0);
+              const rDiff = Math.max(0, rating - 1200);
+              const score = Math.round((problems * 2) + (rDiff * rDiff / 10) + (contests * 50));
+              totalSolved += problems;
+              if (problems > 0 || score > 0) platforms.push({ name: "CodeChef", solved: problems, score });
+            }
+
+            // CodeForces: (problems*2) + ((rating-800)^2/10) + (contests*50)
+            const cf = statsJson.codeforces;
+            if (cf?.configured) {
+              const problems = Number(cf.total_solved || cf.problems_solved || 0);
+              const rating = Number(cf.rating || 0);
+              const contests = Number(cf.contests || cf.contests_count || 0);
+              const rDiff = Math.max(0, rating - 800);
+              const score = Math.round((problems * 2) + (rDiff * rDiff / 10) + (contests * 50));
+              totalSolved += problems;
+              if (problems > 0 || score > 0) platforms.push({ name: "CodeForces", solved: problems, score });
+            }
+
+            // LeetCode: (problems*10) + ((rating-1300)^2/10) + (contests*50)
+            const lc = statsJson.leetcode;
+            if (lc?.configured) {
+              let problems = Number(lc.total_solved || 0) || (Number(lc.easy_solved||0) + Number(lc.medium_solved||0) + Number(lc.hard_solved||0));
+              if (!problems && lc.badge) { const m = String(lc.badge).match(/(\d+)/); if (m) problems = parseInt(m[1]); }
+              const rating = Number(lc.rating || 0);
+              const contests = Number(lc.contests || lc.contests_count || 0);
+              const rDiff = Math.max(0, rating - 1300);
+              const score = Math.round((problems * 10) + (rDiff * rDiff / 10) + (contests * 50));
+              totalSolved += problems;
+              if (problems > 0 || score > 0) platforms.push({ name: "LeetCode", solved: problems, score });
+            }
+
+            // InterviewBit: score / 5
+            const ib = statsJson.interviewbit;
+            if (ib?.configured) {
+              const rawScore = Number(ib.score || 0);
+              const solved = Number(ib.problems_solved || ib.total_solved || 0);
+              const score = Math.round(rawScore / 5);
+              totalSolved += solved;
+              if (rawScore > 0 || solved > 0) platforms.push({ name: "InterviewBit", solved, score });
+            }
+
+            // GFG: (original_score*10) + (problems_solved*5)
+            const gfg = statsJson.geeksforgeeks;
+            if (gfg?.configured) {
+              const origScore = Number(gfg.coding_score || gfg.score || gfg.original_score || 0);
+              const problems = Number(gfg.total_solved || gfg.problems_solved || 0);
+              const score = Math.round((origScore * 10) + (problems * 5));
+              totalSolved += problems;
+              if (problems > 0 || score > 0) platforms.push({ name: "GeeksforGeeks", solved: problems, score });
+            }
+
+            // GitHub: (repos*15) + (contributions*5)
+            const gh = statsJson.github;
+            if (gh?.configured) {
+              const repos = Number(gh.repos || gh.public_repos || 0);
+              const contribs = Number(gh.contributions || gh.total_contributions || 0);
+              const score = Math.round((repos * 15) + (contribs * 5));
+              if (repos > 0 || score > 0) platforms.push({ name: "GitHub", solved: 0, score });
             }
           }
 
@@ -145,6 +207,8 @@ export default function StudentsPage() {
             thumbnail: pl.thumbnail || "",
           }));
 
+          const overallScore = platforms.reduce((s: number, p: any) => s + (p.score || 0), 0);
+
           sbDetail = {
             ...baseStudent,
             id: activeStudentId,
@@ -154,10 +218,12 @@ export default function StudentsPage() {
             section: acadRow.section || baseStudent.section,
             year: acadRow.academic_year || baseStudent.year,
             attendance_percentage: acadRow.attendance_percentage || baseStudent.attendance_percentage || 0,
+            coding_score: overallScore || acadRow.coding_score || baseStudent.coding_score || 0,
             coding_profiles: {
               leetcode_url: lcUrl,
               github_url: ghUrl,
               total_solved: totalSolved,
+              overall_score: overallScore,
               platforms: platforms,
             },
             playlists_info: {
@@ -190,10 +256,12 @@ export default function StudentsPage() {
             setActiveStudentDetail({
               ...sbDetail,
               ...apiData,
+              coding_score: apiData?.coding_score || apiData?.coding_profiles?.overall_score || sbDetail?.coding_score || 0,
               coding_profiles: {
                 ...sbDetail?.coding_profiles,
                 ...apiData?.coding_profiles,
                 total_solved: apiData?.coding_profiles?.total_solved || sbDetail?.coding_profiles?.total_solved || 0,
+                overall_score: apiData?.coding_profiles?.overall_score || sbDetail?.coding_profiles?.overall_score || 0,
                 platforms: apiData?.coding_profiles?.platforms?.length ? apiData.coding_profiles.platforms : sbDetail?.coding_profiles?.platforms || [],
               },
               playlists_info: {
@@ -467,13 +535,13 @@ export default function StudentsPage() {
                 <div className="bg-purple-500/[0.04] border border-purple-500/20 rounded-2xl p-3.5 text-center flex flex-col justify-between">
                   <div className="flex items-center justify-between text-purple-400 mb-1">
                     <Code className="w-4 h-4" />
-                    <span className="text-[10px] font-bold uppercase tracking-wider">Questions Solved</span>
+                    <span className="text-[10px] font-bold uppercase tracking-wider">Overall Score</span>
                   </div>
                   <span className="text-2xl font-black text-white font-mono my-1">
-                    {detail.coding_profiles?.total_solved || (detail.coding_score ? Math.round(detail.coding_score / 10) : 0)}
+                    {detail.coding_profiles?.overall_score || detail.coding_score || 0}
                   </span>
                   <span className="text-[10px] font-semibold text-purple-300 bg-purple-500/15 border border-purple-500/30 px-2 py-0.5 rounded-full">
-                    Across Connected Platforms
+                    {detail.coding_profiles?.total_solved || 0} Problems Solved
                   </span>
                 </div>
               </div>
@@ -483,10 +551,10 @@ export default function StudentsPage() {
                 <div className="flex items-center justify-between">
                   <h3 className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
                     <Code className="w-4 h-4 text-indigo-400" />
-                    <span>Coding Profiles & Platform Stats</span>
+                    <span>Coding Profiles &amp; Score Breakdown</span>
                   </h3>
-                  <span className="text-[10px] text-indigo-300 font-mono font-semibold">
-                    {detail.coding_profiles?.total_solved || 0} Total Solved
+                  <span className="text-[10px] text-indigo-300 font-mono font-semibold bg-indigo-500/10 border border-indigo-500/20 rounded-lg px-2 py-0.5">
+                    Score: {detail.coding_profiles?.overall_score || detail.coding_score || 0}
                   </span>
                 </div>
 
@@ -523,11 +591,19 @@ export default function StudentsPage() {
                 </div>
 
                 {detail.coding_profiles?.platforms && detail.coding_profiles.platforms.length > 0 && (
-                  <div className="grid grid-cols-2 gap-2 pt-2 border-t border-white/5">
+                  <div className="space-y-2 pt-2 border-t border-white/5">
+                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Platform Score Breakdown</p>
                     {detail.coding_profiles.platforms.map((p: any, idx: number) => (
-                      <div key={idx} className="flex items-center justify-between p-2 rounded-xl bg-white/[0.02] border border-white/5 text-xs">
-                        <span className="text-slate-400 font-medium">{p.name}</span>
-                        <span className="font-bold font-mono text-white">{p.solved} solved</span>
+                      <div key={idx} className="flex items-center justify-between p-2.5 rounded-xl bg-white/[0.02] border border-white/5 text-xs">
+                        <span className="text-slate-300 font-semibold">{p.name}</span>
+                        <div className="flex items-center gap-3">
+                          {p.solved > 0 && (
+                            <span className="text-slate-400 font-mono">{p.solved} solved</span>
+                          )}
+                          <span className="font-black font-mono text-indigo-300 bg-indigo-500/10 border border-indigo-500/20 rounded px-2 py-0.5">
+                            {p.score ?? p.solved} pts
+                          </span>
+                        </div>
                       </div>
                     ))}
                   </div>

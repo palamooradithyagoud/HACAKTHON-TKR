@@ -7,6 +7,7 @@ from pydantic import BaseModel
 import httpx
 from backend.services.supabase_service import get_supabase
 from backend.services.auth_service import get_current_user_id, get_session_or_user_id
+from backend.services.score_calculator import compute_overall_coding_score
 
 logger = logging.getLogger(__name__)
 
@@ -533,6 +534,12 @@ async def save_coding_profiles(
         # updated_at is auto-managed by Supabase — do NOT include it
     }
 
+    # Compute official platform scores using the defined formulas
+    score_result = compute_overall_coding_score(stats_json)
+    computed_score = score_result["overall_score"]
+    total_solved = score_result["total_solved"]
+    platform_breakdown = score_result["platforms"]
+
     sb = get_supabase()
     if sb:
         try:
@@ -541,6 +548,13 @@ async def save_coding_profiles(
             logger.info(f"Coding profiles saved to Supabase: {len(result.data)} rows")
         except Exception as e:
             logger.error(f"Failed to save coding profiles: {e}")
+
+        # Persist computed score back into user_academic_profile for faculty/dashboard views
+        try:
+            sb.from_("user_academic_profile").update({"coding_score": computed_score}).eq("user_id", user_id).execute()
+            logger.info(f"Updated coding_score={computed_score} for user_id={user_id}")
+        except Exception as e:
+            logger.warning(f"Could not update coding_score in academic profile: {e}")
 
     return {
         "success": True,
@@ -554,4 +568,9 @@ async def save_coding_profiles(
             "codeforces": body.codeforces,
         },
         "stats": stats_json,
+        "score": {
+            "overall_score": computed_score,
+            "total_solved": total_solved,
+            "platform_breakdown": platform_breakdown,
+        },
     }
