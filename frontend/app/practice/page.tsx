@@ -34,7 +34,6 @@ import {
 import { motion } from "framer-motion";
 import PracticeTopicDrawer from "@/components/PracticeTopicDrawer";
 import FloatingCTA from "@/components/mobile/FloatingCTA";
-import AIInterviewModal from "@/components/AIInterviewModal";
 import {
   fetchPracticeCompanies,
   fetchCompanyQuestions,
@@ -220,7 +219,6 @@ export default function PracticePage() {
   const [selectedStatus, setSelectedStatus] = useState<"All" | "Unsolved" | "Completed">("All");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [activePracticeTopic, setActivePracticeTopic] = useState<string | null>(null);
-  const [isAIInterviewOpen, setIsAIInterviewOpen] = useState<boolean>(false);
 
   const [questions, setQuestions] = useState<PracticeQuestion[]>([]);
   const [totalCount, setTotalCount] = useState<number>(0);
@@ -611,7 +609,7 @@ export default function PracticePage() {
 
       {/* ── MODE SELECTION: INDEX PAGE CARDS */}
       {selectedMode === "index" && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
           {/* Card 1: Beginner Level */}
           <motion.div
             initial={{ opacity: 0, y: 16 }}
@@ -699,52 +697,6 @@ export default function PracticePage() {
 
               <div className="flex items-center gap-1.5 text-xs font-bold text-cyan-400 group-hover:text-cyan-300 transition-colors">
                 <span>Explore</span>
-                <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Card 3: AI Mock Interview (100% UNLOCKED) */}
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2, duration: 0.4 }}
-            onClick={() => setIsAIInterviewOpen(true)}
-            className="relative rounded-2xl p-6 bg-gradient-to-br from-[#131b2e] via-[#161c36] to-[#251435] border border-rose-500/30 hover:border-rose-500/60 hover:shadow-2xl hover:shadow-rose-500/10 hover:-translate-y-1 transition-all duration-300 cursor-pointer flex flex-col justify-between group"
-          >
-            <div className="space-y-5">
-              <div className="flex items-center justify-between">
-                <div className="w-12 h-12 rounded-2xl bg-rose-500/15 border border-rose-500/30 text-rose-400 flex items-center justify-center group-hover:scale-105 transition-transform">
-                  <Sparkles className="w-6 h-6" />
-                </div>
-                <span className="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[10px] font-black tracking-widest uppercase flex items-center gap-1">
-                  <Sparkles className="w-3 h-3" /> UNLOCKED
-                </span>
-              </div>
-
-              <div>
-                <h3 className="text-lg md:text-xl font-bold text-white mb-2 group-hover:text-rose-300 transition-colors flex items-center gap-2">
-                  <span>3. AI Mock Interviews</span>
-                </h3>
-                <p className="text-xs text-slate-400 font-normal leading-relaxed">
-                  Real-time AI voice readout & speech-to-text technical mock interviews with live Groq LLM scoring and transcript exports.
-                </p>
-              </div>
-            </div>
-
-            <div className="mt-8 pt-5 border-t border-white/[0.06] flex items-center justify-between gap-4">
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setIsAIInterviewOpen(true);
-                }}
-                className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-rose-600 to-purple-600 hover:from-rose-500 hover:to-purple-500 text-white text-xs font-bold transition-all shadow-md"
-              >
-                Start AI Interview
-              </button>
-
-              <div className="flex items-center gap-1.5 text-xs font-bold text-rose-400 group-hover:text-rose-300 transition-colors">
-                <span>Practice Now</span>
                 <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
               </div>
             </div>
@@ -1321,12 +1273,6 @@ export default function PracticePage() {
           label="Practice Modes"
         />
       )}
-
-      {/* AI Mock Interview Modal */}
-      <AIInterviewModal
-        isOpen={isAIInterviewOpen}
-        onClose={() => setIsAIInterviewOpen(false)}
-      />
     </motion.div>
   );
 }
