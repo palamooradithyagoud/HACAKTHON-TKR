@@ -117,30 +117,55 @@ async def get_company_questions(
             detail=f"Company '{company}' not found. Use GET /api/practice/companies to list all available companies.",
         )
 
-    csv_path = _csv_path(company_slug, period)
+    # 1. Attempt fetching directly from Supabase DB `company_questions` table
+    sb = get_supabase()
+    questions = []
+    if sb:
+        try:
+            query = sb.table("company_questions").select("*").eq("company_slug", company_slug).eq("period", period)
+            if isinstance(difficulty, str) and difficulty.strip():
+                query = query.ilike("difficulty", difficulty.strip())
+            if isinstance(search, str) and search.strip():
+                query = query.ilike("title", f"%{search.strip()}%")
+            res = query.execute()
+            if res.data:
+                questions = [
+                    {
+                        "id": q["question_id"],
+                        "title": q["title"],
+                        "url": q.get("url", ""),
+                        "difficulty": q.get("difficulty", "Easy"),
+                        "acceptance": q.get("acceptance", ""),
+                        "frequency": q.get("frequency", ""),
+                    }
+                    for q in res.data
+                ]
+        except Exception as sb_err:
+            logger.warning(f"Supabase query for company_questions failed ({company_slug}): {sb_err}")
 
-    if not csv_path.exists():
-        # Fallback to all.csv if requested period file doesn't exist
-        fallback = _csv_path(company_slug, "all")
-        if fallback.exists():
-            logger.info(f"Period '{period}' not found for '{company_slug}', falling back to all.csv")
-            csv_path = fallback
-        else:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"No CSV data found for company '{company}' (period: {period}).",
-            )
+    # 2. Fallback to local CSV dataset if Supabase returned no rows
+    if not questions:
+        csv_path = _csv_path(company_slug, period)
+        if not csv_path.exists():
+            fallback = _csv_path(company_slug, "all")
+            if fallback.exists():
+                logger.info(f"Period '{period}' not found for '{company_slug}', falling back to all.csv")
+                csv_path = fallback
+            else:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=f"No CSV data found for company '{company}' (period: {period}).",
+                )
 
-    questions = _parse_csv(csv_path)
+        questions = _parse_csv(csv_path)
 
-    # Apply filters safely
-    if isinstance(difficulty, str) and difficulty.strip():
-        diff_str = difficulty.strip().lower()
-        questions = [q for q in questions if q.get("difficulty", "").lower() == diff_str]
+        if isinstance(difficulty, str) and difficulty.strip():
+            diff_str = difficulty.strip().lower()
+            questions = [q for q in questions if q.get("difficulty", "").lower() == diff_str]
 
-    if isinstance(search, str) and search.strip():
-        term = search.strip().lower()
-        questions = [q for q in questions if term in q.get("title", "").lower()]
+        if isinstance(search, str) and search.strip():
+            term = search.strip().lower()
+            questions = [q for q in questions if term in q.get("title", "").lower()]
 
     total = len(questions)
     offset_val = offset if isinstance(offset, int) else 0
